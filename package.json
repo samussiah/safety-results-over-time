@@ -1,5 +1,5 @@
 {
-  "name": "se-outlier-explorer",
+  "name": "se-results-over-time",
   "version": "0.0.0",
   "description": "outlier explorer for safety explorer",
   "main": "cf-outlier-explorer.common.js",
