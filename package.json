@@ -2,7 +2,7 @@
   "name": "se-results-over-time",
   "version": "0.0.0",
   "description": "outlier explorer for safety explorer",
-  "main": "cf-outlier-explorer.common.js",
+  "main": "cf-results-over-time.common.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev-watch": "cd test && node watcher.js",
