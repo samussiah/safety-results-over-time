@@ -223,6 +223,10 @@ const settings = {
             }
         }
     ],
+    legend: {
+        label: ''
+    },
+    color_by: 'ALL',
     resizable:true,
     max_width: 600,
     margin:{bottom:50},
@@ -307,7 +311,7 @@ function onDraw(){
   // Make nested data set for boxplots
   this.nested_data = d3$1.nest()
       .key(d => d[this.config.x.column])
-      .key(d => d[this.config.color_by])
+      .key(d => d[this.config.marks[0].per[0]])
       .rollup(d => {
         return d.map(m => +m[this.config.y.column]);
       })
@@ -470,9 +474,9 @@ function onResize(){
                 .attr("transform", "translate("+(this.x(e.key)+offset)+",0)")
                 .datum({values: results})
 
-                var boxPlotWidth = this.colorScale.domain().length ==1 ? 1 : 
-                this.colorScale.domain().length ==2 ? .33  :
-                .25
+                var boxPlotWidth = this.colorScale.domain().length === 1 ? 1 : 
+                    this.colorScale.domain().length === 2 ? 0.33  :
+                    0.25;
                 
                 addBoxplot(
                     g, //svg
@@ -493,6 +497,11 @@ function onResize(){
 function outlierExplorer(element, settings$$){
 	//merge user's settings with defaults
 	let mergedSettings = Object.assign({}, settings, settings$$);
+	//make sure settings are kept in sync
+	mergedSettings.x.column = mergedSettings.time_col;
+	mergedSettings.y.column = mergedSettings.value_col;
+	controlInputs[0].value_col = mergedSettings.measure_col;
+
 	//create controls now
 	let controls = webcharts.createControls(element, {location: 'top', inputs: controlInputs});
 	//create chart

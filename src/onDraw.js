@@ -12,7 +12,7 @@ export default function onDraw(){
   // Make nested data set for boxplots
   this.nested_data = nest()
       .key(d => d[this.config.x.column])
-      .key(d => d[this.config.color_by])
+      .key(d => d[this.config.marks[0].per[0]])
       .rollup(d => {
         return d.map(m => +m[this.config.y.column]);
       })

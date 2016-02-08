@@ -26,9 +26,9 @@ export default function onResize(){
                 .attr("transform", "translate("+(this.x(e.key)+offset)+",0)")
                 .datum({values: results})
 
-                var boxPlotWidth = this.colorScale.domain().length ==1 ? 1 : 
-                this.colorScale.domain().length ==2 ? .33  :
-                .25
+                var boxPlotWidth = this.colorScale.domain().length === 1 ? 1 : 
+                    this.colorScale.domain().length === 2 ? 0.33  :
+                    0.25;
                 
                 addBoxplot(
                     g, //svg

@@ -37,6 +37,10 @@ const settings = {
             }
         }
     ],
+    legend: {
+        label: ''
+    },
+    color_by: 'ALL',
     resizable:true,
     max_width: 600,
     margin:{bottom:50},

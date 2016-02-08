@@ -10,6 +10,11 @@ import onResize from './onResize';
 export default function outlierExplorer(element, settings){
 	//merge user's settings with defaults
 	let mergedSettings = Object.assign({}, config, settings);
+	//make sure settings are kept in sync
+	mergedSettings.x.column = mergedSettings.time_col;
+	mergedSettings.y.column = mergedSettings.value_col;
+	controlInputs[0].value_col = mergedSettings.measure_col;
+
 	//create controls now
 	let controls = createControls(element, {location: 'top', inputs: controlInputs});
 	//create chart
