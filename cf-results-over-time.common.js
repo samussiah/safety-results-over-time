@@ -547,6 +547,18 @@ class ReactResultsOverTime extends React.Component {
 
 ReactResultsOverTime.defaultProps = {data: [], controlInputs: [], id: 'id'}
 
+//some very simple CSS to keep controls looking ok
+const wrapperClass = 'cf-results-over-time';
+const styles = `.${wrapperClass} .control-group {
+  display: inline-block;
+  margin: 0 1em 1em 0;
+}
+
+.${wrapperClass} .control-group .control-label {
+  display: block;
+}
+`;
+
 class Renderer extends React.Component {
   constructor(props) {
     super(props);
@@ -596,12 +608,15 @@ class Renderer extends React.Component {
   }
   render() {
     return (
-      React.createElement(ReactResultsOverTime, {
-        id: this.props.id,
-        settings: this.state.settings, 
-        controlInputs: this.props.template.controls,
-        data: this.props.data
-      })
+      React.createElement('div', {className: wrapperClass}, 
+        React.createElement('style', null, styles),
+        React.createElement(ReactResultsOverTime, {
+          id: this.props.id,
+          settings: this.state.settings, 
+          controlInputs: this.props.template.controls,
+          data: this.props.data
+        })
+      )
     );
   }
 }

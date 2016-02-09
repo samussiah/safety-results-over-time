@@ -3,6 +3,18 @@ import stringAccessor from './string-accessor';
 import binding from './binding';
 import ReactResultsOverTime from './ReactResultsOverTime';
 
+//some very simple CSS to keep controls looking ok
+const wrapperClass = 'cf-results-over-time';
+const styles = `.${wrapperClass} .control-group {
+  display: inline-block;
+  margin: 0 1em 1em 0;
+}
+
+.${wrapperClass} .control-group .control-label {
+  display: block;
+}
+`;
+
 export default class Renderer extends React.Component {
   constructor(props) {
     super(props);
@@ -52,12 +64,15 @@ export default class Renderer extends React.Component {
   }
   render() {
     return (
-      React.createElement(ReactResultsOverTime, {
-        id: this.props.id,
-        settings: this.state.settings, 
-        controlInputs: this.props.template.controls,
-        data: this.props.data
-      })
+      React.createElement('div', {className: wrapperClass}, 
+        React.createElement('style', null, styles),
+        React.createElement(ReactResultsOverTime, {
+          id: this.props.id,
+          settings: this.state.settings, 
+          controlInputs: this.props.template.controls,
+          data: this.props.data
+        })
+      )
     );
   }
 }
