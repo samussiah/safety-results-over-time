@@ -220,6 +220,10 @@ var bundle = (function (React,d3$1,webcharts) {
               }
           }
       ],
+      legend: {
+          label: ''
+      },
+      color_by: 'ALL',
       resizable:true,
       max_width: 600,
       margin:{bottom:50},
@@ -304,7 +308,7 @@ var bundle = (function (React,d3$1,webcharts) {
     // Make nested data set for boxplots
     this.nested_data = d3$1.nest()
         .key(d => d[this.config.x.column])
-        .key(d => d[this.config.color_by])
+        .key(d => d[this.config.marks[0].per[0]])
         .rollup(d => {
           return d.map(m => +m[this.config.y.column]);
         })
@@ -467,9 +471,9 @@ var bundle = (function (React,d3$1,webcharts) {
                   .attr("transform", "translate("+(this.x(e.key)+offset)+",0)")
                   .datum({values: results})
 
-                  var boxPlotWidth = this.colorScale.domain().length ==1 ? 1 : 
-                  this.colorScale.domain().length ==2 ? .33  :
-                  .25
+                  var boxPlotWidth = this.colorScale.domain().length === 1 ? 1 : 
+                      this.colorScale.domain().length === 2 ? 0.33  :
+                      0.25;
                   
                   addBoxplot(
                       g, //svg
@@ -490,6 +494,11 @@ var bundle = (function (React,d3$1,webcharts) {
   function outlierExplorer(element, settings$$){
   	//merge user's settings with defaults
   	let mergedSettings = Object.assign({}, settings, settings$$);
+  	//make sure settings are kept in sync
+  	mergedSettings.x.column = mergedSettings.time_col;
+  	mergedSettings.y.column = mergedSettings.value_col;
+  	controlInputs[0].value_col = mergedSettings.measure_col;
+
   	//create controls now
   	let controls = webcharts.createControls(element, {location: 'top', inputs: controlInputs});
   	//create chart
@@ -535,10 +544,40 @@ var bundle = (function (React,d3$1,webcharts) {
 
   ReactResultsOverTime.defaultProps = {data: [], controlInputs: [], id: 'id'}
 
+  //some very simple CSS to keep controls looking ok
+  const wrapperClass = 'cf-results-over-time';
+  const styles = `.${wrapperClass} .control-group {
+  display: inline-block;
+  margin: 0 1em 1em 0;
+}
+
+.${wrapperClass} .control-group .control-label {
+  display: block;
+}
+`;
+
+
+  function describeCode(){
+      console.log(d3$1.version)
+      
+      const code = `//uses d3 v.${d3$1.version}
+//uses webcharts v.${webcharts.version}
+var settings = ${JSON.stringify(this.state.settings, null, 2)};
+
+var myChart = resultsOverTime(div, settings);
+
+d3.csv(dataPath, function(error, csv) {
+  myChart.init(data);
+});
+    `;
+      console.log(code)
+    }
+
   class Renderer extends React.Component {
     constructor(props) {
       super(props);
       this.binding = binding;
+      this.describeCode = describeCode.bind(this);
       this.state = {data: [], settings: {}, template: {}, loadMsg: 'Loading...'};
     }
     createSettings(props) {
@@ -584,12 +623,15 @@ var bundle = (function (React,d3$1,webcharts) {
     }
     render() {
       return (
-        React.createElement(ReactResultsOverTime, {
-          id: this.props.id,
-          settings: this.state.settings, 
-          controlInputs: this.props.template.controls,
-          data: this.props.data
-        })
+        React.createElement('div', {className: wrapperClass}, 
+          React.createElement('style', null, styles),
+          React.createElement(ReactResultsOverTime, {
+            id: this.props.id,
+            settings: this.state.settings, 
+            controlInputs: this.props.template.controls,
+            data: this.props.data
+          })
+        )
       );
     }
   }

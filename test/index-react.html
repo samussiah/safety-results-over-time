@@ -32,10 +32,14 @@
         };
         var Renderer = bundle;
 
+        var component = React.createElement(Renderer, props);
+
         ReactDOM.render(
-          React.createElement(Renderer, props),
+          component,
           document.getElementById('root')
         );
+
+        new Renderer(props).describeCode();
         
       });
     </script>

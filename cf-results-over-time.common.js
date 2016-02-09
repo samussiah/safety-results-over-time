@@ -559,10 +559,26 @@ const styles = `.${wrapperClass} .control-group {
 }
 `;
 
+function describeCode(){
+    const code = `//uses d3 v.${d3$1.version}
+//uses webcharts v.${webcharts.version}
+
+var settings = ${JSON.stringify(this.state.settings, null, 2)};
+
+var myChart = resultsOverTime(dataElement, settings);
+
+d3.csv(dataPath, function(error, csv) {
+  myChart.init(data);
+});
+    `;
+    return code;
+}
+
 class Renderer extends React.Component {
   constructor(props) {
     super(props);
     this.binding = binding;
+    this.describeCode = describeCode.bind(this);
     this.state = {data: [], settings: {}, template: {}, loadMsg: 'Loading...'};
   }
   createSettings(props) {

@@ -2,6 +2,8 @@ import React from 'react';
 import stringAccessor from './string-accessor';
 import binding from './binding';
 import ReactResultsOverTime from './ReactResultsOverTime';
+import { version  as d3_version } from 'd3';
+import { version as wc_version } from 'webcharts';
 
 //some very simple CSS to keep controls looking ok
 const wrapperClass = 'cf-results-over-time';
@@ -15,10 +17,26 @@ const styles = `.${wrapperClass} .control-group {
 }
 `;
 
+function describeCode(){
+    const code = `//uses d3 v.${d3_version}
+//uses webcharts v.${wc_version}
+
+var settings = ${JSON.stringify(this.state.settings, null, 2)};
+
+var myChart = resultsOverTime(dataElement, settings);
+
+d3.csv(dataPath, function(error, csv) {
+  myChart.init(data);
+});
+    `;
+    return code;
+}
+
 export default class Renderer extends React.Component {
   constructor(props) {
     super(props);
     this.binding = binding;
+    this.describeCode = describeCode.bind(this);
     this.state = {data: [], settings: {}, template: {}, loadMsg: 'Loading...'};
   }
   createSettings(props) {
