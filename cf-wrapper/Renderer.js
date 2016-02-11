@@ -17,8 +17,9 @@ const styles = `.${wrapperClass} .control-group {
 }
 `;
 
-function describeCode(){
-    const code = `//uses d3 v.${d3_version}
+function describeCode(props){
+  var settings = this.createSettings(props);
+  const code = `//uses d3 v.${d3_version}
 //uses webcharts v.${wc_version}
 
 var settings = ${JSON.stringify(this.state.settings, null, 2)};
@@ -28,8 +29,8 @@ var myChart = resultsOverTime(dataElement, settings);
 d3.csv(dataPath, function(error, csv) {
   myChart.init(data);
 });
-    `;
-    return code;
+  `;
+  return code;
 }
 
 export default class Renderer extends React.Component {
@@ -72,13 +73,15 @@ export default class Renderer extends React.Component {
       } 
     });
 
-    this.setState({settings: shell, loadMsg: ''});
+    return shell;
   }
   componentWillMount() {
-    this.createSettings(this.props);
+    var settings = this.createSettings(this.props);
+    this.setState({settings: settings});
   }
   componentWillReceiveProps(nextProps){
-    this.createSettings(nextProps);
+    var settings = this.createSettings(nextProps);
+    this.setState({settings: settings});
   }
   render() {
     return (
