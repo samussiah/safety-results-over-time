@@ -5,6 +5,6 @@ module.exports = {
     webcharts: 'webCharts',
     d3: 'd3'
   },
-  dest: 'results-over-time.js',
+  dest: 'index.js',
   moduleName: 'resultsOverTime'
 }; 
