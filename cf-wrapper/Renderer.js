@@ -27,7 +27,7 @@ var settings = ${JSON.stringify(this.state.settings, null, 2)};
 var myChart = resultsOverTime(dataElement, settings);
 
 d3.csv(dataPath, function(error, csv) {
-  myChart.init(data);
+  myChart.init(csv);
 });
   `;
   return code;
