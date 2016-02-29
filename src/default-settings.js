@@ -34,7 +34,8 @@ const settings = {
             ],
             attributes:{
                 'stroke-width': 2, 
-                'stroke-opacity': 1
+                'stroke-opacity': 1,
+                "display":"none"
             }
         }
     ],

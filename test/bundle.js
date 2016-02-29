@@ -37,7 +37,8 @@ var resultsOverTime = (function (webcharts,d3$1) {
 	            ],
 	            attributes:{
 	                'stroke-width': 2, 
-	                'stroke-opacity': 1
+	                'stroke-opacity': 1,
+	                "display":"none"
 	            }
 	        }
 	    ],

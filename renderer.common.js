@@ -185,7 +185,8 @@ var settings = {
         per: ["ALL"],
         attributes: {
             'stroke-width': 2,
-            'stroke-opacity': 1
+            'stroke-opacity': 1,
+            "display": "none"
         }
     }],
     legend: {
