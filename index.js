@@ -20,7 +20,8 @@ var resultsOverTime = (function (webcharts, d3$1) {
 			column: "VISITN",
 			type: "ordinal",
 			label: null,
-			sort: "alphabetical-ascending"
+			sort: "alphabetical-ascending",
+			behavior: "raw"
 		},
 		y: {
 			column: "STRESN",
@@ -150,13 +151,15 @@ var resultsOverTime = (function (webcharts, d3$1) {
 		this.y_dom[1] = Math.max.apply(null, y_95s);
 
 		// x domain
-		var visits = d3$1.set(this.filtered_data.map(function (m) {
-			return m[_this2.config.x.column];
-		})).values().sort(function (a, b) {
-			return a === 'NA' ? 1 : b === 'NA' ? -1 : d3$1.ascending(+a, +b);
-		});
-
-		this.config.x_dom = visits;
+		/*
+  var visits = set( this.filtered_data.map(m => m[this.config.x.column] ) )
+    .values()
+    .sort(function(a,b){
+      return a === 'NA' ? 1 : b === 'NA' ? -1 : ascending(+a, +b);
+    });
+  console.log(visits)
+  this.config.x_dom = visits;
+  */
 	}
 
 	function addBoxplot(svg, results, height, width, domain, boxPlotWidth, boxColor, boxInsideColor, format, horizontal) {

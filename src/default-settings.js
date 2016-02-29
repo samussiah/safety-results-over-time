@@ -15,7 +15,8 @@ const settings = {
         column:"VISITN",
         type:"ordinal",
         label:null,
-        sort:"alphabetical-ascending"
+        sort:"alphabetical-ascending", 
+        behavior:"raw"
     },
     y:{
         column:"STRESN",

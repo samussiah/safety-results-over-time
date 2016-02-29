@@ -198,7 +198,8 @@ var bundle = (function (React,d3$1,webcharts) {
           column:"VISITN",
           type:"ordinal",
           label:null,
-          sort:"alphabetical-ascending"
+          sort:"alphabetical-ascending",
+          behavior:"raw"
       },
       y:{
           column:"STRESN",
