@@ -31,15 +31,4 @@ export default function onDraw(){
   });
   this.y_dom[0] = Math.min.apply(null, y_05s);
   this.y_dom[1] = Math.max.apply(null, y_95s);
-
-  // x domain
-  /*
-  var visits = set( this.filtered_data.map(m => m[this.config.x.column] ) )
-    .values()
-    .sort(function(a,b){
-      return a === 'NA' ? 1 : b === 'NA' ? -1 : ascending(+a, +b);
-    });
-console.log(visits)
-  this.config.x_dom = visits;
-*/
 }

@@ -170,7 +170,7 @@ var settings = {
         type: "ordinal",
         label: null,
         sort: "alphabetical-ascending",
-        behavior: "raw"
+        behavior: "flex"
     },
     y: {
         column: "STRESN",
@@ -193,10 +193,12 @@ var settings = {
         label: ''
     },
     color_by: 'ALL',
-    resizable: true,
-    max_width: 600,
+    resizable: false,
+    //  max_width: 600,
+    height: 500,
+    range_band: 20,
     margin: { bottom: 50 },
-    aspect: 1.33,
+    //  aspect: 1.33,
     gridlines: 'xy'
 };
 
@@ -212,6 +214,13 @@ var controlInputs = [{
     require: true,
     values: ['ALL', 'SEX', 'RACE'],
     start: "ALL"
+}, {
+    label: "Hide visits with no data:",
+    option: "x.behavior",
+    type: "radio",
+    require: true,
+    values: ['flex', 'raw'],
+    relabels: ['Yes', "No"]
 }];
 
 function onInit() {
@@ -299,17 +308,6 @@ function onDraw() {
     });
     this.y_dom[0] = Math.min.apply(null, y_05s);
     this.y_dom[1] = Math.max.apply(null, y_95s);
-
-    // x domain
-    /*
-    var visits = set( this.filtered_data.map(m => m[this.config.x.column] ) )
-      .values()
-      .sort(function(a,b){
-        return a === 'NA' ? 1 : b === 'NA' ? -1 : ascending(+a, +b);
-      });
-    console.log(visits)
-    this.config.x_dom = visits;
-    */
 }
 
 function addBoxplot(svg, results, height, width, domain, boxPlotWidth, boxColor, boxInsideColor, format, horizontal) {

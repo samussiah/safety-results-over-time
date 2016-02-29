@@ -16,7 +16,7 @@ const settings = {
         type:"ordinal",
         label:null,
         sort:"alphabetical-ascending", 
-        behavior:"raw"
+        behavior:"flex"
     },
     y:{
         column:"STRESN",
@@ -43,10 +43,12 @@ const settings = {
         label: ''
     },
     color_by: 'ALL',
-    resizable:true,
-    max_width: 600,
+    resizable:false,
+  //  max_width: 600,
+    height:500,
+    range_band:20,
     margin:{bottom:50},
-    aspect: 1.33,
+  //  aspect: 1.33,
     gridlines: 'xy'
 };
 
@@ -64,6 +66,14 @@ export const controlInputs = [
         require: true, 
         values: ['ALL', 'SEX', 'RACE'],
         start:"ALL"
+    },
+    {
+        label:"Hide visits with no data:", 
+        option: "x.behavior", 
+        type: "radio", 
+        require: true, 
+        values: ['flex','raw'],
+        relabels:['Yes',"No"]
     }
 ];
 
