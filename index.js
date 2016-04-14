@@ -21,7 +21,8 @@ var resultsOverTime = (function (webcharts, d3$1) {
 			type: "ordinal",
 			label: null,
 			sort: "alphabetical-ascending",
-			behavior: "flex"
+			behavior: "flex",
+			tickAttr: null
 		},
 		y: {
 			column: "STRESN",
@@ -227,6 +228,15 @@ var resultsOverTime = (function (webcharts, d3$1) {
 		});
 	}
 
+	function adjustTicks(axis, dx, dy, rotation, anchor) {
+		if (!axis) return;
+		this.svg.selectAll("." + axis + ".axis .tick text").attr({
+			"transform": "rotate(" + rotation + ")",
+			"dx": dx,
+			"dy": dy
+		}).style("text-anchor", anchor || 'start');
+	}
+
 	function onResize() {
 		var _this3 = this;
 
@@ -265,6 +275,11 @@ var resultsOverTime = (function (webcharts, d3$1) {
 				}
 			});
 		});
+
+		// rotate ticks
+		if (config.x.tickAttr) {
+			adjustTicks.call(this, 'x', 0, 0, config.x.tickAttr.rotate, config.x.tickAttr.anchor);
+		}
 	}
 
 	if (typeof Object.assign != 'function') {
@@ -294,6 +309,10 @@ var resultsOverTime = (function (webcharts, d3$1) {
 	function outlierExplorer(element, settings$$) {
 		//merge user's settings with defaults
 		var mergedSettings = Object.assign({}, settings, settings$$);
+		// nested objects must be copied explicitly
+		mergedSettings.x = Object.assign({}, settings.x, settings$$.x);
+		mergedSettings.y = Object.assign({}, settings.y, settings$$.y);
+		mergedSettings.margin = Object.assign({}, settings.margin, settings$$.margin);
 		//make sure settings are kept in sync
 		mergedSettings.x.column = mergedSettings.time_col;
 		mergedSettings.y.column = mergedSettings.value_col;

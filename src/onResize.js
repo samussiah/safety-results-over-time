@@ -1,5 +1,6 @@
 import { ascending } from 'd3';
 import addBoxplot from './addBoxplot';
+import adjustTicks from './adjust-ticks';
 
 export default function onResize(){
     const config = this.config;
@@ -43,5 +44,10 @@ export default function onResize(){
             }
         });
     });
+
+    // rotate ticks
+    if (config.x.tickAttr) {
+        adjustTicks.call(this, 'x', 0, 0, config.x.tickAttr.rotate, config.x.tickAttr.anchor);
+    }
 
 }

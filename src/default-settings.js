@@ -16,7 +16,8 @@ const settings = {
         type:"ordinal",
         label:null,
         sort:"alphabetical-ascending", 
-        behavior:"flex"
+        behavior:"flex",
+        tickAttr: null
     },
     y:{
         column:"STRESN",
