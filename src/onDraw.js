@@ -1,4 +1,4 @@
-import { ascending, nest, set, quantile } from 'd3';
+import { ascending, nest, set, quantile, extent } from 'd3';
 
 export default function onDraw(){
   this.marks[0].data.forEach(e => {
@@ -31,4 +31,10 @@ export default function onDraw(){
   });
   this.y_dom[0] = Math.min.apply(null, y_05s);
   this.y_dom[1] = Math.max.apply(null, y_95s);
+
+  if (this.config.violins) {
+    this.y_dom = extent(
+      this.filtered_data.map((m) => +m[this.config.y.column])
+    );
+  }
 }

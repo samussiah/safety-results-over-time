@@ -15,6 +15,8 @@ var resultsOverTime = (function (webcharts, d3$1) {
 		start_value: null,
 		rotateX: true,
 		missingValues: ["NA", ""],
+		boxplots: true,
+		violins: false,
 		//Standard webcharts settings
 		x: {
 			column: "VISITN",
@@ -73,7 +75,7 @@ var resultsOverTime = (function (webcharts, d3$1) {
 		require: true,
 		values: ['flex', 'raw'],
 		relabels: ['Yes', "No"]
-	}];
+	}, { type: "checkbox", option: "violins", label: "Violin Plots", inline: true }, { type: "checkbox", option: "boxplots", label: "Box Plots", inline: true }];
 
 	function onInit() {
 		var _this = this;
@@ -160,6 +162,12 @@ var resultsOverTime = (function (webcharts, d3$1) {
 		});
 		this.y_dom[0] = Math.min.apply(null, y_05s);
 		this.y_dom[1] = Math.max.apply(null, y_95s);
+
+		if (this.config.violins) {
+			this.y_dom = d3$1.extent(this.filtered_data.map(function (m) {
+				return +m[_this2.config.y.column];
+			}));
+		}
 	}
 
 	function addBoxplot(svg, results, height, width, domain, boxPlotWidth, boxColor, boxInsideColor, format, horizontal) {
@@ -228,6 +236,47 @@ var resultsOverTime = (function (webcharts, d3$1) {
 		});
 	}
 
+	function addViolin(svg, results, height, width, domain, imposeMax, violinColor) {
+		var interpolation = "basis";
+
+		var data = d3.layout.histogram().bins(10).frequency(0)(results);
+
+		var y = d3.scale.linear().range([width / 2, 0]).domain([0, Math.max(imposeMax, d3.max(data, function (d) {
+			return d.y;
+		}))]).clamp(true);
+
+		var x = d3.scale.linear().range([height, 0]).domain(domain);
+		//.nice() ;
+
+		var area = d3.svg.area().interpolate(interpolation).x(function (d) {
+			if (interpolation == "step-before") return x(d.x + d.dx / 2);
+			return x(d.x);
+		}).y0(width / 2).y1(function (d) {
+			return y(d.y);
+		});
+
+		var line = d3.svg.line().interpolate(interpolation).x(function (d) {
+			if (interpolation == "step-before") return x(d.x + d.dx / 2);
+			return x(d.x);
+		}).y(function (d) {
+			return y(d.y);
+		});
+
+		var gPlus = svg.append("g");
+		var gMinus = svg.append("g");
+
+		gPlus.append("path").datum(data).attr("class", "area").attr("d", area).attr("fill", violinColor);
+
+		gPlus.append("path").datum(data).attr("class", "violin").attr("d", line).attr("stroke", violinColor).attr("fill", "none");
+
+		gMinus.append("path").datum(data).attr("class", "area").attr("d", area).attr("fill", violinColor);
+
+		gMinus.append("path").datum(data).attr("class", "violin").attr("d", line).attr("stroke", violinColor).attr("fill", "none");
+
+		gPlus.attr("transform", "rotate(90,0,0)  translate(0,-" + width + ")"); //translate(0,-200)");
+		gMinus.attr("transform", "rotate(90,0,0) scale(1,-1)");
+	};
+
 	function adjustTicks(axis, dx, dy, rotation, anchor) {
 		if (!axis) return;
 		this.svg.selectAll("." + axis + ".axis .tick text").attr({
@@ -263,15 +312,21 @@ var resultsOverTime = (function (webcharts, d3$1) {
 
 					var boxPlotWidth = _this3.colorScale.domain().length === 1 ? 1 : _this3.colorScale.domain().length === 2 ? 0.33 : 0.25;
 
-					addBoxplot(g, //svg
-					results, //results
-					_this3.plot_height, //height
-					_this3.x.rangeBand(), //width
-					_this3.y.domain(), //domain
-					boxPlotWidth, //boxPlotWidth
-					_this3.colorScale(v.key), //boxColor
-					"#eee" //boxInsideColor
-					);
+					if (config.boxplots) {
+						addBoxplot(g, //svg
+						results, //results
+						_this3.plot_height, //height
+						_this3.x.rangeBand(), //width
+						_this3.y.domain(), //domain
+						boxPlotWidth, //boxPlotWidth
+						_this3.colorScale(v.key), //boxColor
+						"#eee" //boxInsideColor
+						);
+					}
+
+					if (config.violins) {
+						addViolin(g, results, _this3.plot_height, _this3.x.rangeBand(), _this3.y.domain(), 1 / _this3.colorScale.domain().length / 3, "#ccc7d6");
+					}
 				}
 			});
 		});
