@@ -11,6 +11,10 @@ import './object-assign';
 export default function outlierExplorer(element, settings){
 	//merge user's settings with defaults
 	let mergedSettings = Object.assign({}, config, settings);
+	// nested objects must be copied explicitly
+	mergedSettings.x = Object.assign({}, config.x, settings.x);
+	mergedSettings.y = Object.assign({}, config.y, settings.y);
+	mergedSettings.margin = Object.assign({}, config.margin, settings.margin);
 	//make sure settings are kept in sync
 	mergedSettings.x.column = mergedSettings.time_col;
 	mergedSettings.y.column = mergedSettings.value_col;

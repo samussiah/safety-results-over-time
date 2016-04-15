@@ -10,13 +10,16 @@ const settings = {
     start_value: null,
     rotateX: true,
     missingValues: ["NA",""],
+    boxplots: true,
+    violins: false,
     //Standard webcharts settings
     x:{
         column:"VISITN",
         type:"ordinal",
         label:null,
         sort:"alphabetical-ascending", 
-        behavior:"flex"
+        behavior:"flex",
+        tickAttr: null
     },
     y:{
         column:"STRESN",
@@ -74,7 +77,9 @@ export const controlInputs = [
         require: true, 
         values: ['flex','raw'],
         relabels:['Yes',"No"]
-    }
+    },
+    {type: "checkbox", option: "violins", label: "Violin Plots", inline: true},
+    {type: "checkbox", option: "boxplots", label: "Box Plots", inline: true}
 ];
 
 export const tableSettings = {

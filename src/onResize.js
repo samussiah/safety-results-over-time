@@ -1,5 +1,7 @@
 import { ascending } from 'd3';
 import addBoxplot from './addBoxplot';
+import addViolinPlot from './addViolinPlot';
+import adjustTicks from './adjust-ticks';
 
 export default function onResize(){
     const config = this.config;
@@ -30,18 +32,37 @@ export default function onResize(){
                     this.colorScale.domain().length === 2 ? 0.33  :
                     0.25;
                 
-                addBoxplot(
-                    g, //svg
-                    results, //results 
-                    this.plot_height, //height 
-                    this.x.rangeBand(), //width 
-                    this.y.domain(), //domain 
-                    boxPlotWidth, //boxPlotWidth 
-                    this.colorScale(v.key), //boxColor 
-                    "#eee" //boxInsideColor 
-                );
+                if (config.boxplots) {
+                    addBoxplot(
+                        g, //svg
+                        results, //results 
+                        this.plot_height, //height 
+                        this.x.rangeBand(), //width 
+                        this.y.domain(), //domain 
+                        boxPlotWidth, //boxPlotWidth 
+                        this.colorScale(v.key), //boxColor 
+                        "#eee" //boxInsideColor 
+                    );
+                }
+
+                if (config.violins) {
+                    addViolinPlot(
+                        g,
+                        results,
+                        this.plot_height,
+                        this.x.rangeBand(),
+                        this.y.domain(),
+                        (1/this.colorScale.domain().length/3),
+                        "#ccc7d6"
+                    );
+                }
             }
         });
     });
+
+    // rotate ticks
+    if (config.x.tickAttr) {
+        adjustTicks.call(this, 'x', 0, 0, config.x.tickAttr.rotate, config.x.tickAttr.anchor);
+    }
 
 }

@@ -16,7 +16,16 @@
     <script src="bundle.js"></script>
     <script>
       var div = '#root';
-      var settings = {start_value: 'Bilirubin'};
+      var settings = {
+        start_value: 'Bilirubin',
+        violins: true,
+        x: {
+          tickAttr: {
+            rotate: -45,
+            anchor: 'end'
+          }
+        }
+      };
       var dataFile = 'analysis-test-results.csv';
 
       d3.csv(dataFile, function (data){
