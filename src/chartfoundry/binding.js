@@ -1,6 +1,40 @@
 
 export default {
 	dataMappings : [
+		//Custom variables
+		{
+			source:"id_col",
+			target:"id_col"
+		},
+		{
+			source:"time_col",
+			target:"time_col"
+		},
+		{
+			source:"measure_col",
+			target:"measure_col"
+		},
+		{
+			source:"value_col",
+			target:"value_col"
+		},
+		{
+			source:"unit_col",
+			target:"unit_col"
+		},
+		{
+			source:"normal_col_low",
+			target:"normal_col_low"
+		},
+		{
+			source:"normal_col_high",
+			target:"normal_col_high"
+		},
+		{
+			source:"group_cols",
+			target:"group_cols"
+		},
+		//WebCharts Defaults
 		{
 			source:"x",
 			target:"x.column"
@@ -51,6 +85,28 @@ export default {
 		}
 	],
 	chartProperties: [
+		//Custom variables
+    	{
+			source:"start_value",
+			target:"start_value"
+		},
+		{
+			source:"rotateX",
+			target:"rotateX"
+		},
+		{
+			source:"missingValues",
+			target:"missingValues"
+		},
+		{
+			source:"boxplots",
+			target:"boxplots"
+		},
+		{
+			source:"violins",
+			target:"violins"
+		},
+		//WebCharts Defaults
 		{
 			source:"date_format",
 			target:"date_format"

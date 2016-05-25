@@ -2,14 +2,12 @@
   "name": "safety-results-over-time",
   "version": "1.2.0",
   "description": "Chart showing population averages for lab measures, vital signs and other related measures during the course of a clinical trial.",
-  "main": ".build/safetyResultsOverTime.js",
+  "main": "./build/safetyResultsOverTime.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "dev-watch": "cd test && node watcher.js",
     "build": "rollup -c ./scripts/rollup.wrapper.config.js | babel > ./build/safetyResultsOverTime.js",
-    "build-react": "rollup -c ./scripts/rollup.react.config.js | babel > ./build/safetyResultsOverTime-react.js"
+    "build-chf": "rollup -c ./scripts/rollup.chf.config.js > ./build/safetyResultsOverTime-chf.js"
   },
-  "author": "Rho Inc",
+  "author": "Rho, Inc.",
   "license": "MIT",
   "dependencies": {
     "d3": "^3.5.14",
