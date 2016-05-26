@@ -2,7 +2,7 @@
   "name": "safety-results-over-time",
   "version": "1.2.0",
   "description": "Chart showing population averages for lab measures, vital signs and other related measures during the course of a clinical trial.",
-  "main": "./build/safetyResultsOverTime.js",
+  "main": "./build/safetyResultsOverTime-chf.js",
   "scripts": {
     "build": "rollup -c ./scripts/rollup.wrapper.config.js | babel > ./build/safetyResultsOverTime.js",
     "build-chf": "rollup -c ./scripts/rollup.chf.config.js > ./build/safetyResultsOverTime-chf.js"
