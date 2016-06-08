@@ -1,7 +1,7 @@
 import { ascending } from 'd3';
-import addBoxplot from './addBoxplot';
-import addViolinPlot from './addViolinPlot';
-import adjustTicks from './adjust-ticks';
+import addBoxplot from './util/addBoxplot';
+import addViolinPlot from './util/addViolinPlot';
+import adjustTicks from './util/adjust-ticks';
 
 export default function onResize(){
     const config = this.config;

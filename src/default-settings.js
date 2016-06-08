@@ -7,14 +7,16 @@ const settings = {
     unit_col: "STRESU",
     normal_col_low: "STNRLO",
     normal_col_high: "STNRHI",
+    group_cols:["SEX","RACE"],
     start_value: null,
     rotateX: true,
     missingValues: ["NA",""],
     boxplots: true,
     violins: false,
+
     //Standard webcharts settings
-    x:{
-        column:"VISITN",
+     x:{
+        column:null, //set in syncSettings()
         type:"ordinal",
         label:null,
         sort:"alphabetical-ascending", 
@@ -22,7 +24,7 @@ const settings = {
         tickAttr: null
     },
     y:{
-        column:"STRESN",
+    	column:null, //set in syncSettings()
         stat:"mean",
         type:"linear",
         label:"Value",
@@ -47,18 +49,24 @@ const settings = {
     },
     color_by: 'ALL',
     resizable:false,
-  //  max_width: 600,
     height:500,
     range_band:20,
     margin:{bottom:50},
-  //  aspect: 1.33,
     gridlines: 'xy'
 };
 
+// Replicate settings in multiple places in the settings object
+export function syncSettings(settings){
+	settings.x.column = settings.time_col;
+	settings.y.column = settings.value_col;
+	 return settings;
+}
+
+// Default Control objects
 export const controlInputs = [ 
-    {
+  	{
         label:"Measure", 
-        value_col: "TEST", 
+        value_col: null, //set in syncControlInputs()
         type: "subsetter",  
         start: null
     },
@@ -67,7 +75,7 @@ export const controlInputs = [
         options: ["marks.0.per.0","color_by"], 
         type: "dropdown", 
         require: true, 
-        values: ['ALL', 'SEX', 'RACE'],
+        values:["ALL"], //additional options added in syncControlInputs()
         start:"ALL"
     },
     {
@@ -79,12 +87,17 @@ export const controlInputs = [
         relabels:['Yes',"No"]
     },
     {type: "checkbox", option: "violins", label: "Violin Plots", inline: true},
-    {type: "checkbox", option: "boxplots", label: "Box Plots", inline: true}
-];
+    {type: "checkbox", option: "boxplots", label: "Box Plots", inline: true}];
 
-export const tableSettings = {
-    cols: ["key","shiftx","shifty"],
-    headers: ["ID","Start Value", "End Value"]
-};
+// Map values from settings to control inputs
+export function syncControlInputs(controlInputs, settings){
+	var measureControl = controlInputs.filter(function(d){return d.label=="Measure"})[0] 
+	measureControl.value_col = settings.measure_col; 
+	
+	var groupControl = controlInputs.filter(function(d){return d.label=="Group"})[0]  
+	groupControl.values = d3.merge([groupControl.values,settings.group_cols])
+
+    return controlInputs
+}
 
 export default settings
