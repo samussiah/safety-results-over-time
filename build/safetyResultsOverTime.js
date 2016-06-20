@@ -95,8 +95,14 @@ var safetyResultsOverTime = (function (webcharts, d3$1) {
 		var groupControl = controlInputs.filter(function (d) {
 			return d.label == "Group";
 		})[0];
-		groupControl.values = d3.merge([groupControl.values, settings.group_cols]);
-
+		//groupControl.values = d3.merge([groupControl.values,settings.group_cols])
+		if (settings.group_cols) {
+			settings.group_cols.forEach(function (d) {
+				if (groupControl.values.indexOf(d) == -1) {
+					groupControl.values.push(d);
+				}
+			});
+		}
 		return controlInputs;
 	}
 
