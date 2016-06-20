@@ -695,7 +695,7 @@
 
 	function describeCode(props) {
 	  var settings = this.createSettings(props);
-	  var code = '// uses d3 v.' + d3$1.version + '\n// uses webcharts v.' + webcharts.version + '\n// uses safety-results-over-time v.1.2.0\n\nvar settings = ' + JSON.stringify(settings, null, 2) + ';\n\nvar myChart = safetyResultsOverTime(dataElement, settings);\n\nd3.csv(dataPath, function(error, csv) {\n  myChart.init(csv);\n});\n';
+	  var code = '// uses d3 v.' + d3$1.version + '\n// uses webcharts v.' + webcharts.version + '\n// uses safety-results-over-time v.1.2.1\n\nvar settings = ' + JSON.stringify(settings, null, 2) + ';\n\nvar myChart = safetyResultsOverTime(dataElement, settings);\n\nd3.csv(dataPath, function(error, csv) {\n  myChart.init(csv);\n});\n';
 	  return code;
 	}
 
