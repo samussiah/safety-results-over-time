@@ -29,7 +29,12 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
     var defaultSettings = {
         //Custom settings for this template
         id_col: 'USUBJID',
-        time_col: 'VISITN',
+        time_settings: {
+            value_col: 'VISITN',
+            label: 'Visit Number',
+            order: null, // x-axis domain order (array)
+            rotate_tick_labels: false,
+            vertical_space: 0 },
         measure_col: 'TEST',
         value_col: 'STRESN',
         unit_col: 'STRESU',
@@ -40,7 +45,6 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
         filters: null,
         boxplots: true,
         violins: false,
-        rotateX: true,
         missingValues: ['', 'NA', 'N/A'],
 
         //Standard webcharts settings
@@ -70,7 +74,7 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
             }
         }],
         legend: {
-            label: ''
+            mark: 'square'
         },
         color_by: null, // set in syncSettings()
         resizable: false,
@@ -80,10 +84,13 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
 
     // Replicate settings in multiple places in the settings object
     function syncSettings(settings) {
-        settings.x.column = settings.time_col;
+        settings.x.column = settings.time_settings.value_col;
+        settings.x.label = settings.time_settings.label;
+        settings.x.order = settings.time_settings.order;
         settings.y.column = settings.value_col;
         if (settings.groups) settings.color_by = settings.groups[0].value_col ? settings.groups[0].value_col : settings.groups[0];else settings.color_by = 'NONE';
         settings.marks[0].per = [settings.color_by];
+        settings.margin = settings.margin || { bottom: settings.time_settings.vertical_space };
 
         return settings;
     }
@@ -148,7 +155,7 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
 
         //'All'variable for non-grouped comparisons
         this.raw_data.forEach(function (e) {
-            return e.NONE = 'All';
+            return e.NONE = 'All Subjects';
         });
 
         //Drop missing values
@@ -189,7 +196,19 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
 
     function onLayout() {}
 
-    function onDataTransform() {}
+    function onDataTransform() {
+        //Redefine y-axis label.
+        this.config.y.label = this.filtered_data[0][this.config.measure_col] + ' (' + this.filtered_data[0][this.config.unit_col] + ')';
+        //Redefine legend label.
+        var group_value_cols = this.config.groups.map(function (group) {
+            return group.value_col ? group.value_col : group;
+        });
+        var group_labels = this.config.groups.map(function (group) {
+            return group.label ? group.label : group.value_col ? group.value_col : group;
+        });
+        var group = this.config.color_by;
+        if (group !== 'NONE') this.config.legend.label = group_labels[group_value_cols.indexOf(group)];else this.config.legend.label = '';
+    }
 
     function onDraw() {
         var _this = this;
@@ -233,69 +252,92 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
         }
     }
 
-    function addBoxplot(svg, results, height, width, domain, boxPlotWidth, boxColor, boxInsideColor, format, horizontal) {
-        //set default orientation to "horizontal"
-        var horizontal = horizontal == undefined ? true : horizontal;
+    function addBoxplot(svg, results, height, width, domain, boxPlotWidth, boxColor, boxInsideColor) {
+        var format = arguments.length > 8 && arguments[8] !== undefined ? arguments[8] : '.2f';
+        var horizontal = arguments.length > 9 && arguments[9] !== undefined ? arguments[9] : true;
 
-        //make the results numeric and sort
-        var results = results.map(function (d) {
+        //Make the numericResults numeric and sort.
+        var numericResults = results.map(function (d) {
             return +d;
         }).sort(d3.ascending);
 
-        //set up scales
+        //Define x - and y - scales.
+        var x = d3.scale.linear().range([0, width]);
         var y = d3.scale.linear().range([height, 0]);
 
-        var x = d3.scale.linear().range([0, width]);
+        if (horizontal) y.domain(domain);else x.domain(domain);
 
-        if (horizontal) {
-            y.domain(domain);
-        } else {
-            x.domain(domain);
+        //Define quantiles of interest.
+        var probs = [0.05, 0.25, 0.5, 0.75, 0.95],
+            iS = void 0;
+        for (var _i = 0; _i < probs.length; _i++) {
+            probs[_i] = d3.quantile(numericResults, probs[_i]);
         }
 
-        var probs = [0.05, 0.25, 0.5, 0.75, 0.95];
-        for (var i = 0; i < probs.length; i++) {
-            probs[i] = d3.quantile(results, probs[i]);
-        }
+        //Define box plot container.
+        var boxplot = svg.append('g').attr('class', 'boxplot').datum({ values: numericResults,
+            probs: probs });
 
-        var boxplot = svg.append("g").attr("class", "boxplot").datum({ values: results, probs: probs });
-
-        //set bar width variable
+        //Define box dimensions.
         var left = horizontal ? 0.5 - boxPlotWidth / 2 : null;
         var right = horizontal ? 0.5 + boxPlotWidth / 2 : null;
         var top = horizontal ? null : 0.5 - boxPlotWidth / 2;
         var bottom = horizontal ? null : 0.5 + boxPlotWidth / 2;
 
-        //draw rectangle from q1 to q3
-        var box_x = horizontal ? x(0.5 - boxPlotWidth / 2) : x(probs[1]);
-        var box_width = horizontal ? x(0.5 + boxPlotWidth / 2) - x(0.5 - boxPlotWidth / 2) : x(probs[3]) - x(probs[1]);
-        var box_y = horizontal ? y(probs[3]) : y(0.5 + boxPlotWidth / 2);
-        var box_height = horizontal ? -y(probs[3]) + y(probs[1]) : y(0.5 - boxPlotWidth / 2) - y(0.5 + boxPlotWidth / 2);
+        //Transform box dimensions.
+        var box_x = horizontal ? x(left) : x(probs[1]);
+        var box_width = horizontal ? x(right) - x(left) : x(probs[3]) - x(probs[1]);
+        var box_y = horizontal ? y(probs[3]) : y(right);
+        var box_height = horizontal ? -y(probs[3]) + y(probs[1]) : y(left) - y(right);
 
-        boxplot.append("rect").attr("class", "boxplot fill").attr("x", box_x).attr("width", box_width).attr("y", box_y).attr("height", box_height).style("fill", boxColor);
+        //Draw box.
+        boxplot.append('rect').attr({ 'class': 'boxplot fill',
+            'x': box_x,
+            'width': box_width,
+            'y': box_y,
+            'height': box_height }).style('fill', boxColor);
 
-        //draw dividing lines at median, 95% and 5%
-        var iS = [0, 2, 4];
-        var iSclass = ["", "median", ""];
+        //Draw horizontal lines at 5th percentile, median, and 95th percentile.
+        iS = [0, 2, 4];
+        var iSclass = ['', 'median', ''];
         var iSColor = [boxColor, boxInsideColor, boxColor];
-        for (var i = 0; i < iS.length; i++) {
-            boxplot.append("line").attr("class", "boxplot " + iSclass[i]).attr("x1", horizontal ? x(0.5 - boxPlotWidth / 2) : x(probs[iS[i]])).attr("x2", horizontal ? x(0.5 + boxPlotWidth / 2) : x(probs[iS[i]])).attr("y1", horizontal ? y(probs[iS[i]]) : y(0.5 - boxPlotWidth / 2)).attr("y2", horizontal ? y(probs[iS[i]]) : y(0.5 + boxPlotWidth / 2)).style("fill", iSColor[i]).style("stroke", iSColor[i]);
+        for (var _i2 = 0; _i2 < iS.length; _i2++) {
+            boxplot.append('line').attr({ 'class': 'boxplot ' + iSclass[_i2],
+                'x1': horizontal ? x(left) : x(probs[iS[_i2]]),
+                'x2': horizontal ? x(right) : x(probs[iS[_i2]]),
+                'y1': horizontal ? y(probs[iS[_i2]]) : y(left),
+                'y2': horizontal ? y(probs[iS[_i2]]) : y(right) }).style({ 'fill': iSColor[_i2],
+                'stroke': iSColor[_i2] });
         }
 
-        //draw lines from 5% to 25% and from 75% to 95%
-        var iS = [[0, 1], [3, 4]];
+        //Draw vertical lines from the 5th percentile to the 25th percentile and from the 75th percentile to the 95th percentile.
+        iS = [[0, 1], [3, 4]];
         for (var i = 0; i < iS.length; i++) {
-            boxplot.append("line").attr("class", "boxplot").attr("x1", horizontal ? x(0.5) : x(probs[iS[i][0]])).attr("x2", horizontal ? x(0.5) : x(probs[iS[i][1]])).attr("y1", horizontal ? y(probs[iS[i][0]]) : y(0.5)).attr("y2", horizontal ? y(probs[iS[i][1]]) : y(0.5)).style("stroke", boxColor);
+            boxplot.append('line').attr({ 'class': 'boxplot',
+                'x1': horizontal ? x(0.5) : x(probs[iS[i][0]]),
+                'x2': horizontal ? x(0.5) : x(probs[iS[i][1]]),
+                'y1': horizontal ? y(probs[iS[i][0]]) : y(0.5),
+                'y2': horizontal ? y(probs[iS[i][1]]) : y(0.5) }).style('stroke', boxColor);
         }
 
-        boxplot.append("circle").attr("class", "boxplot mean").attr("cx", horizontal ? x(0.5) : x(d3.mean(results))).attr("cy", horizontal ? y(d3.mean(results)) : y(0.5)).attr("r", horizontal ? x(boxPlotWidth / 3) : y(1 - boxPlotWidth / 3)).style("fill", boxInsideColor).style("stroke", boxColor);
+        //Draw outer circle.
+        boxplot.append('circle').attr({ 'class': 'boxplot mean',
+            'cx': horizontal ? x(0.5) : x(d3.mean(numericResults)),
+            'cy': horizontal ? y(d3.mean(numericResults)) : y(0.5),
+            'r': horizontal ? x(boxPlotWidth / 3) : y(1 - boxPlotWidth / 3) }).style({ 'fill': boxInsideColor,
+            'stroke': boxColor });
 
-        boxplot.append("circle").attr("class", "boxplot mean").attr("cx", horizontal ? x(0.5) : x(d3.mean(results))).attr("cy", horizontal ? y(d3.mean(results)) : y(0.5)).attr("r", horizontal ? x(boxPlotWidth / 6) : y(1 - boxPlotWidth / 6)).style("fill", boxColor).style("stroke", 'None');
+        //Draw inner circle.
+        boxplot.append('circle').attr({ 'class': 'boxplot mean',
+            'cx': horizontal ? x(0.5) : x(d3.mean(numericResults)),
+            'cy': horizontal ? y(d3.mean(numericResults)) : y(0.5),
+            'r': horizontal ? x(boxPlotWidth / 6) : y(1 - boxPlotWidth / 6) }).style({ 'fill': boxColor,
+            'stroke': 'None' });
 
-        var formatx = format ? d3.format(format) : d3.format(".2f");
-
-        boxplot.selectAll(".boxplot").append("title").text(function (d) {
-            return "N = " + d.values.length + "\n" + "Min = " + d3.min(d.values) + "\n" + "5th % = " + formatx(d3.quantile(d.values, 0.05)) + "\n" + "Q1 = " + formatx(d3.quantile(d.values, 0.25)) + "\n" + "Median = " + formatx(d3.median(d.values)) + "\n" + "Q3 = " + formatx(d3.quantile(d.values, 0.75)) + "\n" + "95th % = " + formatx(d3.quantile(d.values, 0.95)) + "\n" + "Max = " + d3.max(d.values) + "\n" + "Mean = " + formatx(d3.mean(d.values)) + "\n" + "StDev = " + formatx(d3.deviation(d.values));
+        //Annotate statistics.
+        var xFormat = d3.format(format);
+        boxplot.selectAll('.boxplot').append('title').text(function (d) {
+            return 'N = ' + d.values.length + '\nMin = ' + d3.min(d.values) + '\n5th % = ' + xFormat(d3.quantile(d.values, 0.05)) + '\nQ1 = ' + xFormat(d3.quantile(d.values, 0.25)) + '\nMedian = ' + xFormat(d3.median(d.values)) + '\nQ3 = ' + xFormat(d3.quantile(d.values, 0.75)) + '\n95th % = ' + xFormat(d3.quantile(d.values, 0.95)) + '\nMax = ' + d3.max(d.values) + '\nMean = ' + xFormat(d3.mean(d.values)) + '\nStDev = ' + xFormat(d3.deviation(d.values));
         });
     }
 
@@ -341,64 +383,76 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
         gMinus.attr("transform", "rotate(90,0,0) scale(1,-1)");
     };
 
-    function adjustTicks(axis, dx, dy, rotation, anchor) {
-        if (!axis) return;
-        this.svg.selectAll("." + axis + ".axis .tick text").attr({
-            "transform": "rotate(" + rotation + ")",
-            "dx": dx,
-            "dy": dy
-        }).style("text-anchor", anchor || 'start');
-    }
-
     function onResize() {
         var _this = this;
 
         var config = this.config;
-        var units = this.filtered_data[0][config.unit_col];
-        var measure = this.filtered_data[0][config.measure_col];
 
-        this.svg.select(".y.axis").select(".axis-title").text(measure + " (" + units + ")");
+        //Rotate x-axis tick labels.
+        if (config.time_settings.rotate_tick_labels) this.svg.selectAll('.x.axis .tick text').attr({ 'transform': 'rotate(-45)',
+            'dx': -10,
+            'dy': 10 }).style('text-anchor', 'end');
 
-        //draw reference boxplot 
-        this.svg.selectAll(".boxplot-wrap").remove();
+        //Draw reference boxplot.
+        this.svg.selectAll('.boxplot-wrap').remove();
+
+        //Count number of groups.
+        var nGroups = this.colorScale.domain().length;
+        //Given an odd number of groups, center first box and offset the rest.
+        //Given an even number of groups, offset all boxes.
+        var start = nGroups % 2 ? 0 : 1;
+        var width = this.x.rangeBand();
 
         this.nested_data.forEach(function (e) {
+            //Sort [ config.color_by ] groups.
+            e.values = e.values.sort(function (a, b) {
+                return _this.colorScale.domain().indexOf(a.key) < _this.colorScale.domain().indexOf(b.key) ? -1 : 1;
+            });
+
             e.values.forEach(function (v, i) {
-                var index = _this.colorScale.domain().indexOf(v.key);
-                var sign = index % 2 === 0 ? -1 : 1;
-                var multiplier = index === 1 ? 1 : Math.floor(index / 2);
-                var offset = sign * multiplier * _this.colorScale.domain().length * 4;
+                //Calculate direction in which to offset each box plot.
+                var direction = i > 0 ? Math.pow(-1, i % 2) * (start ? 1 : -1) : start;
+                //Calculate multiplier of offset distance.
+                var multiplier = Math.round((i + start) / 2);
+                //Calculate offset distance as a function of the x-axis range band, number of groups, and whether
+                //the number of groups is even or odd.
+                var distance = width / nGroups;
+                var distanceOffset = start * -1 * direction * width / nGroups / 2;
+                //Calculate offset.
+                var offset = direction * multiplier * distance + distanceOffset;
+                //Capture all results within visit and group.
                 var results = v.values.sort(d3$1.ascending).map(function (d) {
                     return +d;
                 });
-                if (_this.x_dom.indexOf(e.key) > -1) {
-                    var g = _this.svg.append("g").attr("class", "boxplot-wrap overlay-item").attr("transform", "translate(" + (_this.x(e.key) + offset) + ",0)").datum({ values: results });
 
-                    var boxPlotWidth = _this.colorScale.domain().length === 1 ? 1 : _this.colorScale.domain().length === 2 ? 0.33 : 0.25;
+                if (_this.x_dom.indexOf(e.key) > -1) {
+                    var g = _this.svg.append('g').attr('class', 'boxplot-wrap overlay-item').attr('transform', 'translate(' + (_this.x(e.key) + offset) + ',0)').datum({ values: results });
 
                     if (config.boxplots) {
                         addBoxplot(g, //svg
                         results, //results 
                         _this.plot_height, //height 
-                        _this.x.rangeBand(), //width 
+                        width, //width 
                         _this.y.domain(), //domain 
-                        boxPlotWidth, //boxPlotWidth 
+                        .75 / nGroups, //boxPlotWidth 
                         _this.colorScale(v.key), //boxColor 
-                        "#eee" //boxInsideColor 
+                        '#eee' //boxInsideColor 
                         );
                     }
 
                     if (config.violins) {
-                        addViolin(g, results, _this.plot_height, _this.x.rangeBand(), _this.y.domain(), 1 / _this.colorScale.domain().length / 3, "#ccc7d6");
+                        addViolin(g, //svg
+                        results, //results
+                        _this.plot_height, //height
+                        width, //width
+                        _this.y.domain(), //domain
+                        1 / nGroups / 3, //violinPlotWidth
+                        '#ccc7d6' //violinPlotColor
+                        );
                     }
                 }
             });
         });
-
-        // rotate ticks
-        if (config.x.tickAttr) {
-            adjustTicks.call(this, 'x', 0, 0, config.x.tickAttr.rotate, config.x.tickAttr.anchor);
-        }
     }
 
     function safetyResultsOverTime(element, settings) {

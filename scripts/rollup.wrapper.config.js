@@ -1,28 +1,28 @@
-import babel from "rollup-plugin-babel";
+import babel from 'rollup-plugin-babel';
 
 module.exports = {
-  moduleName: "safetyResultsOverTime",
-  entry: "./src/wrapper.js",
-  format: "iife",
+  moduleName: 'safetyResultsOverTime',
+  entry: './src/wrapper.js',
+  format: 'iife',
   globals: {
-    webcharts: "webCharts",
-    d3: "d3"
+    webcharts: 'webCharts',
+    d3: 'd3'
   },
   plugins: [
     babel(
       {
-        "presets": [
+        'presets': [
           [
-            "es2015",
+            'es2015',
             {
-              "modules": false
+              'modules': false
             }
           ]
         ],
-        "plugins": [
-          "external-helpers"
+        'plugins': [
+          'external-helpers'
         ],
-        "exclude": "node_modules/**"
+        'exclude': 'node_modules/**'
       })
   ]
 }; 

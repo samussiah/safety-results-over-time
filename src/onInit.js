@@ -6,7 +6,7 @@ export default function onInit() {
     const allMeasures = set(this.raw_data.map(m => m[config.measure_col])).values();
 
     //'All'variable for non-grouped comparisons
-    this.raw_data.forEach(e => e.NONE = 'All' );
+    this.raw_data.forEach(e => e.NONE = 'All Subjects' );
     
     //Drop missing values
     this.raw_data = this.raw_data.filter(f => {
