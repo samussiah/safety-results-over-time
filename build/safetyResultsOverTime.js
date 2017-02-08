@@ -1,9 +1,7 @@
-"use strict";
-
-var safetyResultsOverTime = (function (webcharts, d3$1) {
+var safetyResultsOverTime = function (webcharts, d3$1) {
 	'use strict';
 
-	var settings = {
+	const settings = {
 		//Addition settings for this template
 		id_col: "USUBJID",
 		time_col: "VISITN",
@@ -64,7 +62,7 @@ var safetyResultsOverTime = (function (webcharts, d3$1) {
 	}
 
 	// Default Control objects
-	var controlInputs = [{
+	const controlInputs = [{
 		label: "Measure",
 		value_col: null, //set in syncControlInputs()
 		type: "subsetter",
@@ -107,28 +105,21 @@ var safetyResultsOverTime = (function (webcharts, d3$1) {
 	}
 
 	function onInit() {
-		var _this = this;
-
-		var config = this.config;
-		var allMeasures = d3$1.set(this.raw_data.map(function (m) {
-			return m[config.measure_col];
-		})).values();
+		const config = this.config;
+		const allMeasures = d3$1.set(this.raw_data.map(m => m[config.measure_col])).values();
 
 		// "All" variable for non-grouped comparisons
-		this.raw_data.forEach(function (e) {
-			return e.ALL = "All";
-		});
+		this.raw_data.forEach(e => e.ALL = "All");
 
 		//Drop missing values
-		this.raw_data = this.raw_data.filter(function (f) {
+		this.populationCount = d3$1.set(this.raw_data.map(d => d[config.id_col])).values().length;
+		this.raw_data = this.raw_data.filter(f => {
 			return config.missingValues.indexOf(f[config.value_col]) === -1;
 		});
 
 		//warning for non-numeric endpoints
-		var catMeasures = allMeasures.filter(function (f) {
-			var measureVals = _this.raw_data.filter(function (d) {
-				return d[config.measure_col] === f;
-			});
+		var catMeasures = allMeasures.filter(f => {
+			var measureVals = this.raw_data.filter(d => d[config.measure_col] === f);
 
 			return webcharts.dataOps.getValType(measureVals, config.value_col) !== "continuous";
 		});
@@ -137,31 +128,51 @@ var safetyResultsOverTime = (function (webcharts, d3$1) {
 		}
 
 		//delete non-numeric endpoints
-		var numMeasures = allMeasures.filter(function (f) {
-			var measureVals = _this.raw_data.filter(function (d) {
-				return d[config.measure_col] === f;
-			});
+		var numMeasures = allMeasures.filter(f => {
+			var measureVals = this.raw_data.filter(d => d[config.measure_col] === f);
 
 			return webcharts.dataOps.getValType(measureVals, config.value_col) === "continuous";
 		});
 
-		this.raw_data = this.raw_data.filter(function (f) {
-			return numMeasures.indexOf(f[config.measure_col]) > -1;
-		});
+		this.raw_data = this.raw_data.filter(f => numMeasures.indexOf(f[config.measure_col]) > -1);
 
 		//Choose the start value for the Test filter
 		this.controls.config.inputs[0].start = this.config.startValue || numMeasures[0];
 	};
 
-	function onLayout() {}
+	function onLayout() {
+		//Add population count container.
+		this.controls.wrap.append('div').attr('id', 'populationCount').style('font-style', 'italic');
+	}
 
 	function onDataTransform() {}
 
-	function onDraw() {
-		var _this2 = this;
+	// Takes a webcharts object creates a text annotation giving the 
+	// number and percentage of observations shown in the current view 
+	//
+	// inputs:
+	// - chart - a webcharts chart object
+	// - selector - css selector for the annotation
+	// - id_unit - a text string to label the units in the annotation (default = "participants")
+	function updateSubjectCount(chart, selector, id_unit) {
+		//count the number of unique ids in the current chart and calculate the percentage
+		var currentObs = d3.set(chart.filtered_data.map(function (d) {
+			return d[chart.config.id_col];
+		})).values().length;
+		var percentage = d3.format('0.1%')(currentObs / chart.populationCount);
 
-		this.marks[0].data.forEach(function (e) {
-			e.values.sort(function (a, b) {
+		//clear the annotation
+		var annotation = d3.select(selector);
+		d3.select(selector).selectAll("*").remove();
+
+		//update the annotation
+		var units = id_unit ? " " + id_unit : " participant(s)";
+		annotation.text('\n' + currentObs + " of " + chart.populationCount + units + " shown (" + percentage + ")");
+	}
+
+	function onDraw() {
+		this.marks[0].data.forEach(e => {
+			e.values.sort((a, b) => {
 				return a.key === 'NA' ? 1 : b.key === 'NA' ? -1 : d3$1.ascending(a.key, b.key);
 			});
 		});
@@ -169,14 +180,8 @@ var safetyResultsOverTime = (function (webcharts, d3$1) {
 		var sortVar = this.config.x.column;
 
 		// Make nested data set for boxplots
-		this.nested_data = d3$1.nest().key(function (d) {
-			return d[_this2.config.x.column];
-		}).key(function (d) {
-			return d[_this2.config.marks[0].per[0]];
-		}).rollup(function (d) {
-			return d.map(function (m) {
-				return +m[_this2.config.y.column];
-			});
+		this.nested_data = d3$1.nest().key(d => d[this.config.x.column]).key(d => d[this.config.marks[0].per[0]]).rollup(d => {
+			return d.map(m => +m[this.config.y.column]);
 		}).entries(this.filtered_data);
 
 		// y-domain for box plots
@@ -193,10 +198,11 @@ var safetyResultsOverTime = (function (webcharts, d3$1) {
 		this.y_dom[1] = Math.max.apply(null, y_95s);
 
 		if (this.config.violins) {
-			this.y_dom = d3$1.extent(this.filtered_data.map(function (m) {
-				return +m[_this2.config.y.column];
-			}));
+			this.y_dom = d3$1.extent(this.filtered_data.map(m => +m[this.config.y.column]));
 		}
+
+		//Annotate population count.
+		updateSubjectCount(this, '#populationCount');
 	}
 
 	function addBoxplot(svg, results, height, width, domain, boxPlotWidth, boxColor, boxInsideColor, format, horizontal) {
@@ -277,6 +283,7 @@ var safetyResultsOverTime = (function (webcharts, d3$1) {
 		var x = d3.scale.linear().range([height, 0]).domain(domain);
 		//.nice() ;
 
+
 		var area = d3.svg.area().interpolate(interpolation).x(function (d) {
 			if (interpolation == "step-before") return x(d.x + d.dx / 2);
 			return x(d.x);
@@ -316,45 +323,43 @@ var safetyResultsOverTime = (function (webcharts, d3$1) {
 	}
 
 	function onResize() {
-		var _this3 = this;
-
-		var config = this.config;
-		var units = this.filtered_data[0][config.unit_col];
-		var measure = this.filtered_data[0][config.measure_col];
+		const config = this.config;
+		const units = this.filtered_data[0][config.unit_col];
+		const measure = this.filtered_data[0][config.measure_col];
 
 		this.svg.select(".y.axis").select(".axis-title").text(measure + " level (" + units + ")");
 
-		//draw reference boxplot
+		//draw reference boxplot 
 		this.svg.selectAll(".boxplot-wrap").remove();
 
-		this.nested_data.forEach(function (e) {
-			e.values.forEach(function (v, i) {
-				var index = _this3.colorScale.domain().indexOf(v.key);
+		this.nested_data.forEach(e => {
+			e.values.forEach((v, i) => {
+				var index = this.colorScale.domain().indexOf(v.key);
 				var sign = index % 2 === 0 ? -1 : 1;
 				var multiplier = index === 1 ? 1 : Math.floor(index / 2);
-				var offset = sign * multiplier * _this3.colorScale.domain().length * 4;
+				var offset = sign * multiplier * this.colorScale.domain().length * 4;
 				var results = v.values.sort(d3$1.ascending).map(function (d) {
 					return +d;
 				});
-				if (_this3.x_dom.indexOf(e.key) > -1) {
-					var g = _this3.svg.append("g").attr("class", "boxplot-wrap overlay-item").attr("transform", "translate(" + (_this3.x(e.key) + offset) + ",0)").datum({ values: results });
+				if (this.x_dom.indexOf(e.key) > -1) {
+					var g = this.svg.append("g").attr("class", "boxplot-wrap overlay-item").attr("transform", "translate(" + (this.x(e.key) + offset) + ",0)").datum({ values: results });
 
-					var boxPlotWidth = _this3.colorScale.domain().length === 1 ? 1 : _this3.colorScale.domain().length === 2 ? 0.33 : 0.25;
+					var boxPlotWidth = this.colorScale.domain().length === 1 ? 1 : this.colorScale.domain().length === 2 ? 0.33 : 0.25;
 
 					if (config.boxplots) {
 						addBoxplot(g, //svg
-						results, //results
-						_this3.plot_height, //height
-						_this3.x.rangeBand(), //width
-						_this3.y.domain(), //domain
-						boxPlotWidth, //boxPlotWidth
-						_this3.colorScale(v.key), //boxColor
-						"#eee" //boxInsideColor
+						results, //results 
+						this.plot_height, //height 
+						this.x.rangeBand(), //width 
+						this.y.domain(), //domain 
+						boxPlotWidth, //boxPlotWidth 
+						this.colorScale(v.key), //boxColor 
+						"#eee" //boxInsideColor 
 						);
 					}
 
 					if (config.violins) {
-						addViolin(g, results, _this3.plot_height, _this3.x.rangeBand(), _this3.y.domain(), 1 / _this3.colorScale.domain().length / 3, "#ccc7d6");
+						addViolin(g, results, this.plot_height, this.x.rangeBand(), this.y.domain(), 1 / this.colorScale.domain().length / 3, "#ccc7d6");
 					}
 				}
 			});
@@ -370,6 +375,7 @@ var safetyResultsOverTime = (function (webcharts, d3$1) {
 		(function () {
 			Object.assign = function (target) {
 				'use strict';
+
 				if (target === undefined || target === null) {
 					throw new TypeError('Cannot convert undefined or null to object');
 				}
@@ -393,17 +399,17 @@ var safetyResultsOverTime = (function (webcharts, d3$1) {
 	function yourFunctionNameHere(element, settings$$) {
 
 		//merge user's settings with defaults
-		var mergedSettings = Object.assign({}, settings, settings$$);
+		let mergedSettings = Object.assign({}, settings, settings$$);
 
 		//keep settings in sync with the data mappings
 		mergedSettings = syncSettings(mergedSettings);
 
 		//keep control inputs in sync and create controls object (if needed)
-		var syncedControlInputs = syncControlInputs(controlInputs, mergedSettings);
-		var controls = webcharts.createControls(element, { location: 'top', inputs: syncedControlInputs });
+		let syncedControlInputs = syncControlInputs(controlInputs, mergedSettings);
+		let controls = webcharts.createControls(element, { location: 'top', inputs: syncedControlInputs });
 
 		//create chart
-		var chart = webcharts.createChart(element, mergedSettings, controls);
+		let chart = webcharts.createChart(element, mergedSettings, controls);
 		chart.on('init', onInit);
 		chart.on('layout', onLayout);
 		chart.on('datatransform', onDataTransform);
@@ -414,5 +420,5 @@ var safetyResultsOverTime = (function (webcharts, d3$1) {
 	}
 
 	return yourFunctionNameHere;
-})(webCharts, d3);
+}(webCharts, d3);
 

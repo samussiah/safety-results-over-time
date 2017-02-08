@@ -1,4 +1,5 @@
 import { ascending, nest, set, quantile, extent } from 'd3';
+import updateSubjectCount from './util/updateSubjectCount';
 
 export default function onDraw(){
   this.marks[0].data.forEach(e => {
@@ -37,4 +38,7 @@ export default function onDraw(){
       this.filtered_data.map((m) => +m[this.config.y.column])
     );
   }
+
+  //Annotate population count.
+    updateSubjectCount(this, '#populationCount');
 }
