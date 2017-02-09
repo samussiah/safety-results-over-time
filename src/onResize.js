@@ -6,6 +6,28 @@ import adjustTicks from './util/adjustTicks';
 export default function onResize() {
     const config = this.config;
 
+  //Manually draw y-axis ticks when none exist.
+    if (!this.svg.selectAll('.y .tick')[0].length) {
+        const probs = [
+            {probability: .05},
+            {probability: .25},
+            {probability: .50},
+            {probability: .75},
+            {probability: .95}];
+
+        for (let i = 0; i < probs.length; i++) {
+            probs[i].quantile = d3.quantile(
+                this.measure_data
+                    .map(d => +d[this.config.y.column])
+                    .sort(), probs[i].probability);
+        }
+
+        const ticks = [probs[1].quantile, probs[3].quantile];
+        this.yAxis.tickValues(ticks);
+        this.svg.select('g.y.axis').transition().call(this.yAxis);
+        this.drawGridlines();
+    }
+
   //Rotate x-axis tick labels.
     if (config.time_settings.rotate_tick_labels)
         this.svg

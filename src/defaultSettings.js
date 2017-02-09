@@ -55,8 +55,8 @@ const defaultSettings = {
         mark: 'square'
     },
     color_by: null, // set in syncSettings()
-    resizable: false,
-    gridlines: 'xy',
+    resizable: true,
+    gridlines: 'y',
     aspect: 3
 };
 
@@ -80,15 +80,17 @@ export function syncSettings(settings) {
 
 // Default Control objects
 export const controlInputs = [
-      {
+    {
         type: 'subsetter',
         label: 'Measure',
+        description: 'filter',
         value_col: null, // set in syncControlInputs()
         start: null // set in syncControlInputs()
     },
     {
         type: 'dropdown',
         label: 'Group',
+        description: 'stratification',
         options: ['marks.0.per.0','color_by'],
         start: null, // set in syncControlInputs()
         values: null, // set in syncControlInputs()
@@ -96,14 +98,22 @@ export const controlInputs = [
     },
     {
         type: 'radio',
-        label: 'Hide visits with no data: ',
+        label: 'Y-axis scale:',
+        option: 'y.type',
+        values: ['linear','log'], // set in syncControlInputs()
+        relabels: ['Linear','Log'],
+        require: true
+    },
+    {
+        type: 'radio',
+        label: 'Hide visits with no data:',
         option: 'x.behavior',
         values: ['flex','raw'],
         relabels: ['Yes','No'],
         require: true
     },
-    {type: 'checkbox', option: 'boxplots', label: 'Box Plots', inline: true},
-    {type: 'checkbox', option: 'violins', label: 'Violin Plots', inline: true}];
+    {type: 'checkbox', option: 'boxplots', label: 'Box plots', inline: true},
+    {type: 'checkbox', option: 'violins', label: 'Violin plots', inline: true}];
 
 // Map values from settings to control inputs
 export function syncControlInputs(controlInputs, settings) {
@@ -127,11 +137,12 @@ export function syncControlInputs(controlInputs, settings) {
     if (settings.filters)
         settings.filters
             .reverse()
-            .forEach(filter =>
-                controlInputs.splice(2, 0,
+            .forEach((filter,i) =>
+                controlInputs.splice(1, 0,
                     {type: 'subsetter'
                     ,value_col: filter.value_col ? filter.value_col : filter
-                    ,label: filter.label ? filter.label : filter.value_col ? filter.value_col : filter}));
+                    ,label: filter.label ? filter.label : filter.value_col ? filter.value_col : filter
+                    ,description: 'filter'}));
 
     return controlInputs
 }

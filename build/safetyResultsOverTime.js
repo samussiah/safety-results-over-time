@@ -77,8 +77,8 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
             mark: 'square'
         },
         color_by: null, // set in syncSettings()
-        resizable: false,
-        gridlines: 'xy',
+        resizable: true,
+        gridlines: 'y',
         aspect: 3
     };
 
@@ -99,23 +99,32 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
     var controlInputs = [{
         type: 'subsetter',
         label: 'Measure',
+        description: 'filter',
         value_col: null, // set in syncControlInputs()
         start: null // set in syncControlInputs()
     }, {
         type: 'dropdown',
         label: 'Group',
+        description: 'stratification',
         options: ['marks.0.per.0', 'color_by'],
         start: null, // set in syncControlInputs()
         values: null, // set in syncControlInputs()
         require: true
     }, {
         type: 'radio',
-        label: 'Hide visits with no data: ',
+        label: 'Y-axis scale:',
+        option: 'y.type',
+        values: ['linear', 'log'], // set in syncControlInputs()
+        relabels: ['Linear', 'Log'],
+        require: true
+    }, {
+        type: 'radio',
+        label: 'Hide visits with no data:',
         option: 'x.behavior',
         values: ['flex', 'raw'],
         relabels: ['Yes', 'No'],
         require: true
-    }, { type: 'checkbox', option: 'boxplots', label: 'Box Plots', inline: true }, { type: 'checkbox', option: 'violins', label: 'Violin Plots', inline: true }];
+    }, { type: 'checkbox', option: 'boxplots', label: 'Box plots', inline: true }, { type: 'checkbox', option: 'violins', label: 'Violin plots', inline: true }];
 
     // Map values from settings to control inputs
     function syncControlInputs(controlInputs, settings) {
@@ -136,10 +145,11 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
         });
 
         //Add custom filters to control inputs.
-        if (settings.filters) settings.filters.reverse().forEach(function (filter) {
-            return controlInputs.splice(2, 0, { type: 'subsetter',
+        if (settings.filters) settings.filters.reverse().forEach(function (filter, i) {
+            return controlInputs.splice(1, 0, { type: 'subsetter',
                 value_col: filter.value_col ? filter.value_col : filter,
-                label: filter.label ? filter.label : filter.value_col ? filter.value_col : filter });
+                label: filter.label ? filter.label : filter.value_col ? filter.value_col : filter,
+                description: 'filter' });
         });
 
         return controlInputs;
@@ -154,8 +164,10 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
         })).values();
 
         //'All'variable for non-grouped comparisons
-        this.raw_data.forEach(function (e) {
-            return e.NONE = 'All Subjects';
+        this.config.log_value_col = 'log_' + config.value_col;
+        this.raw_data.forEach(function (d) {
+            d.NONE = 'All Subjects';
+            d[_this.config.log_value_col] = +d[config.value_col] > 0 ? Math.log(d[config.value_col]) : NaN;
         });
 
         //Drop missing values
@@ -196,9 +208,53 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
 
     function onLayout() {}
 
+    function onPreprocess() {
+        var _this = this;
+
+        //Update y.column based on y-scale.
+        if (this.config.y.type === 'linear') this.config.y.column = this.config.value_col;else this.config.y.column = this.config.log_value_col;
+
+        //Capture currently selected measure.
+        var measure = this.controls.wrap.selectAll('.control-group').filter(function (d) {
+            return d.value_col && d.value_col === _this.config.measure_col;
+        }).select('option:checked').text();
+
+        //Filter data and nest data by visit and group.
+        this.measure_data = this.raw_data.filter(function (d) {
+            return d[_this.config.measure_col] === measure;
+        });
+        var nested_data = d3.nest().key(function (d) {
+            return d[_this.config.x.column];
+        }).key(function (d) {
+            return d[_this.config.color_by];
+        }).rollup(function (d) {
+            return d.map(function (m) {
+                return +m[_this.config.y.column];
+            });
+        }).entries(this.measure_data);
+
+        //Define y-axis range based on currently selected measure.
+        if (!this.config.violins) {
+            (function () {
+                var y_05s = [];
+                var y_95s = [];
+                nested_data.forEach(function (visit) {
+                    visit.values.forEach(function (group) {
+                        var results = group.values.sort(d3.ascending);
+                        y_05s.push(d3.quantile(results, 0.05));
+                        y_95s.push(d3.quantile(results, 0.95));
+                    });
+                });
+                _this.config.y.domain = [Math.min.apply(null, y_05s), Math.max.apply(null, y_95s)];
+            })();
+        } else this.config.y.domain = d3.extent(this.measure_data.map(function (d) {
+            return +d[_this.config.y.column];
+        }));
+    }
+
     function onDataTransform() {
         //Redefine y-axis label.
-        this.config.y.label = this.filtered_data[0][this.config.measure_col] + ' (' + this.filtered_data[0][this.config.unit_col] + ')';
+        this.config.y.label = this.measure_data[0][this.config.measure_col] + ' (' + this.measure_data[0][this.config.unit_col] + ')';
         //Redefine legend label.
         var group_value_cols = this.config.groups.map(function (group) {
             return group.value_col ? group.value_col : group;
@@ -213,43 +269,25 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
     function onDraw() {
         var _this = this;
 
-        this.marks[0].data.forEach(function (e) {
-            e.values.sort(function (a, b) {
-                return a.key === 'NA' ? 1 : b.key === 'NA' ? -1 : d3$1.ascending(a.key, b.key);
+        this.marks[0].data.forEach(function (d) {
+            d.values.sort(function (a, b) {
+                return a.key === 'NA' ? 1 : b.key === 'NA' ? -1 : d3.ascending(a.key, b.key);
             });
         });
 
-        var sortVar = this.config.x.column;
-
-        // Make nested data set for boxplots
-        this.nested_data = d3$1.nest().key(function (d) {
+        //Nest filtered data.
+        this.nested_data = d3.nest().key(function (d) {
             return d[_this.config.x.column];
         }).key(function (d) {
-            return d[_this.config.marks[0].per[0]];
+            return d[_this.config.color_by];
         }).rollup(function (d) {
             return d.map(function (m) {
                 return +m[_this.config.y.column];
             });
         }).entries(this.filtered_data);
 
-        // y-domain for box plots
-        var y_05s = [];
-        var y_95s = [];
-        this.nested_data.forEach(function (e) {
-            e.values.forEach(function (v, i) {
-                var results = v.values.sort(d3$1.ascending);
-                y_05s.push(d3$1.quantile(results, 0.05));
-                y_95s.push(d3$1.quantile(results, 0.95));
-            });
-        });
-        this.y_dom[0] = Math.min.apply(null, y_05s);
-        this.y_dom[1] = Math.max.apply(null, y_95s);
-
-        if (this.config.violins) {
-            this.y_dom = d3$1.extent(this.filtered_data.map(function (m) {
-                return +m[_this.config.y.column];
-            }));
-        }
+        //Clear y-axis ticks.
+        this.svg.selectAll('.y .tick').remove();
     }
 
     function addBoxplot(chart, group) {
@@ -402,6 +440,22 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
 
         var config = this.config;
 
+        //Manually draw y-axis ticks when none exist.
+        if (!this.svg.selectAll('.y .tick')[0].length) {
+            var probs = [{ probability: .05 }, { probability: .25 }, { probability: .50 }, { probability: .75 }, { probability: .95 }];
+
+            for (var i = 0; i < probs.length; i++) {
+                probs[i].quantile = d3.quantile(this.measure_data.map(function (d) {
+                    return +d[_this.config.y.column];
+                }).sort(), probs[i].probability);
+            }
+
+            var ticks = [probs[1].quantile, probs[3].quantile];
+            this.yAxis.tickValues(ticks);
+            this.svg.select('g.y.axis').transition().call(this.yAxis);
+            this.drawGridlines();
+        }
+
         //Rotate x-axis tick labels.
         if (config.time_settings.rotate_tick_labels) this.svg.selectAll('.x.axis .tick text').attr({ 'transform': 'rotate(-45)',
             'dx': -10,
@@ -471,6 +525,7 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
         var chart = webcharts.createChart(element, mergedSettings, controls);
         chart.on('init', onInit);
         chart.on('layout', onLayout);
+        chart.on('preprocess', onPreprocess);
         chart.on('datatransform', onDataTransform);
         chart.on('draw', onDraw);
         chart.on('resize', onResize);

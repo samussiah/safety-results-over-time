@@ -6,7 +6,14 @@ export default function onInit() {
     const allMeasures = set(this.raw_data.map(m => m[config.measure_col])).values();
 
     //'All'variable for non-grouped comparisons
-    this.raw_data.forEach(e => e.NONE = 'All Subjects' );
+    this.config.log_value_col = 'log_' + config.value_col;
+    this.raw_data
+        .forEach(d => {
+            d.NONE = 'All Subjects';
+            d[this.config.log_value_col] = +d[config.value_col] > 0
+                ? Math.log(d[config.value_col])
+                : NaN;
+        });
     
     //Drop missing values
     this.raw_data = this.raw_data.filter(f => {
