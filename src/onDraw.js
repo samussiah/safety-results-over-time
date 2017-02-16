@@ -1,3 +1,6 @@
+import { ascending, nest, set, quantile, extent } from 'd3';
+import updateSubjectCount from './util/updateSubjectCount';
+
 export default function onDraw() {
     this.marks[0].data
         .forEach(d => {
@@ -14,4 +17,17 @@ export default function onDraw() {
 
   //Clear y-axis ticks.
     this.svg.selectAll('.y .tick').remove();
+
+  //Make nested data set for boxplots
+    this.nested_data = nest()
+        .key(d => d[this.config.x.column])
+        .key(d => d[this.config.marks[0].per[0]])
+        .rollup(d => {
+            return d.map(m => +m[this.config.y.column]);
+        })
+        .entries(this.filtered_data);
+  }
+
+  //Annotate population count.
+    updateSubjectCount(this, '#populationCount');
 }

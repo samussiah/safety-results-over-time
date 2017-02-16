@@ -12,6 +12,11 @@ export default function onInit() {
         });
     
     //Drop missing values
+    this.populationCount = set(
+          this.raw_data
+              .map(d => d[config.id_col]))
+      .values()
+      .length;
     this.raw_data = this.raw_data.filter(f => {
         return config.missingValues.indexOf(f[config.value_col]) === -1;
     })
