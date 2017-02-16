@@ -14,9 +14,7 @@ const defaultSettings = {
     normal_col_high: 'STNRHI',
     start_value: null,
     groups: [
-        {value_col: 'NONE', label: 'None'},
-        {value_col: 'SEX', label: 'Sex'},
-        {value_col: 'RACE', label: 'Race'}
+        {value_col: 'NONE', label: 'None'}
     ],
     filters: null,
     boxplots: true,
