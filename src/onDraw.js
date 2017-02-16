@@ -1,4 +1,4 @@
-import { ascending, nest, set, quantile, extent } from 'd3';
+import { ascending, nest, quantile, extent } from 'd3';
 
 export default function onDraw(){
   this.marks[0].data.forEach(e => {

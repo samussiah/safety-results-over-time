@@ -1,15 +1,14 @@
 import { ascending } from 'd3';
 import addBoxplot from './util/addBoxplot';
 import addViolinPlot from './util/addViolinPlot';
-import adjustTicks from './util/adjust-ticks';
+import adjustTicks from './util/adjustTicks';
 
 export default function onResize(){
     const config = this.config;
     const units = this.filtered_data[0][config.unit_col];
     const measure = this.filtered_data[0][config.measure_col];
 
-    this.svg.select(".y.axis").select(".axis-title").text(measure+" level ("+units+")");
-
+    this.svg.select(".y.axis").select(".axis-title").text(measure+" ("+units+")");
 
     //draw reference boxplot 
     this.svg.selectAll(".boxplot-wrap").remove();
