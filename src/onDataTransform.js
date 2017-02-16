@@ -1,6 +1,6 @@
 export default function onDataTransform() {
   //Redefine y-axis label.
-    this.config.y.label = `${this.filtered_data[0][this.config.measure_col]} (${this.filtered_data[0][this.config.unit_col]})`;
+    this.config.y.label = `${this.measure_data[0][this.config.measure_col]} (${this.measure_data[0][this.config.unit_col]})`;
   //Redefine legend label.
     const group_value_cols = this.config.groups
         .map(group => group.value_col
@@ -13,6 +13,7 @@ export default function onDataTransform() {
                 ? group.value_col
                 : group);
     const group = this.config.color_by;
+
     if (group !== 'NONE')
         this.config.legend.label = group_labels[group_value_cols.indexOf(group)];
     else

@@ -6,7 +6,10 @@ export default function onInit() {
     const allMeasures = set(this.raw_data.map(m => m[config.measure_col])).values();
 
     //'All'variable for non-grouped comparisons
-    this.raw_data.forEach(e => e.NONE = 'All Subjects' );
+    this.raw_data
+        .forEach(d => {
+            d.NONE = 'All Subjects';
+        });
     
     //Drop missing values
     this.populationCount = set(

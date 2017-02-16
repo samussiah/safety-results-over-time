@@ -12,9 +12,13 @@ export default function addBoxplot(chart, group
   //Define x - and y - scales.
     const x = d3.scale.linear()
         .range([0, chart.x.rangeBand()])
-    const y = d3.scale.linear()
-        .range([chart.plot_height,0])
-        .domain(chart.y.domain());
+    const y = chart.config.y.type === 'linear'
+        ? d3.scale.linear()
+            .range([chart.plot_height,0])
+            .domain(chart.y.domain())
+        : d3.scale.log()
+            .range([chart.plot_height,0])
+            .domain(chart.y.domain());
 
   //Define quantiles of interest.
     let probs = [0.05,0.25,0.5,0.75,0.95],iS;
@@ -96,7 +100,7 @@ export default function addBoxplot(chart, group
             ,'r' : x(boxPlotWidth/6)})
         .style(
             {'fill': boxColor
-            ,'stroke': 'None'});
+            ,'stroke': 'none'});
 
   //Annotate statistics.
     const format0 = d3.format(`.${precision + 0}f`);

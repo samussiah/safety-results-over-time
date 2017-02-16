@@ -6,6 +6,7 @@ import { createControls, createChart, createTable } from 'webcharts';
 
 import onInit from './onInit';
 import onLayout from './onLayout';
+import onPreprocess from './onPreprocess';
 import onDataTransform from './onDataTransform';
 import onDraw from './onDraw';
 import onResize from './onResize';
@@ -26,6 +27,7 @@ export default function safetyResultsOverTime(element, settings) {
     const chart = createChart(element, mergedSettings,controls);
     chart.on('init', onInit);
     chart.on('layout', onLayout);
+    chart.on('preprocess', onPreprocess);
     chart.on('datatransform', onDataTransform);
     chart.on('draw', onDraw);
     chart.on('resize', onResize);

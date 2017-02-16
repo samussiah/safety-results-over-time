@@ -16,12 +16,16 @@ export default function addViolin(chart,group
 
   //Define plot properties.
     const width = chart.x.rangeBand();
-    const x = d3.scale.linear()
-        .domain(chart.y.domain())
-        .range([chart.plot_height,0]);
+    const x = chart.config.y.type === 'linear'
+        ? d3.scale.linear()
+            .domain(chart.y.domain())
+            .range([chart.plot_height,0])
+        : d3.scale.log()
+            .domain(chart.y.domain())
+            .range([chart.plot_height,0]);
     const y = d3.scale.linear()
-        .domain([0, Math.max(1 - 1/group.x.nGroups, d3.max(data, d => d.y))])
-        .range([width/2, 0]);
+            .domain([0, Math.max(1 - 1/group.x.nGroups, d3.max(data, d => d.y))])
+            .range([width/2, 0]);
 
   //Define violin shapes.
     const area = d3.svg.area()
