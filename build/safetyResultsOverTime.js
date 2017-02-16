@@ -41,7 +41,7 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
         normal_col_low: 'STNRLO',
         normal_col_high: 'STNRHI',
         start_value: null,
-        groups: [{ value_col: 'NONE', label: 'None' }, { value_col: 'SEX', label: 'Sex' }, { value_col: 'RACE', label: 'Race' }],
+        groups: [{ value_col: 'NONE', label: 'None' }],
         filters: null,
         boxplots: true,
         violins: false,
@@ -478,6 +478,14 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
         var _this = this;
 
         var config = this.config;
+
+        //Hide Group control if only one grouping is specified.
+        var groupControl = this.controls.wrap.selectAll('.control-group').filter(function (controlGroup) {
+            return controlGroup.label === 'Group';
+        });
+        groupControl.style('display', function (d) {
+            return d.values.length === 1 ? 'none' : groupControl.style('display');
+        });
 
         //Manually draw y-axis ticks when none exist.
         if (!this.svg.selectAll('.y .tick')[0].length) {
