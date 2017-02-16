@@ -26,7 +26,6 @@ export default function onDraw() {
             return d.map(m => +m[this.config.y.column]);
         })
         .entries(this.filtered_data);
-  }
 
   //Annotate population count.
     updateSubjectCount(this, '#populationCount');
