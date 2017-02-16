@@ -29,7 +29,12 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
     var defaultSettings = {
         //Custom settings for this template
         id_col: 'USUBJID',
-        time_col: 'VISITN',
+        time_settings: {
+            value_col: 'VISITN',
+            label: 'Visit Number',
+            order: null, // x-axis domain order (array)
+            rotate_tick_labels: false,
+            vertical_space: 0 },
         measure_col: 'TEST',
         value_col: 'STRESN',
         unit_col: 'STRESU',
@@ -40,7 +45,6 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
         filters: null,
         boxplots: true,
         violins: false,
-        rotateX: true,
         missingValues: ['', 'NA', 'N/A'],
 
         //Standard webcharts settings
@@ -70,7 +74,7 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
             }
         }],
         legend: {
-            label: ''
+            mark: 'square'
         },
         color_by: null, // set in syncSettings()
         resizable: false,
@@ -80,10 +84,13 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
 
     // Replicate settings in multiple places in the settings object
     function syncSettings(settings) {
-        settings.x.column = settings.time_col;
+        settings.x.column = settings.time_settings.value_col;
+        settings.x.label = settings.time_settings.label;
+        settings.x.order = settings.time_settings.order;
         settings.y.column = settings.value_col;
         if (settings.groups) settings.color_by = settings.groups[0].value_col ? settings.groups[0].value_col : settings.groups[0];else settings.color_by = 'NONE';
         settings.marks[0].per = [settings.color_by];
+        settings.margin = settings.margin || { bottom: settings.time_settings.vertical_space };
 
         return settings;
     }
@@ -148,7 +155,7 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
 
         //'All'variable for non-grouped comparisons
         this.raw_data.forEach(function (e) {
-            return e.NONE = 'All';
+            return e.NONE = 'All Subjects';
         });
 
         //Drop missing values
@@ -189,7 +196,19 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
 
     function onLayout() {}
 
-    function onDataTransform() {}
+    function onDataTransform() {
+        //Redefine y-axis label.
+        this.config.y.label = this.filtered_data[0][this.config.measure_col] + ' (' + this.filtered_data[0][this.config.unit_col] + ')';
+        //Redefine legend label.
+        var group_value_cols = this.config.groups.map(function (group) {
+            return group.value_col ? group.value_col : group;
+        });
+        var group_labels = this.config.groups.map(function (group) {
+            return group.label ? group.label : group.value_col ? group.value_col : group;
+        });
+        var group = this.config.color_by;
+        if (group !== 'NONE') this.config.legend.label = group_labels[group_value_cols.indexOf(group)];else this.config.legend.label = '';
+    }
 
     function onDraw() {
         var _this = this;
@@ -233,172 +252,207 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
         }
     }
 
-    function addBoxplot(svg, results, height, width, domain, boxPlotWidth, boxColor, boxInsideColor, format, horizontal) {
-        //set default orientation to "horizontal"
-        var horizontal = horizontal == undefined ? true : horizontal;
+    function addBoxplot(chart, group) {
+        var boxInsideColor = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '#eee';
+        var precision = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
 
-        //make the results numeric and sort
-        var results = results.map(function (d) {
+        //Make the numericResults numeric and sort.
+        var numericResults = group.results.map(function (d) {
             return +d;
         }).sort(d3.ascending);
+        var boxPlotWidth = .75 / chart.colorScale.domain().length;
+        var boxColor = chart.colorScale(group.key);
 
-        //set up scales
-        var y = d3.scale.linear().range([height, 0]);
+        //Define x - and y - scales.
+        var x = d3.scale.linear().range([0, chart.x.rangeBand()]);
+        var y = d3.scale.linear().range([chart.plot_height, 0]).domain(chart.y.domain());
 
-        var x = d3.scale.linear().range([0, width]);
-
-        if (horizontal) {
-            y.domain(domain);
-        } else {
-            x.domain(domain);
+        //Define quantiles of interest.
+        var probs = [0.05, 0.25, 0.5, 0.75, 0.95],
+            iS = void 0;
+        for (var _i = 0; _i < probs.length; _i++) {
+            probs[_i] = d3.quantile(numericResults, probs[_i]);
         }
 
-        var probs = [0.05, 0.25, 0.5, 0.75, 0.95];
-        for (var i = 0; i < probs.length; i++) {
-            probs[i] = d3.quantile(results, probs[i]);
-        }
+        //Define box plot container.
+        var boxplot = group.svg.append('g').attr('class', 'boxplot').datum({ values: numericResults,
+            probs: probs });
+        var left = x(0.5 - boxPlotWidth / 2);
+        var right = x(0.5 + boxPlotWidth / 2);
 
-        var boxplot = svg.append("g").attr("class", "boxplot").datum({ values: results, probs: probs });
+        //Draw box.
+        boxplot.append('rect').attr({ 'class': 'boxplot fill',
+            'x': left,
+            'width': right - left,
+            'y': y(probs[3]),
+            'height': y(probs[1]) - y(probs[3]) }).style('fill', boxColor);
 
-        //set bar width variable
-        var left = horizontal ? 0.5 - boxPlotWidth / 2 : null;
-        var right = horizontal ? 0.5 + boxPlotWidth / 2 : null;
-        var top = horizontal ? null : 0.5 - boxPlotWidth / 2;
-        var bottom = horizontal ? null : 0.5 + boxPlotWidth / 2;
-
-        //draw rectangle from q1 to q3
-        var box_x = horizontal ? x(0.5 - boxPlotWidth / 2) : x(probs[1]);
-        var box_width = horizontal ? x(0.5 + boxPlotWidth / 2) - x(0.5 - boxPlotWidth / 2) : x(probs[3]) - x(probs[1]);
-        var box_y = horizontal ? y(probs[3]) : y(0.5 + boxPlotWidth / 2);
-        var box_height = horizontal ? -y(probs[3]) + y(probs[1]) : y(0.5 - boxPlotWidth / 2) - y(0.5 + boxPlotWidth / 2);
-
-        boxplot.append("rect").attr("class", "boxplot fill").attr("x", box_x).attr("width", box_width).attr("y", box_y).attr("height", box_height).style("fill", boxColor);
-
-        //draw dividing lines at median, 95% and 5%
-        var iS = [0, 2, 4];
-        var iSclass = ["", "median", ""];
+        //Draw horizontal lines at 5th percentile, median, and 95th percentile.
+        iS = [0, 2, 4];
+        var iSclass = ['', 'median', ''];
         var iSColor = [boxColor, boxInsideColor, boxColor];
-        for (var i = 0; i < iS.length; i++) {
-            boxplot.append("line").attr("class", "boxplot " + iSclass[i]).attr("x1", horizontal ? x(0.5 - boxPlotWidth / 2) : x(probs[iS[i]])).attr("x2", horizontal ? x(0.5 + boxPlotWidth / 2) : x(probs[iS[i]])).attr("y1", horizontal ? y(probs[iS[i]]) : y(0.5 - boxPlotWidth / 2)).attr("y2", horizontal ? y(probs[iS[i]]) : y(0.5 + boxPlotWidth / 2)).style("fill", iSColor[i]).style("stroke", iSColor[i]);
+        for (var _i2 = 0; _i2 < iS.length; _i2++) {
+            boxplot.append('line').attr({ 'class': 'boxplot ' + iSclass[_i2],
+                'x1': left,
+                'x2': right,
+                'y1': y(probs[iS[_i2]]),
+                'y2': y(probs[iS[_i2]]) }).style({ 'fill': iSColor[_i2],
+                'stroke': iSColor[_i2] });
         }
 
-        //draw lines from 5% to 25% and from 75% to 95%
-        var iS = [[0, 1], [3, 4]];
+        //Draw vertical lines from the 5th percentile to the 25th percentile and from the 75th percentile to the 95th percentile.
+        iS = [[0, 1], [3, 4]];
         for (var i = 0; i < iS.length; i++) {
-            boxplot.append("line").attr("class", "boxplot").attr("x1", horizontal ? x(0.5) : x(probs[iS[i][0]])).attr("x2", horizontal ? x(0.5) : x(probs[iS[i][1]])).attr("y1", horizontal ? y(probs[iS[i][0]]) : y(0.5)).attr("y2", horizontal ? y(probs[iS[i][1]]) : y(0.5)).style("stroke", boxColor);
+            boxplot.append('line').attr({ 'class': 'boxplot',
+                'x1': x(0.5),
+                'x2': x(0.5),
+                'y1': y(probs[iS[i][0]]),
+                'y2': y(probs[iS[i][1]]) }).style('stroke', boxColor);
         }
 
-        boxplot.append("circle").attr("class", "boxplot mean").attr("cx", horizontal ? x(0.5) : x(d3.mean(results))).attr("cy", horizontal ? y(d3.mean(results)) : y(0.5)).attr("r", horizontal ? x(boxPlotWidth / 3) : y(1 - boxPlotWidth / 3)).style("fill", boxInsideColor).style("stroke", boxColor);
+        //Draw outer circle.
+        boxplot.append('circle').attr({ 'class': 'boxplot mean',
+            'cx': x(0.5),
+            'cy': y(d3.mean(numericResults)),
+            'r': x(boxPlotWidth / 3) }).style({ 'fill': boxInsideColor,
+            'stroke': boxColor });
 
-        boxplot.append("circle").attr("class", "boxplot mean").attr("cx", horizontal ? x(0.5) : x(d3.mean(results))).attr("cy", horizontal ? y(d3.mean(results)) : y(0.5)).attr("r", horizontal ? x(boxPlotWidth / 6) : y(1 - boxPlotWidth / 6)).style("fill", boxColor).style("stroke", 'None');
+        //Draw inner circle.
+        boxplot.append('circle').attr({ 'class': 'boxplot mean',
+            'cx': x(0.5),
+            'cy': y(d3.mean(numericResults)),
+            'r': x(boxPlotWidth / 6) }).style({ 'fill': boxColor,
+            'stroke': 'None' });
 
-        var formatx = format ? d3.format(format) : d3.format(".2f");
-
-        boxplot.selectAll(".boxplot").append("title").text(function (d) {
-            return "N = " + d.values.length + "\n" + "Min = " + d3.min(d.values) + "\n" + "5th % = " + formatx(d3.quantile(d.values, 0.05)) + "\n" + "Q1 = " + formatx(d3.quantile(d.values, 0.25)) + "\n" + "Median = " + formatx(d3.median(d.values)) + "\n" + "Q3 = " + formatx(d3.quantile(d.values, 0.75)) + "\n" + "95th % = " + formatx(d3.quantile(d.values, 0.95)) + "\n" + "Max = " + d3.max(d.values) + "\n" + "Mean = " + formatx(d3.mean(d.values)) + "\n" + "StDev = " + formatx(d3.deviation(d.values));
+        //Annotate statistics.
+        var format0 = d3.format('.' + (precision + 0) + 'f');
+        var format1 = d3.format('.' + (precision + 1) + 'f');
+        var format2 = d3.format('.' + (precision + 2) + 'f');
+        boxplot.selectAll('.boxplot').append('title').text(function (d) {
+            return 'N = ' + d.values.length + '\nMin = ' + d3.min(d.values) + '\n5th % = ' + format1(d3.quantile(d.values, 0.05)) + '\nQ1 = ' + format1(d3.quantile(d.values, 0.25)) + '\nMedian = ' + format1(d3.median(d.values)) + '\nQ3 = ' + format1(d3.quantile(d.values, 0.75)) + '\n95th % = ' + format1(d3.quantile(d.values, 0.95)) + '\nMax = ' + d3.max(d.values) + '\nMean = ' + format1(d3.mean(d.values)) + '\nStDev = ' + format2(d3.deviation(d.values));
         });
     }
 
-    function addViolin(svg, results, height, width, domain, imposeMax, violinColor) {
-        var interpolation = "basis";
+    function addViolin(chart, group) {
+        var violinColor = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '#ccc7d6';
+        var precision = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
 
-        var data = d3.layout.histogram().bins(10).frequency(0)(results);
+        //Define histogram data.
+        var histogram = d3.layout.histogram().bins(10).frequency(0);
+        var data = histogram(group.results);
+        data.unshift({ x: d3.min(group.results),
+            dx: 0,
+            y: data[0].y });
+        data.push({ x: d3.max(group.results),
+            dx: 0,
+            y: data[data.length - 1].y });
 
-        var y = d3.scale.linear().range([width / 2, 0]).domain([0, Math.max(imposeMax, d3.max(data, function (d) {
+        //Define plot properties.
+        var width = chart.x.rangeBand();
+        var x = d3.scale.linear().domain(chart.y.domain()).range([chart.plot_height, 0]);
+        var y = d3.scale.linear().domain([0, Math.max(1 - 1 / group.x.nGroups, d3.max(data, function (d) {
             return d.y;
-        }))]).clamp(true);
+        }))]).range([width / 2, 0]);
 
-        var x = d3.scale.linear().range([height, 0]).domain(domain);
-        //.nice() ;
-
-
-        var area = d3.svg.area().interpolate(interpolation).x(function (d) {
-            if (interpolation == "step-before") return x(d.x + d.dx / 2);
-            return x(d.x);
+        //Define violin shapes.
+        var area = d3.svg.area().interpolate('basis').x(function (d) {
+            return x(d.x + d.dx / 2);
         }).y0(width / 2).y1(function (d) {
             return y(d.y);
         });
-
-        var line = d3.svg.line().interpolate(interpolation).x(function (d) {
-            if (interpolation == "step-before") return x(d.x + d.dx / 2);
-            return x(d.x);
+        var line = d3.svg.line().interpolate('basis').x(function (d) {
+            return x(d.x + d.dx / 2);
         }).y(function (d) {
             return y(d.y);
         });
 
-        var gPlus = svg.append("g");
-        var gMinus = svg.append("g");
+        //Define left half of violin plot.
+        var gMinus = group.svg.append('g').attr('transform', 'rotate(90,0,0) scale(1,-1)');
+        gMinus.append('path').datum(data).attr({ 'class': 'area',
+            'd': area,
+            'fill': violinColor,
+            'fill-opacity': .75 });
+        gMinus.append('path').datum(data).attr({ 'class': 'violin',
+            'd': line,
+            'stroke': violinColor,
+            'fill': 'none' });
 
-        gPlus.append("path").datum(data).attr("class", "area").attr("d", area).attr("fill", violinColor);
+        //Define right half of violin plot.
+        var gPlus = group.svg.append('g').attr('transform', 'rotate(90,0,0) translate(0,-' + width + ')');
+        gPlus.append('path').datum(data).attr({ 'class': 'area',
+            'd': area,
+            'fill': violinColor,
+            'fill-opacity': .75 });
+        gPlus.append('path').datum(data).attr({ 'class': 'violin',
+            'd': line,
+            'stroke': violinColor,
+            'fill': 'none' });
 
-        gPlus.append("path").datum(data).attr("class", "violin").attr("d", line).attr("stroke", violinColor).attr("fill", "none");
-
-        gMinus.append("path").datum(data).attr("class", "area").attr("d", area).attr("fill", violinColor);
-
-        gMinus.append("path").datum(data).attr("class", "violin").attr("d", line).attr("stroke", violinColor).attr("fill", "none");
-
-        gPlus.attr("transform", "rotate(90,0,0)  translate(0,-" + width + ")"); //translate(0,-200)");
-        gMinus.attr("transform", "rotate(90,0,0) scale(1,-1)");
-    };
-
-    function adjustTicks(axis, dx, dy, rotation, anchor) {
-        if (!axis) return;
-        this.svg.selectAll("." + axis + ".axis .tick text").attr({
-            "transform": "rotate(" + rotation + ")",
-            "dx": dx,
-            "dy": dy
-        }).style("text-anchor", anchor || 'start');
+        //Annotate statistics.
+        var format0 = d3.format('.' + (precision + 0) + 'f');
+        var format1 = d3.format('.' + (precision + 1) + 'f');
+        var format2 = d3.format('.' + (precision + 2) + 'f');
+        group.svg.selectAll('g').append('title').text(function (d) {
+            return 'N = ' + group.results.length + '\nMin = ' + d3.min(group.results) + '\n5th % = ' + format1(d3.quantile(group.results, 0.05)) + '\nQ1 = ' + format1(d3.quantile(group.results, 0.25)) + '\nMedian = ' + format1(d3.median(group.results)) + '\nQ3 = ' + format1(d3.quantile(group.results, 0.75)) + '\n95th % = ' + format1(d3.quantile(group.results, 0.95)) + '\nMax = ' + d3.max(group.results) + '\nMean = ' + format1(d3.mean(group.results)) + '\nStDev = ' + format2(d3.deviation(group.results));
+        });
     }
 
     function onResize() {
         var _this = this;
 
         var config = this.config;
-        var units = this.filtered_data[0][config.unit_col];
-        var measure = this.filtered_data[0][config.measure_col];
 
-        this.svg.select(".y.axis").select(".axis-title").text(measure + " (" + units + ")");
+        //Rotate x-axis tick labels.
+        if (config.time_settings.rotate_tick_labels) this.svg.selectAll('.x.axis .tick text').attr({ 'transform': 'rotate(-45)',
+            'dx': -10,
+            'dy': 10 }).style('text-anchor', 'end');
 
-        //draw reference boxplot 
-        this.svg.selectAll(".boxplot-wrap").remove();
+        //Draw reference boxplot.
+        this.svg.selectAll('.boxplot-wrap').remove();
 
         this.nested_data.forEach(function (e) {
+            //Sort [ config.color_by ] groups.
+            e.values = e.values.sort(function (a, b) {
+                return _this.colorScale.domain().indexOf(a.key) < _this.colorScale.domain().indexOf(b.key) ? -1 : 1;
+            });
+
+            //Define group object.
+            var group = {};
+            group.x = { key: e.key // x-axis value
+                , nGroups: _this.colorScale.domain().length // number of groups at x-axis value
+                , width: _this.x.rangeBand() // width of x-axis value
+            };
+            //Given an odd number of groups, center first box and offset the rest.
+            //Given an even number of groups, offset all boxes.
+            group.x.start = group.x.nGroups % 2 ? 0 : 1;
+
             e.values.forEach(function (v, i) {
-                var index = _this.colorScale.domain().indexOf(v.key);
-                var sign = index % 2 === 0 ? -1 : 1;
-                var multiplier = index === 1 ? 1 : Math.floor(index / 2);
-                var offset = sign * multiplier * _this.colorScale.domain().length * 4;
-                var results = v.values.sort(d3$1.ascending).map(function (d) {
+                group.key = v.key;
+                //Calculate direction in which to offset each box plot.
+                group.direction = i > 0 ? Math.pow(-1, i % 2) * (group.x.start ? 1 : -1) : group.x.start;
+                //Calculate multiplier of offset distance.
+                group.multiplier = Math.round((i + group.x.start) / 2);
+                //Calculate offset distance as a function of the x-axis range band, number of groups, and whether
+                //the number of groups is even or odd.
+                group.distance = group.x.width / group.x.nGroups;
+                group.distanceOffset = group.x.start * -1 * group.direction * group.x.width / group.x.nGroups / 2;
+                //Calculate offset.
+                group.offset = group.direction * group.multiplier * group.distance + group.distanceOffset;
+                //Capture all results within visit and group.
+                group.results = v.values.sort(d3$1.ascending).map(function (d) {
                     return +d;
                 });
-                if (_this.x_dom.indexOf(e.key) > -1) {
-                    var g = _this.svg.append("g").attr("class", "boxplot-wrap overlay-item").attr("transform", "translate(" + (_this.x(e.key) + offset) + ",0)").datum({ values: results });
 
-                    var boxPlotWidth = _this.colorScale.domain().length === 1 ? 1 : _this.colorScale.domain().length === 2 ? 0.33 : 0.25;
+                if (_this.x_dom.indexOf(group.x.key) > -1) {
+                    group.svg = _this.svg.append('g').attr({ 'class': 'boxplot-wrap overlay-item',
+                        'transform': 'translate(' + (_this.x(group.x.key) + group.offset) + ',0)' }).datum({ values: group.results });
 
-                    if (config.boxplots) {
-                        addBoxplot(g, //svg
-                        results, //results 
-                        _this.plot_height, //height 
-                        _this.x.rangeBand(), //width 
-                        _this.y.domain(), //domain 
-                        boxPlotWidth, //boxPlotWidth 
-                        _this.colorScale(v.key), //boxColor 
-                        "#eee" //boxInsideColor 
-                        );
-                    }
+                    if (config.boxplots) addBoxplot(_this, group);
 
-                    if (config.violins) {
-                        addViolin(g, results, _this.plot_height, _this.x.rangeBand(), _this.y.domain(), 1 / _this.colorScale.domain().length / 3, "#ccc7d6");
-                    }
+                    if (config.violins) addViolin(_this, group);
                 }
             });
         });
-
-        // rotate ticks
-        if (config.x.tickAttr) {
-            adjustTicks.call(this, 'x', 0, 0, config.x.tickAttr.rotate, config.x.tickAttr.anchor);
-        }
     }
 
     function safetyResultsOverTime(element, settings) {

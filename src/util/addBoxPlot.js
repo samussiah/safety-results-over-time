@@ -1,107 +1,117 @@
-export default function addBoxplot(svg, results, height, width, domain, boxPlotWidth, boxColor, boxInsideColor, format, horizontal){
-    //set default orientation to "horizontal"
-    var horizontal = horizontal==undefined ? true : horizontal 
+export default function addBoxplot(chart, group
+    ,boxInsideColor = '#eee'
+    ,precision = 0) {
 
-    //make the results numeric and sort
-    var results = results.map(function(d){return +d}).sort(d3.ascending)
+  //Make the numericResults numeric and sort.
+    const numericResults = group.results
+        .map(d => + d)
+        .sort(d3.ascending);
+    const boxPlotWidth = .75/chart.colorScale.domain().length;
+    const boxColor = chart.colorScale(group.key)
 
-    //set up scales
-    var y = d3.scale.linear()
-    .range([height, 0])
+  //Define x - and y - scales.
+    const x = d3.scale.linear()
+        .range([0, chart.x.rangeBand()])
+    const y = d3.scale.linear()
+        .range([chart.plot_height,0])
+        .domain(chart.y.domain());
 
-    var x = d3.scale.linear()
-    .range([0, width])
-
-    if(horizontal){
-        y.domain(domain)
-    }else{
-        x.domain(domain)
+  //Define quantiles of interest.
+    let probs = [0.05,0.25,0.5,0.75,0.95],iS;
+    for (let i = 0; i < probs.length; i ++) {
+        probs[i] = d3.quantile(numericResults, probs[i]);
     }
 
-    var probs=[0.05,0.25,0.5,0.75,0.95];
-    for(var i=0; i<probs.length; i++){
-        probs[i]=d3.quantile(results, probs[i])
+  //Define box plot container.
+    const boxplot = group.svg.append('g')
+        .attr('class','boxplot')
+        .datum(
+            {values: numericResults
+            ,probs: probs});
+    const left = x(0.5 - boxPlotWidth/2);
+    const right = x(0.5 + boxPlotWidth/2);
+
+  //Draw box.
+    boxplot
+        .append('rect')
+        .attr(
+            {'class': 'boxplot fill'
+            ,'x': left
+            ,'width': right - left
+            ,'y': y(probs[3])
+            ,'height': y(probs[1]) - y(probs[3])})
+        .style('fill', boxColor);
+
+  //Draw horizontal lines at 5th percentile, median, and 95th percentile.
+    iS = [0,2,4];
+    const iSclass = ['','median',''];
+    const iSColor = [boxColor, boxInsideColor, boxColor]
+    for (let i = 0; i < iS.length; i ++) {
+        boxplot
+            .append('line')
+            .attr(
+                {'class': 'boxplot ' + iSclass[i]
+                ,'x1': left
+                ,'x2': right
+                ,'y1': y(probs[iS[i]])
+                ,'y2': y(probs[iS[i]])})
+            .style(
+                {'fill': iSColor[i]
+                ,'stroke': iSColor[i]})
     }
 
-    var boxplot = svg.append("g")
-    .attr("class","boxplot")
-    .datum({values:results, probs:probs})
-
-    //set bar width variable
-    var left=horizontal ? 0.5-boxPlotWidth/2 : null
-    var right=horizontal ? 0.5+boxPlotWidth/2 : null
-    var top = horizontal ? null : 0.5-boxPlotWidth/2 
-    var bottom = horizontal ? null : 0.5+boxPlotWidth/2
-
-    //draw rectangle from q1 to q3
-    var box_x = horizontal ? x(0.5-boxPlotWidth/2) : x(probs[1])
-    var box_width = horizontal ? x(0.5+boxPlotWidth/2)-x(0.5-boxPlotWidth/2) : x(probs[3])-x(probs[1])
-    var box_y = horizontal ? y(probs[3]) : y(0.5+boxPlotWidth/2)
-    var box_height = horizontal ? (-y(probs[3])+y(probs[1])) : y(0.5-boxPlotWidth/2)-y(0.5+boxPlotWidth/2)
-
-    boxplot.append("rect")
-    .attr("class", "boxplot fill")
-    .attr("x", box_x)
-    .attr("width", box_width)
-    .attr("y", box_y)
-    .attr("height", box_height)
-    .style("fill", boxColor);
-
-    //draw dividing lines at median, 95% and 5%
-    var iS=[0,2,4];
-    var iSclass=["","median",""];
-    var iSColor=[boxColor, boxInsideColor, boxColor]
-    for(var i=0; i<iS.length; i++){
-        boxplot.append("line")
-        .attr("class", "boxplot "+iSclass[i])
-        .attr("x1", horizontal ? x(0.5-boxPlotWidth/2) : x(probs[iS[i]]))
-        .attr("x2", horizontal ? x(0.5+boxPlotWidth/2) : x(probs[iS[i]]))
-        .attr("y1", horizontal ? y(probs[iS[i]]) : y(0.5-boxPlotWidth/2))
-        .attr("y2", horizontal ? y(probs[iS[i]]) : y(0.5+boxPlotWidth/2))
-        .style("fill", iSColor[i])
-        .style("stroke", iSColor[i])
+  //Draw vertical lines from the 5th percentile to the 25th percentile and from the 75th percentile to the 95th percentile.
+    iS = [[0,1],[3,4]];
+    for (var i = 0; i < iS.length; i ++) {
+        boxplot
+            .append('line')
+            .attr(
+                {'class': 'boxplot'
+                ,'x1': x(0.5)
+                ,'x2': x(0.5)
+                ,'y1': y(probs[iS[i][0]])
+                ,'y2': y(probs[iS[i][1]])})
+            .style('stroke', boxColor);
     }
 
-    //draw lines from 5% to 25% and from 75% to 95%
-    var iS=[[0,1],[3,4]];
-    for(var i=0; i<iS.length; i++){
-        boxplot.append("line")
-        .attr("class", "boxplot")
-        .attr("x1", horizontal ? x(0.5) : x(probs[iS[i][0]]))
-        .attr("x2", horizontal ? x(0.5) : x(probs[iS[i][1]]))
-        .attr("y1", horizontal ? y(probs[iS[i][0]]) : y(0.5))
-        .attr("y2", horizontal ? y(probs[iS[i][1]]) : y(0.5))
-        .style("stroke", boxColor);
-    }
+  //Draw outer circle.
+    boxplot
+        .append('circle')
+        .attr(
+            {'class': 'boxplot mean'
+            ,'cx': x(0.5)
+            ,'cy': y(d3.mean(numericResults))
+            ,'r' : x(boxPlotWidth/3)})
+        .style(
+            {'fill': boxInsideColor
+            ,'stroke': boxColor});
 
-    boxplot.append("circle")
-    .attr("class", "boxplot mean")
-    .attr("cx", horizontal ? x(0.5):x(d3.mean(results)))
-    .attr("cy", horizontal ? y(d3.mean(results)):y(0.5))
-    .attr("r", horizontal ? x(boxPlotWidth/3) : y(1-boxPlotWidth/3))
-    .style("fill", boxInsideColor)
-    .style("stroke", boxColor);
+  //Draw inner circle.
+    boxplot
+        .append('circle')
+        .attr(
+            {'class': 'boxplot mean'
+            ,'cx': x(0.5)
+            ,'cy': y(d3.mean(numericResults))
+            ,'r' : x(boxPlotWidth/6)})
+        .style(
+            {'fill': boxColor
+            ,'stroke': 'None'});
 
-    boxplot.append("circle")
-    .attr("class", "boxplot mean")
-    .attr("cx", horizontal ? x(0.5):x(d3.mean(results)))
-    .attr("cy", horizontal ? y(d3.mean(results)):y(0.5))
-    .attr("r", horizontal ? x(boxPlotWidth/6) : y(1-boxPlotWidth/6))
-    .style("fill", boxColor)
-    .style("stroke", 'None');
-
-    var formatx = format ? d3.format(format) : d3.format(".2f");
-
-    boxplot.selectAll(".boxplot").append("title").text(function(d){
-        return "N = "+d.values.length+"\n"+
-        "Min = "+d3.min(d.values)+"\n"+
-        "5th % = "+formatx(d3.quantile(d.values, 0.05))+"\n"+
-        "Q1 = "+formatx(d3.quantile(d.values, 0.25))+"\n"+
-        "Median = "+formatx(d3.median(d.values))+"\n"+
-        "Q3 = "+formatx(d3.quantile(d.values, 0.75))+"\n"+
-        "95th % = "+formatx(d3.quantile(d.values, 0.95))+"\n"+
-        "Max = "+d3.max(d.values)+"\n"+
-        "Mean = "+formatx(d3.mean(d.values))+"\n"+
-        "StDev = "+formatx(d3.deviation(d.values));
-    });
+  //Annotate statistics.
+    const format0 = d3.format(`.${precision + 0}f`);
+    const format1 = d3.format(`.${precision + 1}f`);
+    const format2 = d3.format(`.${precision + 2}f`);
+    boxplot.selectAll('.boxplot')
+        .append('title')
+        .text(d => 'N = ' + d.values.length
+            + '\nMin = ' + d3.min(d.values)
+            + '\n5th % = ' + format1(d3.quantile(d.values, 0.05))
+            + '\nQ1 = ' + format1(d3.quantile(d.values, 0.25))
+            + '\nMedian = ' + format1(d3.median(d.values))
+            + '\nQ3 = ' + format1(d3.quantile(d.values, 0.75))
+            + '\n95th % = ' + format1(d3.quantile(d.values, 0.95))
+            + '\nMax = ' + d3.max(d.values)
+            + '\nMean = ' + format1(d3.mean(d.values))
+            + '\nStDev = ' + format2(d3.deviation(d.values)));
 }

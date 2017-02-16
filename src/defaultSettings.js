@@ -1,7 +1,12 @@
 const defaultSettings = {
   //Custom settings for this template
     id_col: 'USUBJID',
-    time_col: 'VISITN',
+    time_settings: {
+        value_col: 'VISITN',
+        label: 'Visit Number',
+        order: null, // x-axis domain order (array)
+        rotate_tick_labels: false,
+        vertical_space: 0},
     measure_col: 'TEST',
     value_col: 'STRESN',
     unit_col: 'STRESU',
@@ -16,7 +21,6 @@ const defaultSettings = {
     filters: null,
     boxplots: true,
     violins: false,
-    rotateX: true,
     missingValues: ['', 'NA', 'N/A'],
 
   //Standard webcharts settings
@@ -48,7 +52,7 @@ const defaultSettings = {
         }
     ],
     legend: {
-        label: ''
+        mark: 'square'
     },
     color_by: null, // set in syncSettings()
     resizable: false,
@@ -58,7 +62,9 @@ const defaultSettings = {
 
 // Replicate settings in multiple places in the settings object
 export function syncSettings(settings) {
-    settings.x.column = settings.time_col;
+    settings.x.column = settings.time_settings.value_col;
+    settings.x.label = settings.time_settings.label;
+    settings.x.order = settings.time_settings.order;
     settings.y.column = settings.value_col;
     if (settings.groups)
         settings.color_by = settings.groups[0].value_col
@@ -67,6 +73,7 @@ export function syncSettings(settings) {
     else
         settings.color_by = 'NONE';
     settings.marks[0].per = [settings.color_by];
+    settings.margin = settings.margin || {bottom: settings.time_settings.vertical_space};
 
     return settings;
 }
