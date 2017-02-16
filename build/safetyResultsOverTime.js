@@ -145,7 +145,7 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
         });
 
         //Add custom filters to control inputs.
-        if (settings.filters) settings.filters.reverse().forEach(function (filter, i) {
+        if (settings.filters) settings.filters.reverse().forEach(function (filter) {
             return controlInputs.splice(1, 0, { type: 'subsetter',
                 value_col: filter.value_col ? filter.value_col : filter,
                 label: filter.label ? filter.label : filter.value_col ? filter.value_col : filter,
@@ -164,10 +164,8 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
         })).values();
 
         //'All'variable for non-grouped comparisons
-        this.config.log_value_col = 'log_' + config.value_col;
         this.raw_data.forEach(function (d) {
             d.NONE = 'All Subjects';
-            d[_this.config.log_value_col] = +d[config.value_col] > 0 ? Math.log(d[config.value_col]) : NaN;
         });
 
         //Drop missing values
@@ -210,9 +208,6 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
 
     function onPreprocess() {
         var _this = this;
-
-        //Update y.column based on y-scale.
-        if (this.config.y.type === 'linear') this.config.y.column = this.config.value_col;else this.config.y.column = this.config.log_value_col;
 
         //Capture currently selected measure.
         var measure = this.controls.wrap.selectAll('.control-group').filter(function (d) {
@@ -263,6 +258,7 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
             return group.label ? group.label : group.value_col ? group.value_col : group;
         });
         var group = this.config.color_by;
+
         if (group !== 'NONE') this.config.legend.label = group_labels[group_value_cols.indexOf(group)];else this.config.legend.label = '';
     }
 
@@ -303,7 +299,7 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
 
         //Define x - and y - scales.
         var x = d3.scale.linear().range([0, chart.x.rangeBand()]);
-        var y = d3.scale.linear().range([chart.plot_height, 0]).domain(chart.y.domain());
+        var y = chart.config.y.type === 'linear' ? d3.scale.linear().range([chart.plot_height, 0]).domain(chart.y.domain()) : d3.scale.log().range([chart.plot_height, 0]).domain(chart.y.domain());
 
         //Define quantiles of interest.
         var probs = [0.05, 0.25, 0.5, 0.75, 0.95],
@@ -360,7 +356,7 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
             'cx': x(0.5),
             'cy': y(d3.mean(numericResults)),
             'r': x(boxPlotWidth / 6) }).style({ 'fill': boxColor,
-            'stroke': 'None' });
+            'stroke': 'none' });
 
         //Annotate statistics.
         var format0 = d3.format('.' + (precision + 0) + 'f');
@@ -387,7 +383,7 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
 
         //Define plot properties.
         var width = chart.x.rangeBand();
-        var x = d3.scale.linear().domain(chart.y.domain()).range([chart.plot_height, 0]);
+        var x = chart.config.y.type === 'linear' ? d3.scale.linear().domain(chart.y.domain()).range([chart.plot_height, 0]) : d3.scale.log().domain(chart.y.domain()).range([chart.plot_height, 0]);
         var y = d3.scale.linear().domain([0, Math.max(1 - 1 / group.x.nGroups, d3.max(data, function (d) {
             return d.y;
         }))]).range([width / 2, 0]);

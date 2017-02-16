@@ -137,7 +137,7 @@ export function syncControlInputs(controlInputs, settings) {
     if (settings.filters)
         settings.filters
             .reverse()
-            .forEach((filter,i) =>
+            .forEach(filter =>
                 controlInputs.splice(1, 0,
                     {type: 'subsetter'
                     ,value_col: filter.value_col ? filter.value_col : filter

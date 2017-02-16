@@ -13,6 +13,7 @@ export default function onDataTransform() {
                 ? group.value_col
                 : group);
     const group = this.config.color_by;
+
     if (group !== 'NONE')
         this.config.legend.label = group_labels[group_value_cols.indexOf(group)];
     else
