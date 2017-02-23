@@ -1,32 +1,36 @@
-import { createChart, createControls, createTable } from 'webcharts';
-import { controlInputs, syncControlInputs, syncSettings } from './default-settings'
-import config from './default-settings';
+import './util/object-assign';
+import defaultSettings from './defaultSettings';
+import { syncSettings, syncControlInputs, controlInputs } from './defaultSettings';
+
+import { createControls, createChart, createTable } from 'webcharts';
+
 import onInit from './onInit';
 import onLayout from './onLayout';
+import onPreprocess from './onPreprocess';
 import onDataTransform from './onDataTransform';
 import onDraw from './onDraw';
 import onResize from './onResize';
-import './util/object-assign';
 
-export default function yourFunctionNameHere(element, settings){
-	
-	//merge user's settings with defaults
-	let mergedSettings = Object.assign({}, config, settings);
+export default function safetyResultsOverTime(element, settings) {
+    
+  //Merge user settings onto default settings.
+    let mergedSettings = Object.assign({}, defaultSettings, settings);
 
-	//keep settings in sync with the data mappings
-	mergedSettings = syncSettings(mergedSettings);
-	
-	//keep control inputs in sync and create controls object (if needed)
-	let syncedControlInputs = syncControlInputs(controlInputs, mergedSettings);
-	let controls = createControls(element, {location: 'top', inputs: syncedControlInputs});
-	
-	//create chart
-	let chart = createChart(element, mergedSettings,controls);
-	chart.on('init', onInit);
-	chart.on('layout', onLayout);
-	chart.on('datatransform', onDataTransform);
-	chart.on('draw', onDraw);
-	chart.on('resize', onResize);
+  //Sync properties within merged settings, e.g. data mappings.
+    mergedSettings = syncSettings(mergedSettings);
 
-	return chart;
+  //Sync merged settings with controls.
+    const syncedControlInputs = syncControlInputs(controlInputs, mergedSettings);
+    const controls = createControls(element, {location: 'top', inputs: syncedControlInputs});
+
+  //Define chart.
+    const chart = createChart(element, mergedSettings,controls);
+    chart.on('init', onInit);
+    chart.on('layout', onLayout);
+    chart.on('preprocess', onPreprocess);
+    chart.on('datatransform', onDataTransform);
+    chart.on('draw', onDraw);
+    chart.on('resize', onResize);
+
+    return chart;
 }

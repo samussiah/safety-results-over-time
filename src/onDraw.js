@@ -1,40 +1,32 @@
 import { ascending, nest, set, quantile, extent } from 'd3';
+import updateSubjectCount from './util/updateSubjectCount';
 
-export default function onDraw(){
-  this.marks[0].data.forEach(e => {
-      e.values.sort((a,b) => {
-          return a.key === 'NA' ? 1 : b.key === 'NA' ? -1 : ascending(a.key, b.key);
-      });
-  });
+export default function onDraw() {
+    this.marks[0].data
+        .forEach(d => {
+            d.values.sort((a,b) =>
+                a.key === 'NA' ? 1 : b.key === 'NA' ? -1 : d3.ascending(a.key, b.key));
+        });
 
-  var sortVar = this.config.x.column;
+  //Nest filtered data.
+    this.nested_data = d3.nest()
+        .key(d => d[this.config.x.column])
+        .key(d => d[this.config.color_by])
+        .rollup(d => d.map(m => +m[this.config.y.column]))
+        .entries(this.filtered_data);
 
-  // Make nested data set for boxplots
-  this.nested_data = nest()
-      .key(d => d[this.config.x.column])
-      .key(d => d[this.config.marks[0].per[0]])
-      .rollup(d => {
-        return d.map(m => +m[this.config.y.column]);
-      })
-      .entries(this.filtered_data);
+  //Clear y-axis ticks.
+    this.svg.selectAll('.y .tick').remove();
 
-  // y-domain for box plots
-  var y_05s = [];
-  var y_95s = [];
-  this.nested_data.forEach(function(e){
-      e.values.forEach(function(v,i){
-        var results = v.values
-          .sort(ascending);
-          y_05s.push(quantile(results, 0.05));
-          y_95s.push(quantile(results, 0.95));
-      });
-  });
-  this.y_dom[0] = Math.min.apply(null, y_05s);
-  this.y_dom[1] = Math.max.apply(null, y_95s);
+  //Make nested data set for boxplots
+    this.nested_data = nest()
+        .key(d => d[this.config.x.column])
+        .key(d => d[this.config.marks[0].per[0]])
+        .rollup(d => {
+            return d.map(m => +m[this.config.y.column]);
+        })
+        .entries(this.filtered_data);
 
-  if (this.config.violins) {
-    this.y_dom = extent(
-      this.filtered_data.map((m) => +m[this.config.y.column])
-    );
-  }
+  //Annotate population count.
+    updateSubjectCount(this, '#populationCount');
 }
