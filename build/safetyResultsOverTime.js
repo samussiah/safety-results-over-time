@@ -112,13 +112,6 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
         require: true
     }, {
         type: 'radio',
-        label: 'Y-axis scale:',
-        option: 'y.type',
-        values: ['linear', 'log'], // set in syncControlInputs()
-        relabels: ['Linear', 'Log'],
-        require: true
-    }, {
-        type: 'radio',
         label: 'Hide visits with no data:',
         option: 'x.behavior',
         values: ['flex', 'raw'],
