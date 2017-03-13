@@ -112,13 +112,6 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
         require: true
     }, {
         type: 'radio',
-        label: 'Y-axis scale:',
-        option: 'y.type',
-        values: ['linear', 'log'], // set in syncControlInputs()
-        relabels: ['Linear', 'Log'],
-        require: true
-    }, {
-        type: 'radio',
         label: 'Hide visits with no data:',
         option: 'x.behavior',
         values: ['flex', 'raw'],
@@ -201,6 +194,23 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
             return numMeasures.indexOf(f[config.measure_col]) > -1;
         });
 
+        // Remove filters for variables with 0 or 1 levels
+        var chart = this;
+
+        this.controls.config.inputs = this.controls.config.inputs.filter(function (d) {
+            if (d.type != "subsetter") {
+                return true;
+            } else {
+                var levels = d3.set(chart.raw_data.map(function (f) {
+                    return f[d.value_col];
+                })).values();
+                if (levels.length < 2) {
+                    console.warn(d.value_col + " filter not shown since the variable has less than 2 levels");
+                }
+                return levels.length >= 2;
+            }
+        });
+
         //Choose the start value for the Test filter
         this.controls.config.inputs.filter(function (input) {
             return input.label === 'Measure';
@@ -236,18 +246,16 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
 
         //Define y-axis range based on currently selected measure.
         if (!this.config.violins) {
-            (function () {
-                var y_05s = [];
-                var y_95s = [];
-                nested_data.forEach(function (visit) {
-                    visit.values.forEach(function (group) {
-                        var results = group.values.sort(d3.ascending);
-                        y_05s.push(d3.quantile(results, 0.05));
-                        y_95s.push(d3.quantile(results, 0.95));
-                    });
+            var y_05s = [];
+            var y_95s = [];
+            nested_data.forEach(function (visit) {
+                visit.values.forEach(function (group) {
+                    var results = group.values.sort(d3.ascending);
+                    y_05s.push(d3.quantile(results, 0.05));
+                    y_95s.push(d3.quantile(results, 0.95));
                 });
-                _this.config.y.domain = [Math.min.apply(null, y_05s), Math.max.apply(null, y_95s)];
-            })();
+            });
+            this.config.y.domain = [Math.min.apply(null, y_05s), Math.max.apply(null, y_95s)];
         } else this.config.y.domain = d3.extent(this.measure_data.map(function (d) {
             return +d[_this.config.y.column];
         }));
