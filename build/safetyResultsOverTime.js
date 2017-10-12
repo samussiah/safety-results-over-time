@@ -138,13 +138,25 @@ var safetyResultsOverTime = function (webcharts, d3$1) {
         });
 
         //Add custom filters to control inputs.
-        if (settings.filters) settings.filters.reverse().forEach(function (filter) {
-            return controlInputs.splice(1, 0, { type: 'subsetter',
-                value_col: filter.value_col ? filter.value_col : filter,
-                label: filter.label ? filter.label : filter.value_col ? filter.value_col : filter,
-                description: 'filter' });
-        });
+        if (settings.filters) {
+            settings.filters.reverse().forEach(function (filter) {
+                var thisFilter = {
+                    type: 'subsetter',
+                    value_col: filter.value_col ? filter.value_col : filter,
+                    label: filter.label ? filter.label : filter.value_col ? filter.value_col : filter,
+                    description: 'filter'
+                };
 
+                //add the filter to the control inputs (as long as it's not already there)
+                //add the filter to the control inputs (as long as it isn't already there)
+                var current_value_cols = controlInputs.filter(function (f) {
+                    return f.type == "subsetter";
+                }).map(function (m) {
+                    return m.value_col;
+                });
+                if (current_value_cols.indexOf(thisFilter.value_col) == -1) controlInputs.splice(1, 0, thisFilter);
+            });
+        }
         return controlInputs;
     }
 
