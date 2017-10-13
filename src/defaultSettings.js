@@ -94,7 +94,7 @@ export const controlInputs = [
         values: null, // set in syncControlInputs()
         require: true
     },
-   
+
     {
         type: 'radio',
         label: 'Hide visits with no data:',
@@ -125,17 +125,25 @@ export function syncControlInputs(controlInputs, settings) {
                 : group);
 
   //Add custom filters to control inputs.
-    if (settings.filters)
-        settings.filters
-            .reverse()
-            .forEach(filter =>
-                controlInputs.splice(1, 0,
-                    {type: 'subsetter'
-                    ,value_col: filter.value_col ? filter.value_col : filter
-                    ,label: filter.label ? filter.label : filter.value_col ? filter.value_col : filter
-                    ,description: 'filter'}));
+    if (settings.filters){
+      settings.filters.reverse()
+      .forEach(function(filter){
+        const thisFilter =   {
+          type: 'subsetter'
+          ,value_col: filter.value_col ? filter.value_col : filter
+          ,label: filter.label ? filter.label : filter.value_col ? filter.value_col : filter
+          ,description: 'filter'
+        }
 
+        //add the filter to the control inputs (as long as it's not already there)
+        //add the filter to the control inputs (as long as it isn't already there)
+        var current_value_cols = controlInputs.filter(f=>f.type=="subsetter").map(m=>m.value_col)
+        if(current_value_cols.indexOf(thisFilter.value_col)==-1)
+          controlInputs.splice(1, 0, thisFilter);
+      });
+    }
     return controlInputs
-}
+
+  }
 
 export default defaultSettings;
