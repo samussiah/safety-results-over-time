@@ -1,27 +1,26 @@
 const defaultSettings = {
-  //Custom settings for this template
+    //Custom settings for this template
     id_col: 'USUBJID',
     time_settings: {
         value_col: 'VISITN',
         label: 'Visit Number',
         order: null, // x-axis domain order (array)
         rotate_tick_labels: false,
-        vertical_space: 0},
+        vertical_space: 0
+    },
     measure_col: 'TEST',
     value_col: 'STRESN',
     unit_col: 'STRESU',
     normal_col_low: 'STNRLO',
     normal_col_high: 'STNRHI',
     start_value: null,
-    groups: [
-        {value_col: 'NONE', label: 'None'}
-    ],
+    groups: [{ value_col: 'NONE', label: 'None' }],
     filters: null,
     boxplots: true,
     violins: false,
     missingValues: ['', 'NA', 'N/A'],
 
-  //Standard webcharts settings
+    //Standard webcharts settings
     x: {
         column: null, // set in syncSettings()
         type: 'ordinal',
@@ -45,7 +44,7 @@ const defaultSettings = {
             attributes: {
                 'stroke-width': 2,
                 'stroke-opacity': 1,
-                'display': 'none'
+                display: 'none'
             }
         }
     ],
@@ -68,10 +67,9 @@ export function syncSettings(settings) {
         settings.color_by = settings.groups[0].value_col
             ? settings.groups[0].value_col
             : settings.groups[0];
-    else
-        settings.color_by = 'NONE';
+    else settings.color_by = 'NONE';
     settings.marks[0].per = [settings.color_by];
-    settings.margin = settings.margin || {bottom: settings.time_settings.vertical_space};
+    settings.margin = settings.margin || { bottom: settings.time_settings.vertical_space };
 
     return settings;
 }
@@ -89,7 +87,7 @@ export const controlInputs = [
         type: 'dropdown',
         label: 'Group',
         description: 'stratification',
-        options: ['marks.0.per.0','color_by'],
+        options: ['marks.0.per.0', 'color_by'],
         start: null, // set in syncControlInputs()
         values: null, // set in syncControlInputs()
         require: true
@@ -99,51 +97,49 @@ export const controlInputs = [
         type: 'radio',
         label: 'Hide visits with no data:',
         option: 'x.behavior',
-        values: ['flex','raw'],
-        relabels: ['Yes','No'],
+        values: ['flex', 'raw'],
+        relabels: ['Yes', 'No'],
         require: true
     },
-    {type: 'checkbox', option: 'boxplots', label: 'Box plots', inline: true},
-    {type: 'checkbox', option: 'violins', label: 'Violin plots', inline: true}];
+    { type: 'checkbox', option: 'boxplots', label: 'Box plots', inline: true },
+    { type: 'checkbox', option: 'violins', label: 'Violin plots', inline: true }
+];
 
 // Map values from settings to control inputs
 export function syncControlInputs(controlInputs, settings) {
-  //Sync measure control.
-    let measureControl = controlInputs
-        .filter(controlInput => controlInput.label === 'Measure')[0];
+    //Sync measure control.
+    let measureControl = controlInputs.filter(controlInput => controlInput.label === 'Measure')[0];
     measureControl.value_col = settings.measure_col;
     measureControl.start = settings.start_value;
 
-  //Sync group control.
-    let groupControl = controlInputs
-        .filter(controlInput => controlInput.label === 'Group')[0];
+    //Sync group control.
+    let groupControl = controlInputs.filter(controlInput => controlInput.label === 'Group')[0];
     groupControl.start = settings.color_by;
     if (settings.groups)
-        groupControl.values = settings.groups
-            .map(group => group.value_col
-                ? group.value_col
-                : group);
+        groupControl.values = settings.groups.map(
+            group => (group.value_col ? group.value_col : group)
+        );
 
-  //Add custom filters to control inputs.
-    if (settings.filters){
-      settings.filters.reverse()
-      .forEach(function(filter){
-        const thisFilter =   {
-          type: 'subsetter'
-          ,value_col: filter.value_col ? filter.value_col : filter
-          ,label: filter.label ? filter.label : filter.value_col ? filter.value_col : filter
-          ,description: 'filter'
-        }
+    //Add custom filters to control inputs.
+    if (settings.filters) {
+        settings.filters.reverse().forEach(function(filter) {
+            const thisFilter = {
+                type: 'subsetter',
+                value_col: filter.value_col ? filter.value_col : filter,
+                label: filter.label ? filter.label : filter.value_col ? filter.value_col : filter,
+                description: 'filter'
+            };
 
-        //add the filter to the control inputs (as long as it's not already there)
-        //add the filter to the control inputs (as long as it isn't already there)
-        var current_value_cols = controlInputs.filter(f=>f.type=="subsetter").map(m=>m.value_col)
-        if(current_value_cols.indexOf(thisFilter.value_col)==-1)
-          controlInputs.splice(1, 0, thisFilter);
-      });
+            //add the filter to the control inputs (as long as it's not already there)
+            //add the filter to the control inputs (as long as it isn't already there)
+            var current_value_cols = controlInputs
+                .filter(f => f.type == 'subsetter')
+                .map(m => m.value_col);
+            if (current_value_cols.indexOf(thisFilter.value_col) == -1)
+                controlInputs.splice(1, 0, thisFilter);
+        });
     }
-    return controlInputs
-
-  }
+    return controlInputs;
+}
 
 export default defaultSettings;
