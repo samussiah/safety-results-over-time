@@ -1,5 +1,5 @@
-export default function onLayout(){
-  //Add population count container.
+export default function onLayout() {
+    //Add population count container.
     this.controls.wrap
         .append('div')
         .attr('id', 'populationCount')
