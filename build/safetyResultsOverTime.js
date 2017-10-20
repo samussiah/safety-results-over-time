@@ -167,10 +167,10 @@
                         ? filter.label
                         : filter.value_col ? filter.value_col : filter,
                     description: 'filter'
-
-                    //add the filter to the control inputs (as long as it's not already there)
-                    //add the filter to the control inputs (as long as it isn't already there)
                 };
+
+                //add the filter to the control inputs (as long as it's not already there)
+                //add the filter to the control inputs (as long as it isn't already there)
                 var current_value_cols = controlInputs
                     .filter(function(f) {
                         return f.type == 'subsetter';
@@ -189,13 +189,6 @@
         var _this = this;
 
         var config = this.config;
-        var allMeasures = d3$1
-            .set(
-                this.raw_data.map(function(m) {
-                    return m[config.measure_col];
-                })
-            )
-            .values();
 
         //'All'variable for non-grouped comparisons
         this.raw_data.forEach(function(d) {
@@ -214,33 +207,43 @@
             return config.missingValues.indexOf(f[config.value_col]) === -1;
         });
 
-        //warning for non-numeric endpoints
-        var catMeasures = allMeasures.filter(function(f) {
-            var measureVals = _this.raw_data.filter(function(d) {
-                return d[config.measure_col] === f;
+        //Remove measures with any non-numeric results.
+        var allMeasures = d3$1
+                .set(
+                    this.raw_data.map(function(m) {
+                        return m[config.measure_col];
+                    })
+                )
+                .values(),
+            catMeasures = allMeasures.filter(function(measure) {
+                var allObservations = _this.raw_data
+                        .filter(function(d) {
+                            return d[config.measure_col] === measure;
+                        })
+                        .map(function(d) {
+                            return d[config.value_col];
+                        }),
+                    numericObservations = allObservations.filter(function(d) {
+                        return /^-?[0-9.]+$/.test(d);
+                    });
+
+                return numericObservations.length < allObservations.length;
+            }),
+            conMeasures = allMeasures.filter(function(measure) {
+                return catMeasures.indexOf(measure) === -1;
             });
 
-            return webcharts.dataOps.getValType(measureVals, config.value_col) !== 'continuous';
-        });
-        if (catMeasures.length) {
+        if (catMeasures.length)
             console.warn(
                 catMeasures.length +
-                    ' non-numeric endpoints have been removed: ' +
+                    ' non-numeric endpoint' +
+                    (catMeasures.length > 1 ? 's have' : ' has') +
+                    ' been removed: ' +
                     catMeasures.join(', ')
             );
-        }
 
-        //delete non-numeric endpoints
-        var numMeasures = allMeasures.filter(function(f) {
-            var measureVals = _this.raw_data.filter(function(d) {
-                return d[config.measure_col] === f;
-            });
-
-            return webcharts.dataOps.getValType(measureVals, config.value_col) === 'continuous';
-        });
-
-        this.raw_data = this.raw_data.filter(function(f) {
-            return numMeasures.indexOf(f[config.measure_col]) > -1;
+        this.raw_data = this.raw_data.filter(function(d) {
+            return catMeasures.indexOf(d[config.measure_col]) === -1;
         });
 
         // Remove filters for variables with 0 or 1 levels
@@ -270,7 +273,7 @@
         this.controls.config.inputs.filter(function(input) {
             return input.label === 'Measure';
         })[0].start =
-            this.config.start_value || numMeasures[0];
+            this.config.start_value || conMeasures[0];
     }
 
     function onLayout() {
@@ -438,6 +441,158 @@
 
         //Annotate population count.
         updateSubjectCount(this, '#populationCount');
+    }
+
+    function addBoxPlot(chart, group) {
+        var boxInsideColor =
+            arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '#eee';
+        var precision = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
+
+        //Make the numericResults numeric and sort.
+        var numericResults = group.results
+            .map(function(d) {
+                return +d;
+            })
+            .sort(d3.ascending);
+        var boxPlotWidth = 0.75 / chart.colorScale.domain().length;
+        var boxColor = chart.colorScale(group.key);
+
+        //Define x - and y - scales.
+        var x = d3.scale.linear().range([0, chart.x.rangeBand()]);
+        var y =
+            chart.config.y.type === 'linear'
+                ? d3.scale
+                      .linear()
+                      .range([chart.plot_height, 0])
+                      .domain(chart.y.domain())
+                : d3.scale
+                      .log()
+                      .range([chart.plot_height, 0])
+                      .domain(chart.y.domain());
+
+        //Define quantiles of interest.
+        var probs = [0.05, 0.25, 0.5, 0.75, 0.95],
+            iS = void 0;
+        for (var _i = 0; _i < probs.length; _i++) {
+            probs[_i] = d3.quantile(numericResults, probs[_i]);
+        }
+
+        //Define box plot container.
+        var boxplot = group.svg
+            .append('g')
+            .attr('class', 'boxplot')
+            .datum({
+                values: numericResults,
+                probs: probs
+            });
+        var left = x(0.5 - boxPlotWidth / 2);
+        var right = x(0.5 + boxPlotWidth / 2);
+
+        //Draw box.
+        boxplot
+            .append('rect')
+            .attr({
+                class: 'boxplot fill',
+                x: left,
+                width: right - left,
+                y: y(probs[3]),
+                height: y(probs[1]) - y(probs[3])
+            })
+            .style('fill', boxColor);
+
+        //Draw horizontal lines at 5th percentile, median, and 95th percentile.
+        iS = [0, 2, 4];
+        var iSclass = ['', 'median', ''];
+        var iSColor = [boxColor, boxInsideColor, boxColor];
+        for (var _i2 = 0; _i2 < iS.length; _i2++) {
+            boxplot
+                .append('line')
+                .attr({
+                    class: 'boxplot ' + iSclass[_i2],
+                    x1: left,
+                    x2: right,
+                    y1: y(probs[iS[_i2]]),
+                    y2: y(probs[iS[_i2]])
+                })
+                .style({
+                    fill: iSColor[_i2],
+                    stroke: iSColor[_i2]
+                });
+        }
+
+        //Draw vertical lines from the 5th percentile to the 25th percentile and from the 75th percentile to the 95th percentile.
+        iS = [[0, 1], [3, 4]];
+        for (var i = 0; i < iS.length; i++) {
+            boxplot
+                .append('line')
+                .attr({
+                    class: 'boxplot',
+                    x1: x(0.5),
+                    x2: x(0.5),
+                    y1: y(probs[iS[i][0]]),
+                    y2: y(probs[iS[i][1]])
+                })
+                .style('stroke', boxColor);
+        }
+        //Draw outer circle.
+        boxplot
+            .append('circle')
+            .attr({
+                class: 'boxplot mean',
+                cx: x(0.5),
+                cy: y(d3.mean(numericResults)),
+                r: Math.min(x(boxPlotWidth / 3), 10)
+            })
+            .style({
+                fill: boxInsideColor,
+                stroke: boxColor
+            });
+
+        //Draw inner circle.
+        boxplot
+            .append('circle')
+            .attr({
+                class: 'boxplot mean',
+                cx: x(0.5),
+                cy: y(d3.mean(numericResults)),
+                r: Math.min(x(boxPlotWidth / 6), 5)
+            })
+            .style({
+                fill: boxColor,
+                stroke: 'none'
+            });
+
+        //Annotate statistics.
+        var format0 = d3.format('.' + (precision + 0) + 'f');
+        var format1 = d3.format('.' + (precision + 1) + 'f');
+        var format2 = d3.format('.' + (precision + 2) + 'f');
+        boxplot
+            .selectAll('.boxplot')
+            .append('title')
+            .text(function(d) {
+                return (
+                    'N = ' +
+                    d.values.length +
+                    '\nMin = ' +
+                    d3.min(d.values) +
+                    '\n5th % = ' +
+                    format1(d3.quantile(d.values, 0.05)) +
+                    '\nQ1 = ' +
+                    format1(d3.quantile(d.values, 0.25)) +
+                    '\nMedian = ' +
+                    format1(d3.median(d.values)) +
+                    '\nQ3 = ' +
+                    format1(d3.quantile(d.values, 0.75)) +
+                    '\n95th % = ' +
+                    format1(d3.quantile(d.values, 0.95)) +
+                    '\nMax = ' +
+                    d3.max(d.values) +
+                    '\nMean = ' +
+                    format1(d3.mean(d.values)) +
+                    '\nStDev = ' +
+                    format2(d3.deviation(d.values))
+                );
+            });
     }
 
     function addViolinPlot(chart, group) {
@@ -693,7 +848,7 @@
                         })
                         .datum({ values: group.results });
 
-                    if (config.boxplots) addBoxplot(_this, group);
+                    if (config.boxplots) addBoxPlot(_this, group);
 
                     if (config.violins) addViolinPlot(_this, group);
                 }

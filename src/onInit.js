@@ -3,7 +3,6 @@ import { dataOps } from 'webcharts';
 
 export default function onInit() {
     const config = this.config;
-    const allMeasures = set(this.raw_data.map(m => m[config.measure_col])).values();
 
     //'All'variable for non-grouped comparisons
     this.raw_data.forEach(d => {
@@ -16,28 +15,26 @@ export default function onInit() {
         return config.missingValues.indexOf(f[config.value_col]) === -1;
     });
 
-    //warning for non-numeric endpoints
-    var catMeasures = allMeasures.filter(f => {
-        var measureVals = this.raw_data.filter(d => d[config.measure_col] === f);
+    //Remove measures with any non-numeric results.
+    const allMeasures = set(this.raw_data.map(m => m[config.measure_col])).values(),
+        catMeasures = allMeasures.filter(measure => {
+            const allObservations = this.raw_data
+                    .filter(d => d[config.measure_col] === measure)
+                    .map(d => d[config.value_col]),
+                numericObservations = allObservations.filter(d => /^-?[0-9.]+$/.test(d));
 
-        return dataOps.getValType(measureVals, config.value_col) !== 'continuous';
-    });
-    if (catMeasures.length) {
+            return numericObservations.length < allObservations.length;
+        }),
+        conMeasures = allMeasures.filter(measure => catMeasures.indexOf(measure) === -1);
+
+    if (catMeasures.length)
         console.warn(
-            catMeasures.length +
-                ' non-numeric endpoints have been removed: ' +
-                catMeasures.join(', ')
+            `${catMeasures.length} non-numeric endpoint${catMeasures.length > 1
+                ? 's have'
+                : ' has'} been removed: ${catMeasures.join(', ')}`
         );
-    }
 
-    //delete non-numeric endpoints
-    var numMeasures = allMeasures.filter(f => {
-        var measureVals = this.raw_data.filter(d => d[config.measure_col] === f);
-
-        return dataOps.getValType(measureVals, config.value_col) === 'continuous';
-    });
-
-    this.raw_data = this.raw_data.filter(f => numMeasures.indexOf(f[config.measure_col]) > -1);
+    this.raw_data = this.raw_data.filter(d => catMeasures.indexOf(d[config.measure_col]) === -1);
 
     // Remove filters for variables with 0 or 1 levels
     var chart = this;
@@ -58,5 +55,5 @@ export default function onInit() {
 
     //Choose the start value for the Test filter
     this.controls.config.inputs.filter(input => input.label === 'Measure')[0].start =
-        this.config.start_value || numMeasures[0];
+        this.config.start_value || conMeasures[0];
 }

@@ -102,7 +102,7 @@ export default function onResize() {
                     })
                     .datum({ values: group.results });
 
-                if (config.boxplots) addBoxplot(this, group);
+                if (config.boxplots) addBoxPlot(this, group);
 
                 if (config.violins) addViolinPlot(this, group);
             }

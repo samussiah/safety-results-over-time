@@ -81,7 +81,6 @@ export default function addBoxPlot(chart, group, boxInsideColor = '#eee', precis
             })
             .style('stroke', boxColor);
     }
-
     //Draw outer circle.
     boxplot
         .append('circle')
@@ -89,7 +88,7 @@ export default function addBoxPlot(chart, group, boxInsideColor = '#eee', precis
             class: 'boxplot mean',
             cx: x(0.5),
             cy: y(d3.mean(numericResults)),
-            r: x(boxPlotWidth / 3)
+            r: Math.min(x(boxPlotWidth / 3), 10)
         })
         .style({
             fill: boxInsideColor,
@@ -103,7 +102,7 @@ export default function addBoxPlot(chart, group, boxInsideColor = '#eee', precis
             class: 'boxplot mean',
             cx: x(0.5),
             cy: y(d3.mean(numericResults)),
-            r: x(boxPlotWidth / 6)
+            r: Math.min(x(boxPlotWidth / 6), 5)
         })
         .style({
             fill: boxColor,
