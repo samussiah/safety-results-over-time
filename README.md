@@ -78,6 +78,6 @@ Click [here](https://rhoinc.github.io/viz-library/examples/0008-safetyExplorer-d
 - [Interactive Example](https://rhoinc.github.io/viz-library/examples/0008-safetyExplorer-default/safety-results-over-time/)
 - [Configuration](https://github.com/RhoInc/safety-results-over-time/wiki/Configuration) 
 - [API](https://github.com/RhoInc/safety-results-over-time/wiki/API)
-- [Technical Documentation](https://github.com/RhoInc/safety-results-over-time/wiki/User-Requirements) 
+- [Technical Documentation](https://github.com/RhoInc/safety-results-over-time/wiki/Technical-Documentation) 
 - [Data Guidelines](https://github.com/RhoInc/safety-results-over-time/wiki/Data-Guidelines)
 
