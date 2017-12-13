@@ -1,10 +1,10 @@
 # Saftey Results Over Time
-
+![Example](https://github.com/RhoInc/safety-results-over-time/wiki/img/default.PNG)
 ## Overview
 
 safety-results-over-time is a JavaScript library built using Webcharts ([1](https://github.com/RhoInc/Webcharts), [2](https://github.com/RhoInc/webcharts-wrapper-boilerplate)) that allows users to view summaries of clinical outcomes such as lab results and vital signs over time.A typical chart created with safety-results-over-time looks like this:
 
-![Example](https://github.com/RhoInc/safety-results-over-time/wiki/img/default.PNG)
+
 
 Users can specify grouping variables and overlay violin plots:
 
