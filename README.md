@@ -1,5 +1,6 @@
-# Results Over Time for Clinical Trials
-# Overview
+# Saftey Results Over Time
+
+## Overview
 
 safety-results-over-time is a JavaScript library built using Webcharts ([1](https://github.com/RhoInc/Webcharts), [2](https://github.com/RhoInc/webcharts-wrapper-boilerplate)) that allows users to view summaries of clinical outcomes such as lab results and vital signs over time.A typical chart created with safety-results-over-time looks like this:
 
@@ -25,7 +26,7 @@ Users can interact with the display in real time to:
 * Filter the shift plot for selected criteria, and see an updated chart (optional)
 
 
-# Typical Usage
+## Typical Usage
 
 The code to initialize the chart looks like this: 
 
@@ -72,6 +73,6 @@ The chart can be configured to facilitate non-standard data formats and to alter
 
 Click [here](https://rhoinc.github.io/viz-library/examples/0008-safetyExplorer-default/safety-results-over-time/) to open an interactive example of the Safety Results Over Time.
 
-# Examples
+## Examples
 
 - [Results Over Time chart using Sample Data](https://rhoinc.github.io/viz-library/examples/0008-safetyExplorer-default/safety-results-over-time/) 
