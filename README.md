@@ -2,7 +2,7 @@
 ![Example](https://github.com/RhoInc/safety-results-over-time/wiki/img/default.PNG)
 ## Overview
 
-Safety Results Over Time is a JavaScript library built using Webcharts ([1](https://github.com/RhoInc/Webcharts), [2](https://github.com/RhoInc/webcharts-wrapper-boilerplate)) that allows users to view summaries of clinical outcomes such as lab results and vital signs over time.A typical chart created with safety-results-over-time looks like this:
+Safety Results Over Time is a JavaScript library built using Webcharts ([1](https://github.com/RhoInc/Webcharts), [2](https://github.com/RhoInc/webcharts-wrapper-boilerplate)) that allows users to view summaries of clinical outcomes such as lab results and vital signs over time. A typical chart created with safety-results-over-time looks like this:
 
 
 
@@ -10,7 +10,7 @@ Users can specify grouping variables and overlay violin plots:
 
 ![Example](https://github.com/RhoInc/safety-results-over-time/wiki/img/customized.PNG)
 
-Users can view any outcome in the data and stratify that outcome by, for example, sex or treatment; the full functionality is described [here](https://github.com/RhoInc/safety-results-over-time/wiki/User-Requirements).
+Users can view any outcome in the data and stratify that outcome by sex or treatment, for example; the full functionality is described [here](https://github.com/RhoInc/safety-results-over-time/wiki/User-Requirements).
 The library expects an [ADaM-esque data structure](https://www.cdisc.org/system/files/members/standard/foundational/adam/analysis_data_model_v2.1.pdf) by default but can be customized to use any dataset that is one row per participant per timepoint per measure.
 Full details about chart configuration are [here](Configuration).
 
