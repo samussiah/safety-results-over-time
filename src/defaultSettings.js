@@ -89,10 +89,11 @@ export const controlInputs = [
         description: 'stratification',
         options: ['marks.0.per.0', 'color_by'],
         start: null, // set in syncControlInputs()
-        values: null, // set in syncControlInputs()
+        values: ['NONE'], // set in syncControlInputs()
         require: true
     },
-
+    { type: 'number', label: 'Lower Limit', option: 'y.domain[0]', require: true },
+    { type: 'number', label: 'Upper Limit', option: 'y.domain[1]', require: true },
     {
         type: 'radio',
         label: 'Hide visits with no data:',
@@ -107,18 +108,21 @@ export const controlInputs = [
 
 // Map values from settings to control inputs
 export function syncControlInputs(controlInputs, settings) {
+    const measureControl = controlInputs.filter(
+            controlInput => controlInput.label === 'Measure'
+        )[0],
+        groupControl = controlInputs.filter(controlInput => controlInput.label === 'Group')[0];
+
     //Sync measure control.
-    let measureControl = controlInputs.filter(controlInput => controlInput.label === 'Measure')[0];
     measureControl.value_col = settings.measure_col;
     measureControl.start = settings.start_value;
 
     //Sync group control.
-    let groupControl = controlInputs.filter(controlInput => controlInput.label === 'Group')[0];
     groupControl.start = settings.color_by;
     if (settings.groups)
-        groupControl.values = settings.groups.map(
-            group => (group.value_col ? group.value_col : group)
-        );
+        settings.groups.forEach(group => {
+            groupControl.values.push(group.value_col || group);
+        });
 
     //Add custom filters to control inputs.
     if (settings.filters) {

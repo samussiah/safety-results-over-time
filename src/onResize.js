@@ -1,7 +1,7 @@
-import { ascending } from 'd3';
-import addBoxPlot from './util/addBoxPlot';
-import addViolinPlot from './util/addViolinPlot';
-import adjustTicks from './util/adjustTicks';
+import { quantile, ascending } from 'd3';
+import addBoxPlot from './onResize/addBoxPlot';
+import addViolinPlot from './onResize/addViolinPlot';
+import adjustTicks from './onResize/adjustTicks';
 
 export default function onResize() {
     const config = this.config;
@@ -26,7 +26,7 @@ export default function onResize() {
         ];
 
         for (let i = 0; i < probs.length; i++) {
-            probs[i].quantile = d3.quantile(
+            probs[i].quantile = quantile(
                 this.measure_data.map(d => +d[this.config.y.column]).sort(),
                 probs[i].probability
             );
@@ -104,7 +104,7 @@ export default function onResize() {
 
                 if (config.boxplots) addBoxPlot(this, group);
 
-                if (config.violins) addViolinPlot(this, group);
+                if (config.violins) addViolinPlot(this, group, this.colorScale(group.key));
             }
         });
     });

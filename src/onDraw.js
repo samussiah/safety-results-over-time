@@ -1,16 +1,20 @@
-import { ascending, nest, set, quantile, extent } from 'd3';
-import updateSubjectCount from './util/updateSubjectCount';
+import { ascending, nest } from 'd3';
+import updateSubjectCount from './onDraw/updateSubjectCount';
+import updateYdomain from './onDraw/updateYdomain';
 
 export default function onDraw() {
+    //Annotate population count.
+    updateSubjectCount(this, '#populationCount');
+
+    //idk
     this.marks[0].data.forEach(d => {
         d.values.sort(
-            (a, b) => (a.key === 'NA' ? 1 : b.key === 'NA' ? -1 : d3.ascending(a.key, b.key))
+            (a, b) => (a.key === 'NA' ? 1 : b.key === 'NA' ? -1 : ascending(a.key, b.key))
         );
     });
 
     //Nest filtered data.
-    this.nested_data = d3
-        .nest()
+    this.nested_data = nest()
         .key(d => d[this.config.x.column])
         .key(d => d[this.config.color_by])
         .rollup(d => d.map(m => +m[this.config.y.column]))
@@ -28,6 +32,13 @@ export default function onDraw() {
         })
         .entries(this.filtered_data);
 
-    //Annotate population count.
-    updateSubjectCount(this, '#populationCount');
+    //hack to avoid domains with 0 extent
+    if (this.y_dom[0] == this.y_dom[1]) {
+        var jitter = this.y_dom[0] / 10;
+        this.y_dom[0] = this.y_dom[0] - jitter;
+        this.y_dom[1] = this.y_dom[1] + jitter;
+    }
+
+    //update the y domain using the custom controsl
+    updateYdomain.call(this);
 }

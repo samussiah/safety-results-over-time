@@ -1,9 +1,6 @@
 import './util/object-assign';
-import defaultSettings from './defaultSettings';
-import { syncSettings, syncControlInputs, controlInputs } from './defaultSettings';
-
-import { createControls, createChart, createTable } from 'webcharts';
-
+import defaultSettings, { syncSettings, syncControlInputs, controlInputs } from './defaultSettings';
+import { createControls, createChart } from 'webcharts';
 import onInit from './onInit';
 import onLayout from './onLayout';
 import onPreprocess from './onPreprocess';
@@ -12,18 +9,12 @@ import onDraw from './onDraw';
 import onResize from './onResize';
 
 export default function safetyResultsOverTime(element, settings) {
-    //Merge user settings onto default settings.
-    let mergedSettings = Object.assign({}, defaultSettings, settings);
+    const mergedSettings = Object.assign({}, defaultSettings, settings), //Merge user settings onto default settings.
+        syncedSettings = syncSettings(mergedSettings), //Sync properties within merged settings, e.g. data mappings.
+        syncedControlInputs = syncControlInputs(controlInputs, syncedSettings), //Sync merged settings with controls.
+        controls = createControls(element, { location: 'top', inputs: syncedControlInputs }), //Define controls.
+        chart = createChart(element, mergedSettings, controls); //Define chart.
 
-    //Sync properties within merged settings, e.g. data mappings.
-    mergedSettings = syncSettings(mergedSettings);
-
-    //Sync merged settings with controls.
-    const syncedControlInputs = syncControlInputs(controlInputs, mergedSettings);
-    const controls = createControls(element, { location: 'top', inputs: syncedControlInputs });
-
-    //Define chart.
-    const chart = createChart(element, mergedSettings, controls);
     chart.on('init', onInit);
     chart.on('layout', onLayout);
     chart.on('preprocess', onPreprocess);

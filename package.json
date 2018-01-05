@@ -8,15 +8,15 @@
   "main": "./build/safetyResultsOverTime.js",
   "module": "./src/wrapper.js",
   "keywords": [
-      "labs",
-      "vitals",
-      "ecg",
-      "bds",
-      "group comparison",
-      "data",
-      "visualization",
-      "safety",
-      "explorer"
+    "labs",
+    "vitals",
+    "ecg",
+    "bds",
+    "group comparison",
+    "data",
+    "visualization",
+    "safety",
+    "explorer"
   ],
   "dependencies": {
     "d3": "^3",
