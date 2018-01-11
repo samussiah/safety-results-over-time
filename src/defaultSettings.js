@@ -14,8 +14,8 @@ const defaultSettings = {
     normal_col_low: 'STNRLO',
     normal_col_high: 'STNRHI',
     start_value: null,
-    groups: [{ value_col: 'NONE', label: 'None' }],
     filters: null,
+    groups: null,
     boxplots: true,
     violins: false,
     missingValues: ['', 'NA', 'N/A'],
@@ -63,11 +63,11 @@ export function syncSettings(settings) {
     settings.x.label = settings.time_settings.label;
     settings.x.order = settings.time_settings.order;
     settings.y.column = settings.value_col;
-    if (settings.groups)
-        settings.color_by = settings.groups[0].value_col
-            ? settings.groups[0].value_col
-            : settings.groups[0];
-    else settings.color_by = 'NONE';
+    if (!(settings.groups instanceof Array && settings.groups.length))
+        settings.groups = [{ value_col: 'NONE', label: 'None' }];
+    settings.color_by = settings.groups[0].value_col
+        ? settings.groups[0].value_col
+        : settings.groups[0];
     settings.marks[0].per = [settings.color_by];
     settings.margin = settings.margin || { bottom: settings.time_settings.vertical_space };
 
@@ -89,10 +89,11 @@ export const controlInputs = [
         description: 'stratification',
         options: ['marks.0.per.0', 'color_by'],
         start: null, // set in syncControlInputs()
-        values: null, // set in syncControlInputs()
+        values: ['NONE'], // set in syncControlInputs()
         require: true
     },
-
+    { type: 'number', label: 'Lower Limit', option: 'y.domain[0]', require: true },
+    { type: 'number', label: 'Upper Limit', option: 'y.domain[1]', require: true },
     {
         type: 'radio',
         label: 'Hide visits with no data:',
@@ -107,18 +108,20 @@ export const controlInputs = [
 
 // Map values from settings to control inputs
 export function syncControlInputs(controlInputs, settings) {
+    const measureControl = controlInputs.filter(
+            controlInput => controlInput.label === 'Measure'
+        )[0],
+        groupControl = controlInputs.filter(controlInput => controlInput.label === 'Group')[0];
+
     //Sync measure control.
-    let measureControl = controlInputs.filter(controlInput => controlInput.label === 'Measure')[0];
     measureControl.value_col = settings.measure_col;
     measureControl.start = settings.start_value;
 
     //Sync group control.
-    let groupControl = controlInputs.filter(controlInput => controlInput.label === 'Group')[0];
     groupControl.start = settings.color_by;
-    if (settings.groups)
-        groupControl.values = settings.groups.map(
-            group => (group.value_col ? group.value_col : group)
-        );
+    settings.groups.filter(group => group.value_col !== 'NONE').forEach(group => {
+        groupControl.values.push(group.value_col || group);
+    });
 
     //Add custom filters to control inputs.
     if (settings.filters) {

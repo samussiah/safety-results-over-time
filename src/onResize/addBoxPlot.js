@@ -1,18 +1,20 @@
+import { ascending, scale, quantile, mean, format, min, median, max, deviation } from 'd3';
+
 export default function addBoxPlot(chart, group, boxInsideColor = '#eee', precision = 0) {
     //Make the numericResults numeric and sort.
-    const numericResults = group.results.map(d => +d).sort(d3.ascending);
+    const numericResults = group.results.map(d => +d).sort(ascending);
     const boxPlotWidth = 0.75 / chart.colorScale.domain().length;
     const boxColor = chart.colorScale(group.key);
 
     //Define x - and y - scales.
-    const x = d3.scale.linear().range([0, chart.x.rangeBand()]);
+    const x = scale.linear().range([0, chart.x.rangeBand()]);
     const y =
         chart.config.y.type === 'linear'
-            ? d3.scale
+            ? scale
                   .linear()
                   .range([chart.plot_height, 0])
                   .domain(chart.y.domain())
-            : d3.scale
+            : scale
                   .log()
                   .range([chart.plot_height, 0])
                   .domain(chart.y.domain());
@@ -21,7 +23,7 @@ export default function addBoxPlot(chart, group, boxInsideColor = '#eee', precis
     let probs = [0.05, 0.25, 0.5, 0.75, 0.95],
         iS;
     for (let i = 0; i < probs.length; i++) {
-        probs[i] = d3.quantile(numericResults, probs[i]);
+        probs[i] = quantile(numericResults, probs[i]);
     }
 
     //Define box plot container.
@@ -31,7 +33,8 @@ export default function addBoxPlot(chart, group, boxInsideColor = '#eee', precis
         .datum({
             values: numericResults,
             probs: probs
-        });
+        })
+        .attr('clip-path', `url(#${chart.id})`);
     const left = x(0.5 - boxPlotWidth / 2);
     const right = x(0.5 + boxPlotWidth / 2);
 
@@ -87,7 +90,7 @@ export default function addBoxPlot(chart, group, boxInsideColor = '#eee', precis
         .attr({
             class: 'boxplot mean',
             cx: x(0.5),
-            cy: y(d3.mean(numericResults)),
+            cy: y(mean(numericResults)),
             r: Math.min(x(boxPlotWidth / 3), 10)
         })
         .style({
@@ -101,7 +104,7 @@ export default function addBoxPlot(chart, group, boxInsideColor = '#eee', precis
         .attr({
             class: 'boxplot mean',
             cx: x(0.5),
-            cy: y(d3.mean(numericResults)),
+            cy: y(mean(numericResults)),
             r: Math.min(x(boxPlotWidth / 6), 5)
         })
         .style({
@@ -110,9 +113,9 @@ export default function addBoxPlot(chart, group, boxInsideColor = '#eee', precis
         });
 
     //Annotate statistics.
-    const format0 = d3.format(`.${precision + 0}f`);
-    const format1 = d3.format(`.${precision + 1}f`);
-    const format2 = d3.format(`.${precision + 2}f`);
+    const format0 = format(`.${precision + 0}f`);
+    const format1 = format(`.${precision + 1}f`);
+    const format2 = format(`.${precision + 2}f`);
     boxplot
         .selectAll('.boxplot')
         .append('title')
@@ -121,22 +124,22 @@ export default function addBoxPlot(chart, group, boxInsideColor = '#eee', precis
                 'N = ' +
                 d.values.length +
                 '\nMin = ' +
-                d3.min(d.values) +
+                min(d.values) +
                 '\n5th % = ' +
-                format1(d3.quantile(d.values, 0.05)) +
+                format1(quantile(d.values, 0.05)) +
                 '\nQ1 = ' +
-                format1(d3.quantile(d.values, 0.25)) +
+                format1(quantile(d.values, 0.25)) +
                 '\nMedian = ' +
-                format1(d3.median(d.values)) +
+                format1(median(d.values)) +
                 '\nQ3 = ' +
-                format1(d3.quantile(d.values, 0.75)) +
+                format1(quantile(d.values, 0.75)) +
                 '\n95th % = ' +
-                format1(d3.quantile(d.values, 0.95)) +
+                format1(quantile(d.values, 0.95)) +
                 '\nMax = ' +
-                d3.max(d.values) +
+                max(d.values) +
                 '\nMean = ' +
-                format1(d3.mean(d.values)) +
+                format1(mean(d.values)) +
                 '\nStDev = ' +
-                format2(d3.deviation(d.values))
+                format2(deviation(d.values))
         );
 }

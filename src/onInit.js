@@ -1,12 +1,11 @@
 import { set } from 'd3';
-import { dataOps } from 'webcharts';
 
 export default function onInit() {
     const config = this.config;
 
     //'All'variable for non-grouped comparisons
     this.raw_data.forEach(d => {
-        d.NONE = 'All Subjects';
+        d.NONE = 'All Participants';
     });
 
     //Drop missing values
@@ -43,7 +42,7 @@ export default function onInit() {
         if (d.type != 'subsetter') {
             return true;
         } else {
-            var levels = d3.set(chart.raw_data.map(f => f[d.value_col])).values();
+            var levels = set(chart.raw_data.map(f => f[d.value_col])).values();
             if (levels.length < 2) {
                 console.warn(
                     d.value_col + ' filter not shown since the variable has less than 2 levels'

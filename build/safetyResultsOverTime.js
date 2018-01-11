@@ -4,7 +4,7 @@
         : typeof define === 'function' && define.amd
           ? define(['webcharts', 'd3'], factory)
           : (global.safetyResultsOverTime = factory(global.webCharts, global.d3));
-})(this, function(webcharts, d3$1) {
+})(this, function(webcharts, d3) {
     'use strict';
 
     if (typeof Object.assign != 'function') {
@@ -48,8 +48,8 @@
         normal_col_low: 'STNRLO',
         normal_col_high: 'STNRHI',
         start_value: null,
-        groups: [{ value_col: 'NONE', label: 'None' }],
         filters: null,
+        groups: null,
         boxplots: true,
         violins: false,
         missingValues: ['', 'NA', 'N/A'],
@@ -97,11 +97,11 @@
         settings.x.label = settings.time_settings.label;
         settings.x.order = settings.time_settings.order;
         settings.y.column = settings.value_col;
-        if (settings.groups)
-            settings.color_by = settings.groups[0].value_col
-                ? settings.groups[0].value_col
-                : settings.groups[0];
-        else settings.color_by = 'NONE';
+        if (!(settings.groups instanceof Array && settings.groups.length))
+            settings.groups = [{ value_col: 'NONE', label: 'None' }];
+        settings.color_by = settings.groups[0].value_col
+            ? settings.groups[0].value_col
+            : settings.groups[0];
         settings.marks[0].per = [settings.color_by];
         settings.margin = settings.margin || { bottom: settings.time_settings.vertical_space };
 
@@ -123,9 +123,11 @@
             description: 'stratification',
             options: ['marks.0.per.0', 'color_by'],
             start: null, // set in syncControlInputs()
-            values: null, // set in syncControlInputs()
+            values: ['NONE'], // set in syncControlInputs()
             require: true
         },
+        { type: 'number', label: 'Lower Limit', option: 'y.domain[0]', require: true },
+        { type: 'number', label: 'Upper Limit', option: 'y.domain[1]', require: true },
         {
             type: 'radio',
             label: 'Hide visits with no data:',
@@ -140,21 +142,25 @@
 
     // Map values from settings to control inputs
     function syncControlInputs(controlInputs, settings) {
-        //Sync measure control.
         var measureControl = controlInputs.filter(function(controlInput) {
-            return controlInput.label === 'Measure';
-        })[0];
+                return controlInput.label === 'Measure';
+            })[0],
+            groupControl = controlInputs.filter(function(controlInput) {
+                return controlInput.label === 'Group';
+            })[0];
+
+        //Sync measure control.
         measureControl.value_col = settings.measure_col;
         measureControl.start = settings.start_value;
 
         //Sync group control.
-        var groupControl = controlInputs.filter(function(controlInput) {
-            return controlInput.label === 'Group';
-        })[0];
         groupControl.start = settings.color_by;
-        if (settings.groups)
-            groupControl.values = settings.groups.map(function(group) {
-                return group.value_col ? group.value_col : group;
+        settings.groups
+            .filter(function(group) {
+                return group.value_col !== 'NONE';
+            })
+            .forEach(function(group) {
+                groupControl.values.push(group.value_col || group);
             });
 
         //Add custom filters to control inputs.
@@ -192,11 +198,11 @@
 
         //'All'variable for non-grouped comparisons
         this.raw_data.forEach(function(d) {
-            d.NONE = 'All Subjects';
+            d.NONE = 'All Participants';
         });
 
         //Drop missing values
-        this.populationCount = d3$1
+        this.populationCount = d3
             .set(
                 this.raw_data.map(function(d) {
                     return d[config.id_col];
@@ -208,7 +214,7 @@
         });
 
         //Remove measures with any non-numeric results.
-        var allMeasures = d3$1
+        var allMeasures = d3
                 .set(
                     this.raw_data.map(function(m) {
                         return m[config.measure_col];
@@ -276,12 +282,74 @@
             this.config.start_value || conMeasures[0];
     }
 
+    function addResetButton() {
+        var context = this,
+            resetContainer = this.controls.wrap
+                .insert('div', '#lower-limit')
+                .classed('control-group y-axis', true)
+                .datum({
+                    type: 'button',
+                    option: 'y.domain',
+                    label: 'Y-axis:'
+                }),
+            resetLabel = resetContainer
+                .append('span')
+                .attr('class', 'control-label')
+                .style('text-align', 'right')
+                .text('Y-axis:'),
+            resetButton = resetContainer
+                .append('button')
+                .text('Reset Limits')
+                .on('click', function() {
+                    var measure_data = context.raw_data.filter(function(d) {
+                        return d[context.config.measure_col] === context.currentMeasure;
+                    });
+                    context.config.y.domain = d3.extent(measure_data, function(d) {
+                        return +d[context.config.value_col];
+                    }); //reset axis to full range
+
+                    context.controls.wrap
+                        .selectAll('.control-group')
+                        .filter(function(f) {
+                            return f.option === 'y.domain[0]';
+                        })
+                        .select('input')
+                        .property('value', context.config.y.domain[0]);
+
+                    context.controls.wrap
+                        .selectAll('.control-group')
+                        .filter(function(f) {
+                            return f.option === 'y.domain[1]';
+                        })
+                        .select('input')
+                        .property('value', context.config.y.domain[1]);
+
+                    context.draw();
+                });
+    }
+
     function onLayout() {
         //Add population count container.
         this.controls.wrap
             .append('div')
             .attr('id', 'populationCount')
             .style('font-style', 'italic');
+
+        //Distinguish controls to insert y-axis reset button in the correct position.
+        this.controls.wrap.selectAll('.control-group').attr('id', function(d) {
+            return d.label.toLowerCase().replace(' ', '-');
+        });
+
+        //Add a button to reset the y-domain
+        addResetButton.call(this);
+
+        //Add y-axis class to y-axis limit controls.
+        this.controls.wrap
+            .selectAll('.control-group')
+            .filter(function(d) {
+                return ['Lower Limit', 'Upper Limit'].indexOf(d.label) > -1;
+            })
+            .classed('y-axis', true);
     }
 
     function onPreprocess() {
@@ -333,6 +401,51 @@
                     return +d[_this.config.y.column];
                 })
             );
+
+        //Check if the selected measure has changed.
+        var prevMeasure = this.currentMeasure;
+        this.currentMeasure = this.controls.wrap
+            .selectAll('.control-group')
+            .filter(function(d) {
+                return d.value_col && d.value_col === _this.config.measure_col;
+            })
+            .select('option:checked')
+            .text();
+        var changedMeasureFlag = this.currentMeasure !== prevMeasure;
+
+        //Set y-axis domain.
+        if (changedMeasureFlag) {
+            //reset axis to full range when measure changes
+            this.config.y.domain = d3.extent(this.measure_data, function(d) {
+                return +d[_this.config.value_col];
+            });
+            this.controls.wrap
+                .selectAll('.y-axis')
+                .property(
+                    'title',
+                    'Initial Limits: [' +
+                        this.config.y.domain[0] +
+                        ' - ' +
+                        this.config.y.domain[1] +
+                        ']'
+                );
+
+            //Set y-axis domain controls.
+            this.controls.wrap
+                .selectAll('.control-group')
+                .filter(function(f) {
+                    return f.option === 'y.domain[0]';
+                })
+                .select('input')
+                .property('value', this.config.y.domain[0]);
+            this.controls.wrap
+                .selectAll('.control-group')
+                .filter(function(f) {
+                    return f.option === 'y.domain[1]';
+                })
+                .select('input')
+                .property('value', this.config.y.domain[1]);
+        }
     }
 
     function onDataTransform() {
@@ -342,6 +455,7 @@
             ' (' +
             this.measure_data[0][this.config.unit_col] +
             ')';
+
         //Redefine legend label.
         var group_value_cols = this.config.groups.map(function(group) {
             return group.value_col ? group.value_col : group;
@@ -363,7 +477,7 @@
     // - chart - a webcharts chart object
     // - selector - css selector for the annotation
     // - id_unit - a text string to label the units in the annotation (default = "participants")
-    function updateSubjectCount(chart, selector, id_unit) {
+    function updateParticipantCount(chart, selector, id_unit) {
         //count the number of unique ids in the current chart and calculate the percentage
         var currentObs = d3
             .set(
@@ -395,9 +509,40 @@
         );
     }
 
+    function updateYdomain() {
+        var yMinSelect = this.controls.wrap
+            .selectAll('.control-group')
+            .filter(function(f) {
+                return f.option === 'y.domain[0]';
+            })
+            .select('input');
+
+        var yMaxSelect = this.controls.wrap
+            .selectAll('.control-group')
+            .filter(function(f) {
+                return f.option === 'y.domain[1]';
+            })
+            .select('input');
+
+        //switch the values if min > max
+        var range = [yMinSelect.node().value, yMaxSelect.node().value].sort(function(a, b) {
+            return a - b;
+        });
+        yMinSelect.node().value = range[0];
+        yMaxSelect.node().value = range[1];
+
+        //apply custom domain to the this
+        this.config.y.domain = range;
+        this.y_dom = range;
+    }
+
     function onDraw() {
         var _this = this;
 
+        //Annotate population count.
+        updateParticipantCount(this, '#populationCount');
+
+        //idk
         this.marks[0].data.forEach(function(d) {
             d.values.sort(function(a, b) {
                 return a.key === 'NA' ? 1 : b.key === 'NA' ? -1 : d3.ascending(a.key, b.key);
@@ -424,7 +569,7 @@
         this.svg.selectAll('.y .tick').remove();
 
         //Make nested data set for boxplots
-        this.nested_data = d3$1
+        this.nested_data = d3
             .nest()
             .key(function(d) {
                 return d[_this.config.x.column];
@@ -439,8 +584,15 @@
             })
             .entries(this.filtered_data);
 
-        //Annotate population count.
-        updateSubjectCount(this, '#populationCount');
+        //hack to avoid domains with 0 extent
+        if (this.y_dom[0] == this.y_dom[1]) {
+            var jitter = this.y_dom[0] / 10;
+            this.y_dom[0] = this.y_dom[0] - jitter;
+            this.y_dom[1] = this.y_dom[1] + jitter;
+        }
+
+        //update the y domain using the custom controsl
+        updateYdomain.call(this);
     }
 
     function addBoxPlot(chart, group) {
@@ -484,7 +636,8 @@
             .datum({
                 values: numericResults,
                 probs: probs
-            });
+            })
+            .attr('clip-path', 'url(#' + chart.id + ')');
         var left = x(0.5 - boxPlotWidth / 2);
         var right = x(0.5 + boxPlotWidth / 2);
 
@@ -662,9 +815,13 @@
             .y(function(d) {
                 return y(d.y);
             });
+        var violinplot = group.svg
+            .append('g')
+            .attr('class', 'violinplot')
+            .attr('clip-path', 'url(#' + chart.id + ')');
 
         //Define left half of violin plot.
-        var gMinus = group.svg.append('g').attr('transform', 'rotate(90,0,0) scale(1,-1)');
+        var gMinus = violinplot.append('g').attr('transform', 'rotate(90,0,0) scale(1,-1)');
         gMinus
             .append('path')
             .datum(data)
@@ -685,7 +842,7 @@
             });
 
         //Define right half of violin plot.
-        var gPlus = group.svg
+        var gPlus = violinplot
             .append('g')
             .attr('transform', 'rotate(90,0,0) translate(0,-' + width + ')');
         gPlus
@@ -744,6 +901,9 @@
         var _this = this;
 
         var config = this.config;
+
+        //Remove legend when chart is ungrouped.
+        if (this.config.color_by === 'NONE') this.wrap.select('.legend').remove();
 
         //Hide Group control if only one grouping is specified.
         var groupControl = this.controls.wrap
@@ -835,7 +995,7 @@
                 group.offset =
                     group.direction * group.multiplier * group.distance + group.distanceOffset;
                 //Capture all results within visit and group.
-                group.results = v.values.sort(d3$1.ascending).map(function(d) {
+                group.results = v.values.sort(d3.ascending).map(function(d) {
                     return +d;
                 });
 
@@ -850,28 +1010,26 @@
 
                     if (config.boxplots) addBoxPlot(_this, group);
 
-                    if (config.violins) addViolinPlot(_this, group);
+                    if (config.violins) addViolinPlot(_this, group, _this.colorScale(group.key));
                 }
             });
         });
     }
 
     function safetyResultsOverTime(element, settings) {
-        //Merge user settings onto default settings.
-        var mergedSettings = Object.assign({}, defaultSettings, settings);
+        var mergedSettings = Object.assign({}, defaultSettings, settings),
+            //Merge user settings onto default settings.
+            syncedSettings = syncSettings(mergedSettings),
+            //Sync properties within merged settings, e.g. data mappings.
+            syncedControlInputs = syncControlInputs(controlInputs, syncedSettings),
+            //Sync merged settings with controls.
+            controls = webcharts.createControls(element, {
+                location: 'top',
+                inputs: syncedControlInputs
+            }),
+            //Define controls.
+            chart = webcharts.createChart(element, mergedSettings, controls); //Define chart.
 
-        //Sync properties within merged settings, e.g. data mappings.
-        mergedSettings = syncSettings(mergedSettings);
-
-        //Sync merged settings with controls.
-        var syncedControlInputs = syncControlInputs(controlInputs, mergedSettings);
-        var controls = webcharts.createControls(element, {
-            location: 'top',
-            inputs: syncedControlInputs
-        });
-
-        //Define chart.
-        var chart = webcharts.createChart(element, mergedSettings, controls);
         chart.on('init', onInit);
         chart.on('layout', onLayout);
         chart.on('preprocess', onPreprocess);

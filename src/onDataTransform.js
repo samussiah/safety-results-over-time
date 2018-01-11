@@ -3,6 +3,7 @@ export default function onDataTransform() {
     this.config.y.label = `${this.measure_data[0][this.config.measure_col]} (${this.measure_data[0][
         this.config.unit_col
     ]})`;
+
     //Redefine legend label.
     const group_value_cols = this.config.groups.map(
         group => (group.value_col ? group.value_col : group)
