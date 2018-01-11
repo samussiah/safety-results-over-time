@@ -33,7 +33,8 @@ export default function addBoxPlot(chart, group, boxInsideColor = '#eee', precis
         .datum({
             values: numericResults,
             probs: probs
-        });
+        })
+        .attr('clip-path', `url(#${chart.id})`);
     const left = x(0.5 - boxPlotWidth / 2);
     const right = x(0.5 + boxPlotWidth / 2);
 

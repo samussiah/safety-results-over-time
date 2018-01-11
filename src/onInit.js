@@ -5,7 +5,7 @@ export default function onInit() {
 
     //'All'variable for non-grouped comparisons
     this.raw_data.forEach(d => {
-        d.NONE = 'All Subjects';
+        d.NONE = 'All Participants';
     });
 
     //Drop missing values

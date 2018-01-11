@@ -6,6 +6,9 @@ import adjustTicks from './onResize/adjustTicks';
 export default function onResize() {
     const config = this.config;
 
+    //Remove legend when chart is ungrouped.
+    if (this.config.color_by === 'NONE') this.wrap.select('.legend').remove();
+
     //Hide Group control if only one grouping is specified.
     const groupControl = this.controls.wrap
         .selectAll('.control-group')

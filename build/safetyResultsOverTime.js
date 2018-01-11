@@ -48,8 +48,8 @@
         normal_col_low: 'STNRLO',
         normal_col_high: 'STNRHI',
         start_value: null,
-        groups: [{ value_col: 'NONE', label: 'None' }],
         filters: null,
+        groups: null,
         boxplots: true,
         violins: false,
         missingValues: ['', 'NA', 'N/A'],
@@ -97,11 +97,11 @@
         settings.x.label = settings.time_settings.label;
         settings.x.order = settings.time_settings.order;
         settings.y.column = settings.value_col;
-        if (settings.groups)
-            settings.color_by = settings.groups[0].value_col
-                ? settings.groups[0].value_col
-                : settings.groups[0];
-        else settings.color_by = 'NONE';
+        if (!(settings.groups instanceof Array && settings.groups.length))
+            settings.groups = [{ value_col: 'NONE', label: 'None' }];
+        settings.color_by = settings.groups[0].value_col
+            ? settings.groups[0].value_col
+            : settings.groups[0];
         settings.marks[0].per = [settings.color_by];
         settings.margin = settings.margin || { bottom: settings.time_settings.vertical_space };
 
@@ -155,8 +155,11 @@
 
         //Sync group control.
         groupControl.start = settings.color_by;
-        if (settings.groups)
-            settings.groups.forEach(function(group) {
+        settings.groups
+            .filter(function(group) {
+                return group.value_col !== 'NONE';
+            })
+            .forEach(function(group) {
                 groupControl.values.push(group.value_col || group);
             });
 
@@ -195,7 +198,7 @@
 
         //'All'variable for non-grouped comparisons
         this.raw_data.forEach(function(d) {
-            d.NONE = 'All Subjects';
+            d.NONE = 'All Participants';
         });
 
         //Drop missing values
@@ -452,6 +455,7 @@
             ' (' +
             this.measure_data[0][this.config.unit_col] +
             ')';
+
         //Redefine legend label.
         var group_value_cols = this.config.groups.map(function(group) {
             return group.value_col ? group.value_col : group;
@@ -473,7 +477,7 @@
     // - chart - a webcharts chart object
     // - selector - css selector for the annotation
     // - id_unit - a text string to label the units in the annotation (default = "participants")
-    function updateSubjectCount(chart, selector, id_unit) {
+    function updateParticipantCount(chart, selector, id_unit) {
         //count the number of unique ids in the current chart and calculate the percentage
         var currentObs = d3
             .set(
@@ -536,7 +540,7 @@
         var _this = this;
 
         //Annotate population count.
-        updateSubjectCount(this, '#populationCount');
+        updateParticipantCount(this, '#populationCount');
 
         //idk
         this.marks[0].data.forEach(function(d) {
@@ -632,7 +636,8 @@
             .datum({
                 values: numericResults,
                 probs: probs
-            });
+            })
+            .attr('clip-path', 'url(#' + chart.id + ')');
         var left = x(0.5 - boxPlotWidth / 2);
         var right = x(0.5 + boxPlotWidth / 2);
 
@@ -810,9 +815,13 @@
             .y(function(d) {
                 return y(d.y);
             });
+        var violinplot = group.svg
+            .append('g')
+            .attr('class', 'violinplot')
+            .attr('clip-path', 'url(#' + chart.id + ')');
 
         //Define left half of violin plot.
-        var gMinus = group.svg.append('g').attr('transform', 'rotate(90,0,0) scale(1,-1)');
+        var gMinus = violinplot.append('g').attr('transform', 'rotate(90,0,0) scale(1,-1)');
         gMinus
             .append('path')
             .datum(data)
@@ -833,7 +842,7 @@
             });
 
         //Define right half of violin plot.
-        var gPlus = group.svg
+        var gPlus = violinplot
             .append('g')
             .attr('transform', 'rotate(90,0,0) translate(0,-' + width + ')');
         gPlus
@@ -883,7 +892,7 @@
                     '\nMean = ' +
                     format1(d3.mean(group.results)) +
                     '\nStDev = ' +
-                    format2(deviation(group.results))
+                    format2(d3.deviation(group.results))
                 );
             });
     }
@@ -892,6 +901,9 @@
         var _this = this;
 
         var config = this.config;
+
+        //Remove legend when chart is ungrouped.
+        if (this.config.color_by === 'NONE') this.wrap.select('.legend').remove();
 
         //Hide Group control if only one grouping is specified.
         var groupControl = this.controls.wrap

@@ -14,8 +14,8 @@ const defaultSettings = {
     normal_col_low: 'STNRLO',
     normal_col_high: 'STNRHI',
     start_value: null,
-    groups: [{ value_col: 'NONE', label: 'None' }],
     filters: null,
+    groups: null,
     boxplots: true,
     violins: false,
     missingValues: ['', 'NA', 'N/A'],
@@ -63,11 +63,11 @@ export function syncSettings(settings) {
     settings.x.label = settings.time_settings.label;
     settings.x.order = settings.time_settings.order;
     settings.y.column = settings.value_col;
-    if (settings.groups)
-        settings.color_by = settings.groups[0].value_col
-            ? settings.groups[0].value_col
-            : settings.groups[0];
-    else settings.color_by = 'NONE';
+    if (!(settings.groups instanceof Array && settings.groups.length))
+        settings.groups = [{ value_col: 'NONE', label: 'None' }];
+    settings.color_by = settings.groups[0].value_col
+        ? settings.groups[0].value_col
+        : settings.groups[0];
     settings.marks[0].per = [settings.color_by];
     settings.margin = settings.margin || { bottom: settings.time_settings.vertical_space };
 
@@ -119,10 +119,9 @@ export function syncControlInputs(controlInputs, settings) {
 
     //Sync group control.
     groupControl.start = settings.color_by;
-    if (settings.groups)
-        settings.groups.forEach(group => {
-            groupControl.values.push(group.value_col || group);
-        });
+    settings.groups.filter(group => group.value_col !== 'NONE').forEach(group => {
+        groupControl.values.push(group.value_col || group);
+    });
 
     //Add custom filters to control inputs.
     if (settings.filters) {

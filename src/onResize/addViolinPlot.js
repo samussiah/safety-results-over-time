@@ -1,4 +1,4 @@
-import { layout, min, max, scale, svg, format, mean, median, quantile } from 'd3';
+import { layout, min, max, scale, svg, format, mean, median, quantile, deviation } from 'd3';
 
 export default function addViolinPlot(chart, group, violinColor = '#ccc7d6', precision = 0) {
     //Define histogram data.
@@ -47,9 +47,13 @@ export default function addViolinPlot(chart, group, violinColor = '#ccc7d6', pre
         .interpolate('basis')
         .x(d => x(d.x + d.dx / 2))
         .y(d => y(d.y));
+    const violinplot = group.svg
+        .append('g')
+        .attr('class', 'violinplot')
+        .attr('clip-path', `url(#${chart.id})`);
 
     //Define left half of violin plot.
-    const gMinus = group.svg.append('g').attr('transform', 'rotate(90,0,0) scale(1,-1)');
+    const gMinus = violinplot.append('g').attr('transform', 'rotate(90,0,0) scale(1,-1)');
     gMinus
         .append('path')
         .datum(data)
@@ -70,7 +74,7 @@ export default function addViolinPlot(chart, group, violinColor = '#ccc7d6', pre
         });
 
     //Define right half of violin plot.
-    const gPlus = group.svg
+    const gPlus = violinplot
         .append('g')
         .attr('transform', 'rotate(90,0,0) translate(0,-' + width + ')');
     gPlus

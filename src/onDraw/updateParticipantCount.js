@@ -7,7 +7,7 @@
 // - id_unit - a text string to label the units in the annotation (default = "participants")
 import { set, format, select } from 'd3';
 
-export default function updateSubjectCount(chart, selector, id_unit) {
+export default function updateParticipantCount(chart, selector, id_unit) {
     //count the number of unique ids in the current chart and calculate the percentage
     var currentObs = set(
         chart.filtered_data.map(function(d) {

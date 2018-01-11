@@ -1,10 +1,10 @@
 import { ascending, nest } from 'd3';
-import updateSubjectCount from './onDraw/updateSubjectCount';
+import updateParticipantCount from './onDraw/updateParticipantCount';
 import updateYdomain from './onDraw/updateYdomain';
 
 export default function onDraw() {
     //Annotate population count.
-    updateSubjectCount(this, '#populationCount');
+    updateParticipantCount(this, '#populationCount');
 
     //idk
     this.marks[0].data.forEach(d => {
