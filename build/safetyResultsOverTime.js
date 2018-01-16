@@ -191,107 +191,47 @@
         return controlInputs;
     }
 
-    function defineVisitOrder() {
+    function countParticipants() {
         var _this = this;
 
-        //Given an ordering variable sort a unique set of visits by the ordering variable.
-        if (
-            this.config.time_settings.order_col &&
-            this.raw_data[0].hasOwnProperty(this.config.time_settings.order_col)
-        ) {
-            var visits = d3
-                    .set(
-                        this.raw_data.map(function(d) {
-                            return (
-                                d[_this.config.time_settings.order_col] +
-                                '|' +
-                                d[_this.config.time_settings.value_col]
-                            );
-                        })
-                    )
-                    .values(),
-                // concatenate visit order variable and visit
-                visitOrder = visits
-                    .sort(function(a, b) {
-                        var aOrder = a.split('|')[0],
-                            bOrder = b.split('|')[0],
-                            diff = +aOrder - +bOrder;
-                        return diff ? diff : d3.ascending(a, b);
-                    })
-                    .map(function(visit) {
-                        return visit.split('|')[1];
-                    });
-
-            //If a visit order is specified, use it and concatenate any unspecified visits at the end.
-            if (this.config.time_settings.order) {
-                this.config.x.order = this.config.time_settings.order.concat(
-                    visitOrder.filter(function(visit) {
-                        return _this.config.time_settings.order.indexOf(visit) < 0;
-                    })
-                );
-            } else
-                //Otherwise use data-driven visit order.
-                this.config.x.order = visitOrder;
-        } else
-            //Otherwise sort a unique set of visits alphanumerically.
-            this.config.x.order = d3
-                .set(
-                    this.raw_data.map(function(d) {
-                        return d[_this.config.time_settings.value_col];
-                    })
-                )
-                .values()
-                .sort();
-    }
-
-    function onInit() {
-        var _this = this;
-
-        var config = this.config;
-
-        //'All'variable for non-grouped comparisons
-        this.raw_data.forEach(function(d) {
-            d.NONE = 'All Participants';
-        });
-
-        //Drop missing values
         this.populationCount = d3
             .set(
                 this.raw_data.map(function(d) {
-                    return d[config.id_col];
+                    return d[_this.config.id_col];
                 })
             )
             .values().length;
-        this.raw_data = this.raw_data.filter(function(f) {
-            return config.missingValues.indexOf(f[config.value_col]) === -1;
-        });
+    }
 
-        //Remove measures with any non-numeric results.
+    function cleanData() {
+        var _this = this;
+
         var allMeasures = d3
                 .set(
                     this.raw_data.map(function(m) {
-                        return m[config.measure_col];
+                        return m[_this.config.measure_col];
                     })
                 )
-                .values(),
+                .values()
+                .filter(function(measure) {
+                    return _this.config.missingValues.indexOf(measure) === -1;
+                }),
             catMeasures = allMeasures.filter(function(measure) {
                 var allObservations = _this.raw_data
                         .filter(function(d) {
-                            return d[config.measure_col] === measure;
+                            return d[_this.config.measure_col] === measure;
                         })
                         .map(function(d) {
-                            return d[config.value_col];
+                            return d[_this.config.value_col];
                         }),
                     numericObservations = allObservations.filter(function(d) {
                         return /^-?[0-9.]+$/.test(d);
                     });
 
                 return numericObservations.length < allObservations.length;
-            }),
-            conMeasures = allMeasures.filter(function(measure) {
-                return catMeasures.indexOf(measure) === -1;
             });
 
+        //Warn user of non-numeric endpoints.
         if (catMeasures.length)
             console.warn(
                 catMeasures.length +
@@ -301,41 +241,149 @@
                     catMeasures.join(', ')
             );
 
+        //Attach array of continuous measures to chart object.
+        this.measures = allMeasures
+            .filter(function(measure) {
+                return catMeasures.indexOf(measure) === -1;
+            })
+            .sort();
+
+        //Remove dirty data.
         this.raw_data = this.raw_data.filter(function(d) {
-            return catMeasures.indexOf(d[config.measure_col]) === -1;
+            return (
+                _this.config.missingValues.indexOf(d[_this.config.value_col]) === -1 &&
+                catMeasures.indexOf(d[_this.config.measure_col]) === -1
+            );
         });
+    }
 
-        //Define visit order with visit order variable.
-        defineVisitOrder.call(this);
+    function addVariables() {
+        this.raw_data.forEach(function(d) {
+            d.NONE = 'All Participants'; // placeholder variable for non-grouped comparisons
+        });
+    }
 
-        // Remove filters for variables with 0 or 1 levels
-        var chart = this;
+    function defineVisitOrder() {
+        var _this = this;
 
-        this.controls.config.inputs = this.controls.config.inputs.filter(function(d) {
-            if (d.type != 'subsetter') {
+        var visits = void 0,
+            visitOrder = void 0;
+
+        //Given an ordering variable sort a unique set of visits by the ordering variable.
+        if (
+            this.config.time_settings.order_col &&
+            this.raw_data[0].hasOwnProperty(this.config.time_settings.order_col)
+        ) {
+            //Define a unique set of visits with visit order concatenated.
+            visits = d3
+                .set(
+                    this.raw_data.map(function(d) {
+                        return (
+                            d[_this.config.time_settings.order_col] +
+                            '|' +
+                            d[_this.config.time_settings.value_col]
+                        );
+                    })
+                )
+                .values();
+
+            //Sort visits.
+            visitOrder = visits
+                .sort(function(a, b) {
+                    var aOrder = a.split('|')[0],
+                        bOrder = b.split('|')[0],
+                        diff = +aOrder - +bOrder;
+                    return diff ? diff : d3.ascending(a, b);
+                })
+                .map(function(visit) {
+                    return visit.split('|')[1];
+                });
+        } else {
+            //Otherwise sort a unique set of visits alphanumerically.
+            //Define a unique set of visits.
+            visits = d3
+                .set(
+                    this.raw_data.map(function(d) {
+                        return d[_this.config.time_settings.value_col];
+                    })
+                )
+                .values();
+
+            //Sort visits;
+            visitOrder = visits.sort();
+        }
+
+        //Set x-axis domain.
+        if (this.config.time_settings.order) {
+            //If a visit order is specified, use it and concatenate any unspecified visits at the end.
+            this.config.x.order = this.config.time_settings.order.concat(
+                visitOrder.filter(function(visit) {
+                    return _this.config.time_settings.order.indexOf(visit) < 0;
+                })
+            );
+        } else
+            //Otherwise use data-driven visit order.
+            this.config.x.order = visitOrder;
+    }
+
+    function checkFilters() {
+        var _this = this;
+
+        this.controls.config.inputs = this.controls.config.inputs.filter(function(input) {
+            if (input.type != 'subsetter') {
                 return true;
+            } else if (!_this.raw_data[0].hasOwnProperty(input.value_col)) {
+                console.warn(
+                    'The [ ' +
+                        input.label +
+                        ' ] filter has been removed because the variable does not exist.'
+                );
             } else {
                 var levels = d3
                     .set(
-                        chart.raw_data.map(function(f) {
-                            return f[d.value_col];
+                        _this.raw_data.map(function(d) {
+                            return d[input.value_col];
                         })
                     )
                     .values();
-                if (levels.length < 2) {
+
+                if (levels.length === 1)
                     console.warn(
-                        d.value_col + ' filter not shown since the variable has less than 2 levels'
+                        'The [ ' +
+                            input.label +
+                            ' ] filter has been removed because the variable has only one level.'
                     );
-                }
-                return levels.length >= 2;
+
+                return levels.length > 1;
             }
         });
+    }
 
-        //Choose the start value for the Test filter
+    function setInitialMeasure() {
         this.controls.config.inputs.filter(function(input) {
             return input.label === 'Measure';
         })[0].start =
-            this.config.start_value || conMeasures[0];
+            this.config.start_value || this.measures[0];
+    }
+
+    function onInit() {
+        //Count total participants prior to data cleaning.
+        countParticipants.call(this);
+
+        //Drop missing values and remove measures with any non-numeric results.
+        cleanData.call(this);
+
+        //Define additional variables.
+        addVariables.call(this);
+
+        //Define ordered x-axis domain with visit order variable.
+        defineVisitOrder.call(this);
+
+        //Remove filters for nonexistent or single-level variables.
+        checkFilters.call(this);
+
+        //Choose the start value for the Test filter
+        setInitialMeasure.call(this);
     }
 
     function addResetButton() {
