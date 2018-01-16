@@ -1,4 +1,5 @@
 import { set } from 'd3';
+import defineVisitOrder from './onInit/defineVisitOrder';
 
 export default function onInit() {
     const config = this.config;
@@ -28,12 +29,15 @@ export default function onInit() {
 
     if (catMeasures.length)
         console.warn(
-            `${catMeasures.length} non-numeric endpoint${
-                catMeasures.length > 1 ? 's have' : ' has'
-            } been removed: ${catMeasures.join(', ')}`
+            `${catMeasures.length} non-numeric endpoint${catMeasures.length > 1
+                ? 's have'
+                : ' has'} been removed: ${catMeasures.join(', ')}`
         );
 
     this.raw_data = this.raw_data.filter(d => catMeasures.indexOf(d[config.measure_col]) === -1);
+
+    //Define visit order with visit order variable.
+    defineVisitOrder.call(this);
 
     // Remove filters for variables with 0 or 1 levels
     var chart = this;

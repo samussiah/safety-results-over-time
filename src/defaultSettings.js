@@ -2,11 +2,12 @@ const defaultSettings = {
     //Custom settings for this template
     id_col: 'USUBJID',
     time_settings: {
-        value_col: 'VISITN',
-        label: 'Visit Number',
-        order: null, // x-axis domain order (array)
-        rotate_tick_labels: false,
-        vertical_space: 0
+        value_col: 'VISIT',
+        label: 'Visit',
+        order_col: 'VISITNUM',
+        order: null,
+        rotate_tick_labels: true,
+        vertical_space: 100
     },
     measure_col: 'TEST',
     value_col: 'STRESN',
@@ -61,7 +62,6 @@ const defaultSettings = {
 export function syncSettings(settings) {
     settings.x.column = settings.time_settings.value_col;
     settings.x.label = settings.time_settings.label;
-    settings.x.order = settings.time_settings.order;
     settings.y.column = settings.value_col;
     if (!(settings.groups instanceof Array && settings.groups.length))
         settings.groups = [{ value_col: 'NONE', label: 'None' }];

@@ -36,11 +36,12 @@
         //Custom settings for this template
         id_col: 'USUBJID',
         time_settings: {
-            value_col: 'VISITN',
-            label: 'Visit Number',
-            order: null, // x-axis domain order (array)
-            rotate_tick_labels: false,
-            vertical_space: 0
+            value_col: 'VISIT',
+            label: 'Visit',
+            order_col: 'VISITNUM',
+            order: null,
+            rotate_tick_labels: true,
+            vertical_space: 100
         },
         measure_col: 'TEST',
         value_col: 'STRESN',
@@ -95,7 +96,6 @@
     function syncSettings(settings) {
         settings.x.column = settings.time_settings.value_col;
         settings.x.label = settings.time_settings.label;
-        settings.x.order = settings.time_settings.order;
         settings.y.column = settings.value_col;
         if (!(settings.groups instanceof Array && settings.groups.length))
             settings.groups = [{ value_col: 'NONE', label: 'None' }];
@@ -191,6 +191,59 @@
         return controlInputs;
     }
 
+    function defineVisitOrder() {
+        var _this = this;
+
+        //Given an ordering variable sort a unique set of visits by the ordering variable.
+        if (
+            this.config.time_settings.order_col &&
+            this.raw_data[0].hasOwnProperty(this.config.time_settings.order_col)
+        ) {
+            var visits = d3
+                    .set(
+                        this.raw_data.map(function(d) {
+                            return (
+                                d[_this.config.time_settings.order_col] +
+                                '|' +
+                                d[_this.config.time_settings.value_col]
+                            );
+                        })
+                    )
+                    .values(),
+                // concatenate visit order variable and visit
+                visitOrder = visits
+                    .sort(function(a, b) {
+                        var aOrder = a.split('|')[0],
+                            bOrder = b.split('|')[0],
+                            diff = +aOrder - +bOrder;
+                        return diff ? diff : d3.ascending(a, b);
+                    })
+                    .map(function(visit) {
+                        return visit.split('|')[1];
+                    });
+
+            //If a visit order is specified, use it and concatenate any unspecified visits at the end.
+            if (this.config.time_settings.order) {
+                this.config.x.order = this.config.time_settings.order.concat(
+                    visitOrder.filter(function(visit) {
+                        return _this.config.time_settings.order.indexOf(visit) < 0;
+                    })
+                );
+            } else
+                //Otherwise use data-driven visit order.
+                this.config.x.order = visitOrder;
+        } else
+            //Otherwise sort a unique set of visits alphanumerically.
+            this.config.x.order = d3
+                .set(
+                    this.raw_data.map(function(d) {
+                        return d[_this.config.time_settings.value_col];
+                    })
+                )
+                .values()
+                .sort();
+    }
+
     function onInit() {
         var _this = this;
 
@@ -251,6 +304,9 @@
         this.raw_data = this.raw_data.filter(function(d) {
             return catMeasures.indexOf(d[config.measure_col]) === -1;
         });
+
+        //Define visit order with visit order variable.
+        defineVisitOrder.call(this);
 
         // Remove filters for variables with 0 or 1 levels
         var chart = this;
