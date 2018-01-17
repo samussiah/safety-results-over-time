@@ -1,8 +1,8 @@
 export default function onDataTransform() {
     //Redefine y-axis label.
-    this.config.y.label = `${this.measure_data[0][this.config.measure_col]} (${this.measure_data[0][
-        this.config.unit_col
-    ]})`;
+    this.config.y.label = `${this.measure_data[0][this.config.measure_col]} (${
+        this.measure_data[0][this.config.unit_col]
+    })`;
 
     //Redefine legend label.
     const group_value_cols = this.config.groups.map(

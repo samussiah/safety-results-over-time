@@ -16,9 +16,9 @@ export default function cleanData() {
     //Warn user of non-numeric endpoints.
     if (catMeasures.length)
         console.warn(
-            `${catMeasures.length} non-numeric endpoint${catMeasures.length > 1
-                ? 's have'
-                : ' has'} been removed: ${catMeasures.join(', ')}`
+            `${catMeasures.length} non-numeric endpoint${
+                catMeasures.length > 1 ? 's have' : ' has'
+            } been removed: ${catMeasures.join(', ')}`
         );
 
     //Attach array of continuous measures to chart object.
