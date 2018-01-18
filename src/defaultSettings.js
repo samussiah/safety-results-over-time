@@ -20,6 +20,8 @@ const defaultSettings = {
     boxplots: true,
     violins: false,
     missingValues: ['', 'NA', 'N/A'],
+    unscheduled_visits: false,
+    unscheduled_visit_pattern: /unscheduled|early termination/i,
 
     //Standard webcharts settings
     x: {
@@ -65,6 +67,13 @@ export function syncSettings(settings) {
     settings.y.column = settings.value_col;
     if (!(settings.groups instanceof Array && settings.groups.length))
         settings.groups = [{ value_col: 'NONE', label: 'None' }];
+    else
+        settings.groups = settings.groups.map(group => {
+            return {
+                value_col: group.value_col || group,
+                label: group.label || group.value_col || group
+            };
+        });
     settings.color_by = settings.groups[0].value_col
         ? settings.groups[0].value_col
         : settings.groups[0];
@@ -94,16 +103,9 @@ export const controlInputs = [
     },
     { type: 'number', label: 'Lower Limit', option: 'y.domain[0]', require: true },
     { type: 'number', label: 'Upper Limit', option: 'y.domain[1]', require: true },
-    {
-        type: 'radio',
-        label: 'Hide visits with no data:',
-        option: 'x.behavior',
-        values: ['flex', 'raw'],
-        relabels: ['Yes', 'No'],
-        require: true
-    },
-    { type: 'checkbox', option: 'boxplots', label: 'Box plots', inline: true },
-    { type: 'checkbox', option: 'violins', label: 'Violin plots', inline: true }
+    { type: 'checkbox', inline: true, option: 'unscheduled_visits', label: 'Unscheduled visits' },
+    { type: 'checkbox', inline: true, option: 'boxplots', label: 'Box plots' },
+    { type: 'checkbox', inline: true, option: 'violins', label: 'Violin plots' }
 ];
 
 // Map values from settings to control inputs
@@ -120,7 +122,7 @@ export function syncControlInputs(controlInputs, settings) {
     //Sync group control.
     groupControl.start = settings.color_by;
     settings.groups.filter(group => group.value_col !== 'NONE').forEach(group => {
-        groupControl.values.push(group.value_col || group);
+        groupControl.values.push(group.value_col);
     });
 
     //Add custom filters to control inputs.
@@ -134,7 +136,6 @@ export function syncControlInputs(controlInputs, settings) {
             };
 
             //add the filter to the control inputs (as long as it's not already there)
-            //add the filter to the control inputs (as long as it isn't already there)
             var current_value_cols = controlInputs
                 .filter(f => f.type == 'subsetter')
                 .map(m => m.value_col);
@@ -142,6 +143,7 @@ export function syncControlInputs(controlInputs, settings) {
                 controlInputs.splice(1, 0, thisFilter);
         });
     }
+
     return controlInputs;
 }
 
