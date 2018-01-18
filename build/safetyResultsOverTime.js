@@ -229,9 +229,9 @@
         groups: null,
         boxplots: true,
         violins: false,
-        missingValues: ['', 'NA', 'N/A'],
         unscheduled_visits: false,
-        unscheduled_visit_pattern: /unscheduled|early termination/i,
+        unscheduled_visit_pattern: '/unscheduled|early termination/i',
+        missingValues: ['', 'NA', 'N/A'],
 
         //Standard webcharts settings
         x: {
@@ -290,6 +290,19 @@
         settings.marks[0].per = [settings.color_by];
         settings.margin = settings.margin || { bottom: settings.time_settings.vertical_space };
 
+        //Convert unscheduled_visit_pattern from string to regular expression.
+        if (
+            typeof settings.unscheduled_visit_pattern === 'string' &&
+            settings.unscheduled_visit_pattern !== ''
+        ) {
+            var flags = settings.unscheduled_visit_pattern.replace(/.*?\/([gimy]*)$/, '$1'),
+                pattern = settings.unscheduled_visit_pattern.replace(
+                    new RegExp('^/(.*?)/' + flags + '$'),
+                    '$1'
+                );
+            settings.unscheduled_visit_regex = new RegExp(pattern, flags);
+        }
+
         return settings;
     }
 
@@ -325,18 +338,17 @@
 
     // Map values from settings to control inputs
     function syncControlInputs(controlInputs, settings) {
-        var measureControl = controlInputs.filter(function(controlInput) {
-                return controlInput.label === 'Measure';
-            })[0],
-            groupControl = controlInputs.filter(function(controlInput) {
-                return controlInput.label === 'Group';
-            })[0];
-
         //Sync measure control.
+        var measureControl = controlInputs.filter(function(controlInput) {
+            return controlInput.label === 'Measure';
+        })[0];
         measureControl.value_col = settings.measure_col;
         measureControl.start = settings.start_value;
 
         //Sync group control.
+        var groupControl = controlInputs.filter(function(controlInput) {
+            return controlInput.label === 'Group';
+        })[0];
         groupControl.start = settings.color_by;
         settings.groups
             .filter(function(group) {
@@ -370,6 +382,17 @@
                     controlInputs.splice(1, 0, thisFilter);
             });
         }
+
+        //Remove unscheduled visit conrol if unscheduled visit pattern is unscpecified.
+        if (!settings.unscheduled_visit_pattern)
+            controlInputs.splice(
+                controlInputs
+                    .map(function(controlInput) {
+                        return controlInput.label;
+                    })
+                    .indexOf('Unscheduled visits'),
+                1
+            );
 
         return controlInputs;
     }
@@ -441,13 +464,8 @@
     }
 
     function addVariables() {
-        var _this = this;
-
         this.raw_data.forEach(function(d) {
             d.NONE = 'All Participants'; // placeholder variable for non-grouped comparisons
-            d.unscheduled = _this.config.unscheduled_visit_pattern.test(
-                d[_this.config.time_settings.value_col]
-            );
         });
     }
 
@@ -699,11 +717,11 @@
     function removeUnscheduledVisits() {
         var _this = this;
 
-        this.config.x.domain = this.config.unscheduled_visits
-            ? this.config.x.order
-            : this.config.x.order.filter(function(visit) {
-                  return !_this.config.unscheduled_visit_pattern.test(visit);
-              });
+        if (this.config.unscheduled_visit_regex && !this.config.unscheduled_visits)
+            this.config.x.domain = this.config.x.order.filter(function(visit) {
+                return !_this.config.unscheduled_visit_regex.test(visit);
+            });
+        else this.config.x.domain = this.config.x.order;
     }
 
     function setYdomain() {
