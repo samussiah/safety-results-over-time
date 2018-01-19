@@ -22,6 +22,7 @@ const defaultSettings = {
     missingValues: ['', 'NA', 'N/A'],
     visits_without_data: false,
     unscheduled_visits: false,
+    unscheduled_visit_values: null, // takes precedence over unscheduled_visit_pattern
     unscheduled_visit_pattern: /unscheduled|early termination/i,
 
     //Standard webcharts settings
