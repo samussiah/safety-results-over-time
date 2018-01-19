@@ -8,6 +8,8 @@ import setLegendLabel from './onPreprocess/setLegendLabel';
 import updateYaxisResetButton from './onPreprocess/updateYaxisResetButton';
 
 export default function onPreprocess() {
+    console.log(this.config.visits_without_data);
+    this.config.x.behavior = this.config.visits_without_data ? 'raw' : 'flex';
     // 1. Capture currently selected measure.
     getCurrentMeasure.call(this);
 

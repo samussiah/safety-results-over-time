@@ -230,6 +230,7 @@
         boxplots: true,
         violins: false,
         missingValues: ['', 'NA', 'N/A'],
+        visits_without_data: false,
         unscheduled_visits: false,
         unscheduled_visit_pattern: /unscheduled|early termination/i,
 
@@ -274,6 +275,7 @@
     function syncSettings(settings) {
         settings.x.column = settings.time_settings.value_col;
         settings.x.label = settings.time_settings.label;
+        settings.x.behavior = settings.visits_without_data ? 'raw' : 'flex';
         settings.y.column = settings.value_col;
         if (!(settings.groups instanceof Array && settings.groups.length))
             settings.groups = [{ value_col: 'NONE', label: 'None' }];
@@ -313,6 +315,12 @@
         },
         { type: 'number', label: 'Lower Limit', option: 'y.domain[0]', require: true },
         { type: 'number', label: 'Upper Limit', option: 'y.domain[1]', require: true },
+        {
+            type: 'checkbox',
+            inline: true,
+            option: 'visits_without_data',
+            label: 'Visits without data'
+        },
         {
             type: 'checkbox',
             inline: true,
@@ -389,55 +397,34 @@
     function cleanData() {
         var _this = this;
 
-        var allMeasures = d3
-                .set(
-                    this.raw_data.map(function(m) {
-                        return m[_this.config.measure_col];
-                    })
-                )
-                .values()
-                .filter(function(measure) {
-                    return _this.config.missingValues.indexOf(measure) === -1;
-                }),
-            catMeasures = allMeasures.filter(function(measure) {
-                var allObservations = _this.raw_data
-                        .filter(function(d) {
-                            return d[_this.config.measure_col] === measure;
-                        })
-                        .map(function(d) {
-                            return d[_this.config.value_col];
-                        }),
-                    numericObservations = allObservations.filter(function(d) {
-                        return /^-?[0-9.]+$/.test(d);
-                    });
+        //Remove missing and non-numeric data.
+        var preclean = this.raw_data,
+            clean = this.raw_data.filter(function(d) {
+                return /^-?[0-9.]+$/.test(d[_this.config.value_col]);
+            }),
+            nPreclean = preclean.length,
+            nClean = clean.length,
+            nRemoved = nPreclean - nClean;
 
-                return numericObservations.length < allObservations.length;
-            });
-
-        //Warn user of non-numeric endpoints.
-        if (catMeasures.length)
+        //Warn user of removed records.
+        if (nRemoved > 0)
             console.warn(
-                catMeasures.length +
-                    ' non-numeric endpoint' +
-                    (catMeasures.length > 1 ? 's have' : ' has') +
-                    ' been removed: ' +
-                    catMeasures.join(', ')
+                nRemoved +
+                    ' missing or non-numeric result' +
+                    (nRemoved > 1 ? 's have' : ' has') +
+                    ' been removed.'
             );
+        this.raw_data = clean;
 
         //Attach array of continuous measures to chart object.
-        this.measures = allMeasures
-            .filter(function(measure) {
-                return catMeasures.indexOf(measure) === -1;
-            })
+        this.measures = d3
+            .set(
+                this.raw_data.map(function(d) {
+                    return d[_this.config.measure_col];
+                })
+            )
+            .values()
             .sort();
-
-        //Remove dirty data.
-        this.raw_data = this.raw_data.filter(function(d) {
-            return (
-                _this.config.missingValues.indexOf(d[_this.config.value_col]) === -1 &&
-                catMeasures.indexOf(d[_this.config.measure_col]) === -1
-            );
-        });
     }
 
     function addVariables() {
@@ -555,22 +542,22 @@
     }
 
     function onInit() {
-        //Count total participants prior to data cleaning.
+        // 1. Count total participants prior to data cleaning.
         countParticipants.call(this);
 
-        //Drop missing values and remove measures with any non-numeric results.
+        // 2. Drop missing values and remove measures with any non-numeric results.
         cleanData.call(this);
 
-        //Define additional variables.
+        // 3a Define additional variables.
         addVariables.call(this);
 
-        //Define ordered x-axis domain with visit order variable.
+        // 3b Define ordered x-axis domain with visit order variable.
         defineVisitOrder.call(this);
 
-        //Remove filters for nonexistent or single-level variables.
+        // 3c Remove filters for nonexistent or single-level variables.
         checkFilters.call(this);
 
-        //Choose the start value for the Test filter
+        // 3d Choose the start value for the Test filter
         setInitialMeasure.call(this);
     }
 
@@ -699,11 +686,28 @@
     function removeUnscheduledVisits() {
         var _this = this;
 
-        this.config.x.domain = this.config.unscheduled_visits
-            ? this.config.x.order
-            : this.config.x.order.filter(function(visit) {
-                  return !_this.config.unscheduled_visit_pattern.test(visit);
-              });
+        this.config.x.domain = this.config.x.order;
+
+        //Remove visits without data.
+        if (!this.config.visits_without_data)
+            this.config.x.domain = this.config.x.domain.filter(function(visit) {
+                return (
+                    d3
+                        .set(
+                            _this.filtered_measure_data.map(function(d) {
+                                return d[_this.config.time_settings.value_col];
+                            })
+                        )
+                        .values()
+                        .indexOf(visit) > -1
+                );
+            });
+
+        //Remove unscheduled visits.
+        if (!this.config.unscheduled_visits)
+            this.config.x.domain = this.config.x.domain.filter(function(visit) {
+                return !_this.config.unscheduled_visit_pattern.test(visit);
+            });
     }
 
     function setYdomain() {
@@ -781,6 +785,8 @@
     }
 
     function onPreprocess() {
+        console.log(this.config.visits_without_data);
+        this.config.x.behavior = this.config.visits_without_data ? 'raw' : 'flex';
         // 1. Capture currently selected measure.
         getCurrentMeasure.call(this);
 
