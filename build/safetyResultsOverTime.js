@@ -208,8 +208,7 @@
         return target;
     }
 
-    var defaultSettings = {
-        //Custom settings for this template
+    var rendererSettings = {
         id_col: 'USUBJID',
         time_settings: {
             value_col: 'VISIT',
@@ -233,9 +232,10 @@
         visits_without_data: false,
         unscheduled_visits: false,
         unscheduled_visit_pattern: /unscheduled|early termination/i,
-        unscheduled_visit_values: null, // takes precedence over unscheduled_visit_pattern
+        unscheduled_visit_values: null // takes precedence over unscheduled_visit_pattern
+    };
 
-        //Standard webcharts settings
+    var webchartsSettings = {
         x: {
             column: null, // set in syncSettings()
             type: 'ordinal',
@@ -271,6 +271,8 @@
         gridlines: 'y',
         aspect: 3
     };
+
+    var defaultSettings = merge(rendererSettings, webchartsSettings);
 
     // Replicate settings in multiple places in the settings object
     function syncSettings(settings) {

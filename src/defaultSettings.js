@@ -1,5 +1,6 @@
-const defaultSettings = {
-    //Custom settings for this template
+import merge from './util/merge';
+
+export const rendererSettings = {
     id_col: 'USUBJID',
     time_settings: {
         value_col: 'VISIT',
@@ -23,9 +24,10 @@ const defaultSettings = {
     visits_without_data: false,
     unscheduled_visits: false,
     unscheduled_visit_pattern: /unscheduled|early termination/i,
-    unscheduled_visit_values: null, // takes precedence over unscheduled_visit_pattern
+    unscheduled_visit_values: null // takes precedence over unscheduled_visit_pattern
+};
 
-    //Standard webcharts settings
+export const webchartsSettings = {
     x: {
         column: null, // set in syncSettings()
         type: 'ordinal',
@@ -61,6 +63,8 @@ const defaultSettings = {
     gridlines: 'y',
     aspect: 3
 };
+
+export default merge(rendererSettings, webchartsSettings);
 
 // Replicate settings in multiple places in the settings object
 export function syncSettings(settings) {
@@ -169,5 +173,3 @@ export function syncControlInputs(controlInputs, settings) {
 
     return controlInputs;
 }
-
-export default defaultSettings;

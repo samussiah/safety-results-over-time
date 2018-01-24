@@ -1,9 +1,30 @@
-var pkg = require('../package.json'),
+var pkg = require('../package'),
     schema = require('../settings-schema'),
     properties = schema.properties,
     markdown = [],
-    fs = require('fs');
+    fs = require('fs'),
+    webchartsSettingsFlag = 0,
+    webchartsSettings = fs.readFileSync('./src/defaultSettings.js', 'utf8')
+        .split('\n')
+        .filter(line => {
+            if (line.indexOf('const webchartsSettings') > -1)
+                webchartsSettingsFlag = 1;
 
+            if (webchartsSettingsFlag === 1 && /};/.test(line))
+                webchartsSettingsFlag = 0;
+
+            return webchartsSettingsFlag;
+        });
+    webchartsSettings.splice(0,1,'{\r');
+    webchartsSettings.push('}');
+
+schema.overview
+    .split('\n')
+    .forEach(paragraph => {
+        markdown.push(paragraph);
+        markdown.push('');
+    });
+markdown.push(`# Renderer-specific settings`);
 markdown.push(`The sections below describe each ${pkg.name} setting as of version ${schema.version}.`);
 markdown.push(``);
 
@@ -11,7 +32,7 @@ markdown.push(``);
 var keys = Object.keys(properties);
     keys.forEach((property,i) => {
             var setting = properties[property];
-            markdown.push(`# settings.${property}`);
+            markdown.push(`## settings.${property}`);
             markdown.push(`\`${setting.type}\``);
             markdown.push(``);
             markdown.push(`${setting.description}`);
@@ -48,7 +69,7 @@ var keys = Object.keys(properties);
                     Object.keys(subProperties).forEach(subProperty => {
                         var subSetting = subProperties[subProperty];
                         markdown.push(``);
-                        markdown.push(`#j# settings.${property}[].${subProperty}`);
+                        markdown.push(`### settings.${property}[].${subProperty}`);
                         markdown.push(`\`${subSetting.type}\``);
                         markdown.push(``);
                         markdown.push(`${subSetting.title}`);
@@ -79,6 +100,14 @@ var keys = Object.keys(properties);
                 markdown.push(``);
             }
         });
+
+markdown.push(``);
+markdown.push(`# Webcharts-specific settings`);
+markdown.push(`The object below contains each Webcharts setting as of version ${schema.version}.`);
+markdown.push(``);
+markdown.push('```');
+markdown.push(webchartsSettings.join(''));
+markdown.push('```');
 
 fs.writeFile(
     './scripts/configuration.md',

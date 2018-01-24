@@ -1,6 +1,11 @@
+The most straightforward way to customize the Safety Results Over Time is by using a configuration object whose properties describe the behavior and appearance of the chart. Since the Safety Results Over Time is a Webcharts `chart` object, many default Webcharts settings are set in the [defaultSettings.js file](https://github.com/RhoInc/safety-results-over-time/blob/master/src/defaultSettings.js) as [described below](#Webcharts-Settings). Refer to the [Webcharts documentation](https://github.com/RhoInc/Webcharts/wiki/Chart-Configuration) for more details on these settings.
+
+In addition to the standard Webcharts settings several custom settings not available in the base Webcharts library have been added to the Safety Results Over Time to facilitate data mapping and other custom functionality. These custom settings are described in detail below. All defaults can be overwritten by users.
+
+# Renderer-specific settings
 The sections below describe each safety-results-over-time setting as of version 2.2.0.
 
-# settings.id_col
+## settings.id_col
 `string`
 
 unique identifier variable name
@@ -9,7 +14,7 @@ unique identifier variable name
 
 
 
-# settings.time_settings
+## settings.time_settings
 `object`
 
 visit metadata
@@ -58,7 +63,7 @@ Rotated tick label spacing
 
 
 
-# settings.measure_col
+## settings.measure_col
 `string`
 
 measure variable name
@@ -67,7 +72,7 @@ measure variable name
 
 
 
-# settings.unit_col
+## settings.unit_col
 `string`
 
 measure unit variable name
@@ -76,7 +81,7 @@ measure unit variable name
 
 
 
-# settings.value_col
+## settings.value_col
 `string`
 
 result variable name
@@ -85,7 +90,7 @@ result variable name
 
 
 
-# settings.normal_col_low
+## settings.normal_col_low
 `string`
 
 LLN variable name
@@ -94,7 +99,7 @@ LLN variable name
 
 
 
-# settings.normal_col_high
+## settings.normal_col_high
 `string`
 
 ULN variable name
@@ -103,7 +108,7 @@ ULN variable name
 
 
 
-# settings.start_value
+## settings.start_value
 `string`
 
 value of measure to display initially
@@ -112,45 +117,45 @@ value of measure to display initially
 
 
 
-# settings.filters
+## settings.filters
 `array`
 
 an array of filter variables and associated metadata
 
 **default:** none
 
-#j# settings.filters[].value_col
+### settings.filters[].value_col
 `string`
 
 Variable name
 
-#j# settings.filters[].label
+### settings.filters[].label
 `string`
 
 Variable label
 
 
 
-# settings.groups
+## settings.groups
 `array`
 
 an array of grouping variables and associated metadata
 
 **default:** none
 
-#j# settings.groups[].value_col
+### settings.groups[].value_col
 `string`
 
 Variable name
 
-#j# settings.groups[].label
+### settings.groups[].label
 `string`
 
 Variable label
 
 
 
-# settings.boxplots
+## settings.boxplots
 `boolean`
 
 controls initial display of box plots
@@ -159,7 +164,7 @@ controls initial display of box plots
 
 
 
-# settings.violins
+## settings.violins
 `boolean`
 
 controls initial display of violin plots
@@ -168,7 +173,7 @@ controls initial display of violin plots
 
 
 
-# settings.missingValues
+## settings.missingValues
 `array`
 
 an array of strings that identify missing values in both the measure and result variables
@@ -177,7 +182,7 @@ an array of strings that identify missing values in both the measure and result 
 
 
 
-# settings.visits_without_data
+## settings.visits_without_data
 `boolean`
 
 controls display of visits without data for the current measure
@@ -186,7 +191,7 @@ controls display of visits without data for the current measure
 
 
 
-# settings.unscheduled_visits
+## settings.unscheduled_visits
 `boolean`
 
 controls display of unscheduled visits
@@ -195,7 +200,7 @@ controls display of unscheduled visits
 
 
 
-# settings.unscheduled_visit_pattern
+## settings.unscheduled_visit_pattern
 `string`
 
 a regular expression that identifies unscheduled visits
@@ -204,9 +209,16 @@ a regular expression that identifies unscheduled visits
 
 
 
-# settings.unscheduled_visits_values
+## settings.unscheduled_visits_values
 `array`
 
 an array of strings that identify unscheduled visits; overrides unscheduled_visit_pattern
 
 **default:** none
+
+# Webcharts-specific settings
+The object below contains each Webcharts setting as of version 2.2.0.
+
+```
+{    x: {        column: null, // set in syncSettings()        type: 'ordinal',        label: null,        behavior: 'flex',        sort: 'alphabetical-ascending',        tickAttr: null    },    y: {        column: null, // set in syncSettings()        type: 'linear',        label: null,        behavior: 'flex',        stat: 'mean',        format: '0.2f'    },    marks: [        {            type: 'line',            per: null, // set in syncSettings()            attributes: {                'stroke-width': 2,                'stroke-opacity': 1,                display: 'none'            }        }    ],    legend: {        mark: 'square'    },    color_by: null, // set in syncSettings()    resizable: true,    gridlines: 'y',    aspect: 3}
+```
