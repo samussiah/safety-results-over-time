@@ -229,9 +229,11 @@
         groups: null,
         boxplots: true,
         violins: false,
-        unscheduled_visits: false,
-        unscheduled_visit_pattern: '/unscheduled|early termination/i',
         missingValues: ['', 'NA', 'N/A'],
+        visits_without_data: false,
+        unscheduled_visits: false,
+        unscheduled_visit_pattern: /unscheduled|early termination/i,
+        unscheduled_visit_values: null, // takes precedence over unscheduled_visit_pattern
 
         //Standard webcharts settings
         x: {
@@ -274,6 +276,7 @@
     function syncSettings(settings) {
         settings.x.column = settings.time_settings.value_col;
         settings.x.label = settings.time_settings.label;
+        settings.x.behavior = settings.visits_without_data ? 'raw' : 'flex';
         settings.y.column = settings.value_col;
         if (!(settings.groups instanceof Array && settings.groups.length))
             settings.groups = [{ value_col: 'NONE', label: 'None' }];
@@ -326,6 +329,12 @@
         },
         { type: 'number', label: 'Lower Limit', option: 'y.domain[0]', require: true },
         { type: 'number', label: 'Upper Limit', option: 'y.domain[1]', require: true },
+        {
+            type: 'checkbox',
+            inline: true,
+            option: 'visits_without_data',
+            label: 'Visits without data'
+        },
         {
             type: 'checkbox',
             inline: true,
@@ -412,60 +421,50 @@
     function cleanData() {
         var _this = this;
 
-        var allMeasures = d3
-                .set(
-                    this.raw_data.map(function(m) {
-                        return m[_this.config.measure_col];
-                    })
-                )
-                .values()
-                .filter(function(measure) {
-                    return _this.config.missingValues.indexOf(measure) === -1;
-                }),
-            catMeasures = allMeasures.filter(function(measure) {
-                var allObservations = _this.raw_data
-                        .filter(function(d) {
-                            return d[_this.config.measure_col] === measure;
-                        })
-                        .map(function(d) {
-                            return d[_this.config.value_col];
-                        }),
-                    numericObservations = allObservations.filter(function(d) {
-                        return /^-?[0-9.]+$/.test(d);
-                    });
+        //Remove missing and non-numeric data.
+        var preclean = this.raw_data,
+            clean = this.raw_data.filter(function(d) {
+                return /^-?[0-9.]+$/.test(d[_this.config.value_col]);
+            }),
+            nPreclean = preclean.length,
+            nClean = clean.length,
+            nRemoved = nPreclean - nClean;
 
-                return numericObservations.length < allObservations.length;
-            });
-
-        //Warn user of non-numeric endpoints.
-        if (catMeasures.length)
+        //Warn user of removed records.
+        if (nRemoved > 0)
             console.warn(
-                catMeasures.length +
-                    ' non-numeric endpoint' +
-                    (catMeasures.length > 1 ? 's have' : ' has') +
-                    ' been removed: ' +
-                    catMeasures.join(', ')
+                nRemoved +
+                    ' missing or non-numeric result' +
+                    (nRemoved > 1 ? 's have' : ' has') +
+                    ' been removed.'
             );
+        this.raw_data = clean;
 
         //Attach array of continuous measures to chart object.
-        this.measures = allMeasures
-            .filter(function(measure) {
-                return catMeasures.indexOf(measure) === -1;
-            })
+        this.measures = d3
+            .set(
+                this.raw_data.map(function(d) {
+                    return d[_this.config.measure_col];
+                })
+            )
+            .values()
             .sort();
-
-        //Remove dirty data.
-        this.raw_data = this.raw_data.filter(function(d) {
-            return (
-                _this.config.missingValues.indexOf(d[_this.config.value_col]) === -1 &&
-                catMeasures.indexOf(d[_this.config.measure_col]) === -1
-            );
-        });
     }
 
     function addVariables() {
+        var _this = this;
+
         this.raw_data.forEach(function(d) {
             d.NONE = 'All Participants'; // placeholder variable for non-grouped comparisons
+            d.unscheduled = _this.config.unscheduled_visit_values
+                ? _this.config.unscheduled_visit_values.indexOf(
+                      d[_this.config.time_settings.value_col]
+                  ) > -1
+                : _this.config.unscheduled_visit_pattern
+                  ? _this.config.unscheduled_visit_pattern.test(
+                        d[_this.config.time_settings.value_col]
+                    )
+                  : false;
         });
     }
 
@@ -573,22 +572,22 @@
     }
 
     function onInit() {
-        //Count total participants prior to data cleaning.
+        // 1. Count total participants prior to data cleaning.
         countParticipants.call(this);
 
-        //Drop missing values and remove measures with any non-numeric results.
+        // 2. Drop missing values and remove measures with any non-numeric results.
         cleanData.call(this);
 
-        //Define additional variables.
+        // 3a Define additional variables.
         addVariables.call(this);
 
-        //Define ordered x-axis domain with visit order variable.
+        // 3b Define ordered x-axis domain with visit order variable.
         defineVisitOrder.call(this);
 
-        //Remove filters for nonexistent or single-level variables.
+        // 3c Remove filters for nonexistent or single-level variables.
         checkFilters.call(this);
 
-        //Choose the start value for the Test filter
+        // 3d Choose the start value for the Test filter
         setInitialMeasure.call(this);
     }
 
@@ -714,14 +713,43 @@
             .entries(this.filtered_measure_data);
     }
 
+    function removeVisitsWithoutData() {
+        var _this = this;
+
+        if (!this.config.visits_without_data)
+            this.config.x.domain = this.config.x.domain.filter(function(visit) {
+                return (
+                    d3
+                        .set(
+                            _this.filtered_measure_data.map(function(d) {
+                                return d[_this.config.time_settings.value_col];
+                            })
+                        )
+                        .values()
+                        .indexOf(visit) > -1
+                );
+            });
+    }
+
     function removeUnscheduledVisits() {
         var _this = this;
 
-        if (this.config.unscheduled_visit_regex && !this.config.unscheduled_visits)
-            this.config.x.domain = this.config.x.order.filter(function(visit) {
-                return !_this.config.unscheduled_visit_regex.test(visit);
-            });
-        else this.config.x.domain = this.config.x.order;
+        if (!this.config.unscheduled_visits) {
+            if (this.config.unscheduled_visit_values)
+                this.config.x.domain = this.config.x.domain.filter(function(visit) {
+                    return _this.config.unscheduled_visit_values.indexOf(visit) < 0;
+                });
+            else if (this.config.unscheduled_visit_pattern)
+                this.config.x.domain = this.config.x.domain.filter(function(visit) {
+                    return !_this.config.unscheduled_visit_pattern.test(visit);
+                });
+        }
+    }
+
+    function setXdomain() {
+        this.config.x.domain = this.config.x.order;
+        removeVisitsWithoutData.call(this);
+        removeUnscheduledVisits.call(this);
     }
 
     function setYdomain() {
@@ -805,10 +833,13 @@
         // 2. Filter data on currently selected measure.
         defineMeasureData.call(this);
 
-        // 3a Set y-domain given currently selected measure, update y-axis limit controls accordingly.
+        // 3a Set x-domain given current visit settings.
+        setXdomain.call(this);
+
+        // 3b Set y-domain given currently selected measure.
         setYdomain.call(this);
 
-        // 3b Set y-axis label to current measure.
+        // 3c Set y-axis label to current measure.
         setYaxisLabel.call(this);
 
         // 4a Update y-axis reset button when measure changes.
@@ -816,9 +847,6 @@
 
         // 4b Update y-axis limit controls to match y-axis domain.
         updateYaxisLimitControls.call(this);
-
-        //Remove unscheduled visits from x-axis domain.
-        removeUnscheduledVisits.call(this);
 
         //Set legend label to current group.
         setLegendLabel.call(this);

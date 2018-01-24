@@ -119,12 +119,12 @@ an array of filter variables and associated metadata
 
 **default:** none
 
-## settings.filters[].value_col
+#j# settings.filters[].value_col
 `string`
 
 Variable name
 
-## settings.filters[].label
+#j# settings.filters[].label
 `string`
 
 Variable label
@@ -138,12 +138,12 @@ an array of grouping variables and associated metadata
 
 **default:** none
 
-## settings.groups[].value_col
+#j# settings.groups[].value_col
 `string`
 
 Variable name
 
-## settings.groups[].label
+#j# settings.groups[].label
 `string`
 
 Variable label
@@ -168,10 +168,28 @@ controls initial display of violin plots
 
 
 
+# settings.missingValues
+`array`
+
+an array of strings that identify missing values in both the measure and result variables
+
+**default:** ["", "NA", "N/A"]
+
+
+
+# settings.visits_without_data
+`boolean`
+
+controls display of visits without data for the current measure
+
+**default:** none
+
+
+
 # settings.unscheduled_visits
 `boolean`
 
-controls initial display of unscheduled visits
+controls display of unscheduled visits
 
 **default:** none
 
@@ -186,9 +204,9 @@ a regular expression that identifies unscheduled visits
 
 
 
-# settings.missingValues
+# settings.unscheduled_visits_values
 `array`
 
-an array of strings that identify missing values in both the measure and result variables
+an array of strings that identify unscheduled visits; overrides unscheduled_visit_pattern
 
-**default:** ["", "NA", "N/A"]
+**default:** none

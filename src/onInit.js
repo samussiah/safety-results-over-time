@@ -6,21 +6,21 @@ import checkFilters from './onInit/checkFilters';
 import setInitialMeasure from './onInit/setInitialMeasure';
 
 export default function onInit() {
-    //Count total participants prior to data cleaning.
+    // 1. Count total participants prior to data cleaning.
     countParticipants.call(this);
 
-    //Drop missing values and remove measures with any non-numeric results.
+    // 2. Drop missing values and remove measures with any non-numeric results.
     cleanData.call(this);
 
-    //Define additional variables.
+    // 3a Define additional variables.
     addVariables.call(this);
 
-    //Define ordered x-axis domain with visit order variable.
+    // 3b Define ordered x-axis domain with visit order variable.
     defineVisitOrder.call(this);
 
-    //Remove filters for nonexistent or single-level variables.
+    // 3c Remove filters for nonexistent or single-level variables.
     checkFilters.call(this);
 
-    //Choose the start value for the Test filter
+    // 3d Choose the start value for the Test filter
     setInitialMeasure.call(this);
 }

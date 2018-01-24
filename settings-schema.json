@@ -132,9 +132,28 @@
         ,"default":  false
         ,"type": "boolean"
         }
+    ,"missingValues":
+        {"title": "Missing Values"
+        ,"description": "an array of strings that identify missing values in both the measure and result variables"
+        ,"defaultArray":
+            [""
+            ,"NA"
+            ,"N/A"
+            ]
+        ,"type": "array"
+        ,"items":
+            {"type": "string"
+            }
+        }
+    ,"visits_without_data":
+        {"title": "Display visits without data?"
+        ,"description": "controls display of visits without data for the current measure"
+        ,"default":  false
+        ,"type": "boolean"
+        }
     ,"unscheduled_visits":
         {"title": "Display unscheduled visits?"
-        ,"description": "controls initial display of unscheduled visits"
+        ,"description": "controls display of unscheduled visits"
         ,"default":  false
         ,"type": "boolean"
         }
@@ -144,14 +163,9 @@
         ,"default": "/unscheduled|early termination/i"
         ,"type": "string"
         }
-    ,"missingValues":
-        {"title": "Missing Values"
-        ,"description": "an array of strings that identify missing values in both the measure and result variables"
-        ,"defaultArray":
-            [""
-            ,"NA"
-            ,"N/A"
-            ]
+    ,"unscheduled_visits_values":
+        {"title": "Unscheduled Visit List"
+        ,"description": "an array of strings that identify unscheduled visits; overrides unscheduled_visit_pattern"
         ,"type": "array"
         ,"items":
             {"type": "string"

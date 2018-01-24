@@ -19,9 +19,11 @@ const defaultSettings = {
     groups: null,
     boxplots: true,
     violins: false,
-    unscheduled_visits: false,
-    unscheduled_visit_pattern: '/unscheduled|early termination/i',
     missingValues: ['', 'NA', 'N/A'],
+    visits_without_data: false,
+    unscheduled_visits: false,
+    unscheduled_visit_pattern: /unscheduled|early termination/i,
+    unscheduled_visit_values: null, // takes precedence over unscheduled_visit_pattern
 
     //Standard webcharts settings
     x: {
@@ -64,6 +66,7 @@ const defaultSettings = {
 export function syncSettings(settings) {
     settings.x.column = settings.time_settings.value_col;
     settings.x.label = settings.time_settings.label;
+    settings.x.behavior = settings.visits_without_data ? 'raw' : 'flex';
     settings.y.column = settings.value_col;
     if (!(settings.groups instanceof Array && settings.groups.length))
         settings.groups = [{ value_col: 'NONE', label: 'None' }];
@@ -116,6 +119,7 @@ export const controlInputs = [
     },
     { type: 'number', label: 'Lower Limit', option: 'y.domain[0]', require: true },
     { type: 'number', label: 'Upper Limit', option: 'y.domain[1]', require: true },
+    { type: 'checkbox', inline: true, option: 'visits_without_data', label: 'Visits without data' },
     { type: 'checkbox', inline: true, option: 'unscheduled_visits', label: 'Unscheduled visits' },
     { type: 'checkbox', inline: true, option: 'boxplots', label: 'Box plots' },
     { type: 'checkbox', inline: true, option: 'violins', label: 'Violin plots' }
