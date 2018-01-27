@@ -23,7 +23,7 @@ export const rendererSettings = {
     missingValues: ['', 'NA', 'N/A'],
     visits_without_data: false,
     unscheduled_visits: false,
-    unscheduled_visit_pattern: /unscheduled|early termination/i,
+    unscheduled_visit_pattern: '/unscheduled|early termination/i',
     unscheduled_visit_values: null // takes precedence over unscheduled_visit_pattern
 };
 
@@ -165,7 +165,7 @@ export function syncControlInputs(controlInputs, settings) {
     }
 
     //Remove unscheduled visit conrol if unscheduled visit pattern is unscpecified.
-    if (!settings.unscheduled_visit_pattern)
+    if (!settings.unscheduled_visit_regex)
         controlInputs.splice(
             controlInputs.map(controlInput => controlInput.label).indexOf('Unscheduled visits'),
             1

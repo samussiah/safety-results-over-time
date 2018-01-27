@@ -156,7 +156,7 @@
     function assignKey(to, from, key) {
         var val = from[key];
 
-        if (val === undefined || val === null) {
+        if (val === undefined) {
             return;
         }
 
@@ -231,7 +231,7 @@
         missingValues: ['', 'NA', 'N/A'],
         visits_without_data: false,
         unscheduled_visits: false,
-        unscheduled_visit_pattern: /unscheduled|early termination/i,
+        unscheduled_visit_pattern: '/unscheduled|early termination/i',
         unscheduled_visit_values: null // takes precedence over unscheduled_visit_pattern
     };
 
@@ -395,7 +395,7 @@
         }
 
         //Remove unscheduled visit conrol if unscheduled visit pattern is unscpecified.
-        if (!settings.unscheduled_visit_pattern)
+        if (!settings.unscheduled_visit_regex)
             controlInputs.splice(
                 controlInputs
                     .map(function(controlInput) {
@@ -462,8 +462,8 @@
                 ? _this.config.unscheduled_visit_values.indexOf(
                       d[_this.config.time_settings.value_col]
                   ) > -1
-                : _this.config.unscheduled_visit_pattern
-                  ? _this.config.unscheduled_visit_pattern.test(
+                : _this.config.unscheduled_visit_regex
+                  ? _this.config.unscheduled_visit_regex.test(
                         d[_this.config.time_settings.value_col]
                     )
                   : false;
@@ -741,9 +741,9 @@
                 this.config.x.domain = this.config.x.domain.filter(function(visit) {
                     return _this.config.unscheduled_visit_values.indexOf(visit) < 0;
                 });
-            else if (this.config.unscheduled_visit_pattern)
+            else if (this.config.unscheduled_visit_regex)
                 this.config.x.domain = this.config.x.domain.filter(function(visit) {
-                    return !_this.config.unscheduled_visit_pattern.test(visit);
+                    return !_this.config.unscheduled_visit_regex.test(visit);
                 });
         }
     }

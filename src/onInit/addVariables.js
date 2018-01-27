@@ -4,8 +4,8 @@ export default function addVariables() {
         d.unscheduled = this.config.unscheduled_visit_values
             ? this.config.unscheduled_visit_values.indexOf(d[this.config.time_settings.value_col]) >
               -1
-            : this.config.unscheduled_visit_pattern
-              ? this.config.unscheduled_visit_pattern.test(d[this.config.time_settings.value_col])
+            : this.config.unscheduled_visit_regex
+              ? this.config.unscheduled_visit_regex.test(d[this.config.time_settings.value_col])
               : false;
     });
 }
