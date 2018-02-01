@@ -1,4 +1,4 @@
-import './util/object-assign';
+import merge from './util/merge';
 import defaultSettings, { syncSettings, syncControlInputs, controlInputs } from './defaultSettings';
 import { createControls, createChart } from 'webcharts';
 import onInit from './onInit';
@@ -9,7 +9,7 @@ import onDraw from './onDraw';
 import onResize from './onResize';
 
 export default function safetyResultsOverTime(element, settings) {
-    const mergedSettings = Object.assign({}, defaultSettings, settings), //Merge user settings onto default settings.
+    const mergedSettings = merge(defaultSettings, settings), //Merge user settings onto default settings.
         syncedSettings = syncSettings(mergedSettings), //Sync properties within merged settings, e.g. data mappings.
         syncedControlInputs = syncControlInputs(controlInputs, syncedSettings), //Sync merged settings with controls.
         controls = createControls(element, { location: 'top', inputs: syncedControlInputs }), //Define controls.
