@@ -19,47 +19,47 @@ unique identifier variable name
 
 visit metadata
 
-## settings.time_settings.value_col
+### settings.time_settings.value_col
 `string`
 
-Visit variable name
+undefined
 
 **default:** `"VISIT"`
 
-## settings.time_settings.label
+### settings.time_settings.label
 `string`
 
-Visit variable label
+undefined
 
 **default:** `"Visit"`
 
-## settings.time_settings.order_col
+### settings.time_settings.order_col
 `string`
 
-Visit ordering variable name
+undefined
 
 **default:** `"VISITNUM"`
 
-## settings.time_settings.order
+### settings.time_settings.order
 `array`
 
-Visit order
+undefined
 
 **default:** none
 
-## settings.time_settings.rotate_tick_labels
+### settings.time_settings.rotate_tick_labels
 `boolean`
 
-Rotate tick labels 45 degrees?
+undefined
 
-**default:** `"true"`
+**default:** `true`
 
-## settings.time_settings.vertical_space
+### settings.time_settings.vertical_space
 `number`
 
-Rotated tick label spacing
+undefined
 
-**default:** `"100"`
+**default:** `100`
 
 
 
@@ -127,12 +127,16 @@ an array of filter variables and associated metadata
 ### settings.filters[].value_col
 `string`
 
-Variable name
+undefined
+
+**default:** none
 
 ### settings.filters[].label
 `string`
 
-Variable label
+undefined
+
+**default:** none
 
 
 
@@ -146,12 +150,16 @@ an array of grouping variables and associated metadata
 ### settings.groups[].value_col
 `string`
 
-Variable name
+undefined
+
+**default:** none
 
 ### settings.groups[].label
 `string`
 
-Variable label
+undefined
+
+**default:** none
 
 
 
@@ -160,7 +168,7 @@ Variable label
 
 controls initial display of box plots
 
-**default:** `"true"`
+**default:** `true`
 
 
 
@@ -169,7 +177,7 @@ controls initial display of box plots
 
 controls initial display of violin plots
 
-**default:** none
+**default:** `false`
 
 
 
@@ -178,7 +186,7 @@ controls initial display of violin plots
 
 an array of strings that identify missing values in both the measure and result variables
 
-**default:** ["", "NA", "N/A"]
+**default:** none
 
 
 
@@ -187,7 +195,7 @@ an array of strings that identify missing values in both the measure and result 
 
 controls display of visits without data for the current measure
 
-**default:** none
+**default:** `false`
 
 
 
@@ -196,7 +204,7 @@ controls display of visits without data for the current measure
 
 controls display of unscheduled visits
 
-**default:** none
+**default:** `false`
 
 
 

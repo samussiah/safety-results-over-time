@@ -394,7 +394,7 @@
             });
         }
 
-        //Remove unscheduled visit conrol if unscheduled visit pattern is unscpecified.
+        //Remove unscheduled visit control if unscheduled visit pattern is unscpecified.
         if (!settings.unscheduled_visit_regex)
             controlInputs.splice(
                 controlInputs
