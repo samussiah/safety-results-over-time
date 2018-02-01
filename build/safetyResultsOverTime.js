@@ -156,7 +156,7 @@
     function assignKey(to, from, key) {
         var val = from[key];
 
-        if (val === undefined || val === null) {
+        if (val === undefined) {
             return;
         }
 
@@ -208,8 +208,7 @@
         return target;
     }
 
-    var defaultSettings = {
-        //Custom settings for this template
+    var rendererSettings = {
         id_col: 'USUBJID',
         time_settings: {
             value_col: 'VISIT',
@@ -232,10 +231,11 @@
         missingValues: ['', 'NA', 'N/A'],
         visits_without_data: false,
         unscheduled_visits: false,
-        unscheduled_visit_values: null, // takes precedence over unscheduled_visit_pattern
-        unscheduled_visit_pattern: /unscheduled|early termination/i,
+        unscheduled_visit_pattern: '/unscheduled|early termination/i',
+        unscheduled_visit_values: null // takes precedence over unscheduled_visit_pattern
+    };
 
-        //Standard webcharts settings
+    var webchartsSettings = {
         x: {
             column: null, // set in syncSettings()
             type: 'ordinal',
@@ -272,6 +272,8 @@
         aspect: 3
     };
 
+    var defaultSettings = merge(rendererSettings, webchartsSettings);
+
     // Replicate settings in multiple places in the settings object
     function syncSettings(settings) {
         settings.x.column = settings.time_settings.value_col;
@@ -292,6 +294,19 @@
             : settings.groups[0];
         settings.marks[0].per = [settings.color_by];
         settings.margin = settings.margin || { bottom: settings.time_settings.vertical_space };
+
+        //Convert unscheduled_visit_pattern from string to regular expression.
+        if (
+            typeof settings.unscheduled_visit_pattern === 'string' &&
+            settings.unscheduled_visit_pattern !== ''
+        ) {
+            var flags = settings.unscheduled_visit_pattern.replace(/.*?\/([gimy]*)$/, '$1'),
+                pattern = settings.unscheduled_visit_pattern.replace(
+                    new RegExp('^/(.*?)/' + flags + '$'),
+                    '$1'
+                );
+            settings.unscheduled_visit_regex = new RegExp(pattern, flags);
+        }
 
         return settings;
     }
@@ -334,18 +349,17 @@
 
     // Map values from settings to control inputs
     function syncControlInputs(controlInputs, settings) {
-        var measureControl = controlInputs.filter(function(controlInput) {
-                return controlInput.label === 'Measure';
-            })[0],
-            groupControl = controlInputs.filter(function(controlInput) {
-                return controlInput.label === 'Group';
-            })[0];
-
         //Sync measure control.
+        var measureControl = controlInputs.filter(function(controlInput) {
+            return controlInput.label === 'Measure';
+        })[0];
         measureControl.value_col = settings.measure_col;
         measureControl.start = settings.start_value;
 
         //Sync group control.
+        var groupControl = controlInputs.filter(function(controlInput) {
+            return controlInput.label === 'Group';
+        })[0];
         groupControl.start = settings.color_by;
         settings.groups
             .filter(function(group) {
@@ -379,6 +393,17 @@
                     controlInputs.splice(1, 0, thisFilter);
             });
         }
+
+        //Remove unscheduled visit conrol if unscheduled visit pattern is unscpecified.
+        if (!settings.unscheduled_visit_regex)
+            controlInputs.splice(
+                controlInputs
+                    .map(function(controlInput) {
+                        return controlInput.label;
+                    })
+                    .indexOf('Unscheduled visits'),
+                1
+            );
 
         return controlInputs;
     }
@@ -437,8 +462,8 @@
                 ? _this.config.unscheduled_visit_values.indexOf(
                       d[_this.config.time_settings.value_col]
                   ) > -1
-                : _this.config.unscheduled_visit_pattern
-                  ? _this.config.unscheduled_visit_pattern.test(
+                : _this.config.unscheduled_visit_regex
+                  ? _this.config.unscheduled_visit_regex.test(
                         d[_this.config.time_settings.value_col]
                     )
                   : false;
@@ -716,9 +741,9 @@
                 this.config.x.domain = this.config.x.domain.filter(function(visit) {
                     return _this.config.unscheduled_visit_values.indexOf(visit) < 0;
                 });
-            else if (this.config.unscheduled_visit_pattern)
+            else if (this.config.unscheduled_visit_regex)
                 this.config.x.domain = this.config.x.domain.filter(function(visit) {
-                    return !_this.config.unscheduled_visit_pattern.test(visit);
+                    return !_this.config.unscheduled_visit_regex.test(visit);
                 });
         }
     }
