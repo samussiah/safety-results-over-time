@@ -1,3 +1,4 @@
+import './util/object-assign';
 import merge from './util/merge';
 import defaultSettings, { syncSettings, syncControlInputs, controlInputs } from './defaultSettings';
 import { createControls, createChart } from 'webcharts';

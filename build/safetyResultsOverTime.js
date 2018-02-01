@@ -7,6 +7,40 @@
 })(this, function(webcharts, d3) {
     'use strict';
 
+    if (typeof Object.assign != 'function') {
+        // Must be writable: true, enumerable: false, configurable: true
+        Object.defineProperty(Object, 'assign', {
+            value: function assign(target, varArgs) {
+                // .length of function is 2
+                'use strict';
+
+                if (target == null) {
+                    // TypeError if undefined or null
+                    throw new TypeError('Cannot convert undefined or null to object');
+                }
+
+                var to = Object(target);
+
+                for (var index = 1; index < arguments.length; index++) {
+                    var nextSource = arguments[index];
+
+                    if (nextSource != null) {
+                        // Skip over if undefined or null
+                        for (var nextKey in nextSource) {
+                            // Avoid bugs when hasOwnProperty is shadowed
+                            if (Object.prototype.hasOwnProperty.call(nextSource, nextKey)) {
+                                to[nextKey] = nextSource[nextKey];
+                            }
+                        }
+                    }
+                }
+                return to;
+            },
+            writable: true,
+            configurable: true
+        });
+    }
+
     var _typeof =
         typeof Symbol === 'function' && typeof Symbol.iterator === 'symbol'
             ? function(obj) {
@@ -208,7 +242,7 @@
         return target;
     }
 
-    var rendererSettings = {
+    var rendererSpecificSettings = {
         id_col: 'USUBJID',
         time_settings: {
             value_col: 'VISIT',
@@ -272,7 +306,7 @@
         aspect: 3
     };
 
-    var defaultSettings = merge(rendererSettings, webchartsSettings);
+    var defaultSettings = Object.assign({}, rendererSpecificSettings, webchartsSettings);
 
     // Replicate settings in multiple places in the settings object
     function syncSettings(settings) {
