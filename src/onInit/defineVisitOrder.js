@@ -12,9 +12,9 @@ export default function defineVisitOrder() {
         visits = set(
             this.raw_data.map(
                 d =>
-                    `${d[this.config.time_settings.order_col]}|${
-                        d[this.config.time_settings.value_col]
-                    }`
+                    `${d[this.config.time_settings.order_col]}|${d[
+                        this.config.time_settings.value_col
+                    ]}`
             )
         ).values();
 

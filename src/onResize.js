@@ -58,7 +58,7 @@ export default function onResize() {
     //Draw reference boxplot.
     this.svg.selectAll('.boxplot-wrap').remove();
 
-    this.nested_data.forEach(e => {
+    this.nested_measure_data.forEach(e => {
         //Sort [ config.color_by ] groups.
         e.values = e.values.sort(
             (a, b) =>

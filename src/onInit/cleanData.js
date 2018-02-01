@@ -1,33 +1,24 @@
 import { set } from 'd3';
 
 export default function cleanData() {
-    const allMeasures = set(this.raw_data.map(m => m[this.config.measure_col]))
-            .values()
-            .filter(measure => this.config.missingValues.indexOf(measure) === -1),
-        catMeasures = allMeasures.filter(measure => {
-            const allObservations = this.raw_data
-                    .filter(d => d[this.config.measure_col] === measure)
-                    .map(d => d[this.config.value_col]),
-                numericObservations = allObservations.filter(d => /^-?[0-9.]+$/.test(d));
+    //Remove missing and non-numeric data.
+    const preclean = this.raw_data,
+        clean = this.raw_data.filter(d => /^-?[0-9.]+$/.test(d[this.config.value_col])),
+        nPreclean = preclean.length,
+        nClean = clean.length,
+        nRemoved = nPreclean - nClean;
 
-            return numericObservations.length < allObservations.length;
-        });
-
-    //Warn user of non-numeric endpoints.
-    if (catMeasures.length)
+    //Warn user of removed records.
+    if (nRemoved > 0)
         console.warn(
-            `${catMeasures.length} non-numeric endpoint${
-                catMeasures.length > 1 ? 's have' : ' has'
-            } been removed: ${catMeasures.join(', ')}`
+            `${nRemoved} missing or non-numeric result${nRemoved > 1
+                ? 's have'
+                : ' has'} been removed.`
         );
+    this.raw_data = clean;
 
     //Attach array of continuous measures to chart object.
-    this.measures = allMeasures.filter(measure => catMeasures.indexOf(measure) === -1).sort();
-
-    //Remove dirty data.
-    this.raw_data = this.raw_data.filter(
-        d =>
-            this.config.missingValues.indexOf(d[this.config.value_col]) === -1 &&
-            catMeasures.indexOf(d[this.config.measure_col]) === -1
-    );
+    this.measures = set(this.raw_data.map(d => d[this.config.measure_col]))
+        .values()
+        .sort();
 }

@@ -230,6 +230,10 @@
         boxplots: true,
         violins: false,
         missingValues: ['', 'NA', 'N/A'],
+        visits_without_data: false,
+        unscheduled_visits: false,
+        unscheduled_visit_values: null, // takes precedence over unscheduled_visit_pattern
+        unscheduled_visit_pattern: /unscheduled|early termination/i,
 
         //Standard webcharts settings
         x: {
@@ -272,9 +276,17 @@
     function syncSettings(settings) {
         settings.x.column = settings.time_settings.value_col;
         settings.x.label = settings.time_settings.label;
+        settings.x.behavior = settings.visits_without_data ? 'raw' : 'flex';
         settings.y.column = settings.value_col;
         if (!(settings.groups instanceof Array && settings.groups.length))
             settings.groups = [{ value_col: 'NONE', label: 'None' }];
+        else
+            settings.groups = settings.groups.map(function(group) {
+                return {
+                    value_col: group.value_col || group,
+                    label: group.label || group.value_col || group
+                };
+            });
         settings.color_by = settings.groups[0].value_col
             ? settings.groups[0].value_col
             : settings.groups[0];
@@ -305,15 +317,19 @@
         { type: 'number', label: 'Lower Limit', option: 'y.domain[0]', require: true },
         { type: 'number', label: 'Upper Limit', option: 'y.domain[1]', require: true },
         {
-            type: 'radio',
-            label: 'Hide visits with no data:',
-            option: 'x.behavior',
-            values: ['flex', 'raw'],
-            relabels: ['Yes', 'No'],
-            require: true
+            type: 'checkbox',
+            inline: true,
+            option: 'visits_without_data',
+            label: 'Visits without data'
         },
-        { type: 'checkbox', option: 'boxplots', label: 'Box plots', inline: true },
-        { type: 'checkbox', option: 'violins', label: 'Violin plots', inline: true }
+        {
+            type: 'checkbox',
+            inline: true,
+            option: 'unscheduled_visits',
+            label: 'Unscheduled visits'
+        },
+        { type: 'checkbox', inline: true, option: 'boxplots', label: 'Box plots' },
+        { type: 'checkbox', inline: true, option: 'violins', label: 'Violin plots' }
     ];
 
     // Map values from settings to control inputs
@@ -336,7 +352,7 @@
                 return group.value_col !== 'NONE';
             })
             .forEach(function(group) {
-                groupControl.values.push(group.value_col || group);
+                groupControl.values.push(group.value_col);
             });
 
         //Add custom filters to control inputs.
@@ -352,7 +368,6 @@
                 };
 
                 //add the filter to the control inputs (as long as it's not already there)
-                //add the filter to the control inputs (as long as it isn't already there)
                 var current_value_cols = controlInputs
                     .filter(function(f) {
                         return f.type == 'subsetter';
@@ -364,6 +379,7 @@
                     controlInputs.splice(1, 0, thisFilter);
             });
         }
+
         return controlInputs;
     }
 
@@ -382,60 +398,50 @@
     function cleanData() {
         var _this = this;
 
-        var allMeasures = d3
-                .set(
-                    this.raw_data.map(function(m) {
-                        return m[_this.config.measure_col];
-                    })
-                )
-                .values()
-                .filter(function(measure) {
-                    return _this.config.missingValues.indexOf(measure) === -1;
-                }),
-            catMeasures = allMeasures.filter(function(measure) {
-                var allObservations = _this.raw_data
-                        .filter(function(d) {
-                            return d[_this.config.measure_col] === measure;
-                        })
-                        .map(function(d) {
-                            return d[_this.config.value_col];
-                        }),
-                    numericObservations = allObservations.filter(function(d) {
-                        return /^-?[0-9.]+$/.test(d);
-                    });
+        //Remove missing and non-numeric data.
+        var preclean = this.raw_data,
+            clean = this.raw_data.filter(function(d) {
+                return /^-?[0-9.]+$/.test(d[_this.config.value_col]);
+            }),
+            nPreclean = preclean.length,
+            nClean = clean.length,
+            nRemoved = nPreclean - nClean;
 
-                return numericObservations.length < allObservations.length;
-            });
-
-        //Warn user of non-numeric endpoints.
-        if (catMeasures.length)
+        //Warn user of removed records.
+        if (nRemoved > 0)
             console.warn(
-                catMeasures.length +
-                    ' non-numeric endpoint' +
-                    (catMeasures.length > 1 ? 's have' : ' has') +
-                    ' been removed: ' +
-                    catMeasures.join(', ')
+                nRemoved +
+                    ' missing or non-numeric result' +
+                    (nRemoved > 1 ? 's have' : ' has') +
+                    ' been removed.'
             );
+        this.raw_data = clean;
 
         //Attach array of continuous measures to chart object.
-        this.measures = allMeasures
-            .filter(function(measure) {
-                return catMeasures.indexOf(measure) === -1;
-            })
+        this.measures = d3
+            .set(
+                this.raw_data.map(function(d) {
+                    return d[_this.config.measure_col];
+                })
+            )
+            .values()
             .sort();
-
-        //Remove dirty data.
-        this.raw_data = this.raw_data.filter(function(d) {
-            return (
-                _this.config.missingValues.indexOf(d[_this.config.value_col]) === -1 &&
-                catMeasures.indexOf(d[_this.config.measure_col]) === -1
-            );
-        });
     }
 
     function addVariables() {
+        var _this = this;
+
         this.raw_data.forEach(function(d) {
             d.NONE = 'All Participants'; // placeholder variable for non-grouped comparisons
+            d.unscheduled = _this.config.unscheduled_visit_values
+                ? _this.config.unscheduled_visit_values.indexOf(
+                      d[_this.config.time_settings.value_col]
+                  ) > -1
+                : _this.config.unscheduled_visit_pattern
+                  ? _this.config.unscheduled_visit_pattern.test(
+                        d[_this.config.time_settings.value_col]
+                    )
+                  : false;
         });
     }
 
@@ -543,22 +549,22 @@
     }
 
     function onInit() {
-        //Count total participants prior to data cleaning.
+        // 1. Count total participants prior to data cleaning.
         countParticipants.call(this);
 
-        //Drop missing values and remove measures with any non-numeric results.
+        // 2. Drop missing values and remove measures with any non-numeric results.
         cleanData.call(this);
 
-        //Define additional variables.
+        // 3a Define additional variables.
         addVariables.call(this);
 
-        //Define ordered x-axis domain with visit order variable.
+        // 3b Define ordered x-axis domain with visit order variable.
         defineVisitOrder.call(this);
 
-        //Remove filters for nonexistent or single-level variables.
+        // 3c Remove filters for nonexistent or single-level variables.
         checkFilters.call(this);
 
-        //Choose the start value for the Test filter
+        // 3d Choose the start value for the Test filter
         setInitialMeasure.call(this);
     }
 
@@ -632,23 +638,43 @@
             .classed('y-axis', true);
     }
 
-    function onPreprocess() {
+    function getCurrentMeasure() {
         var _this = this;
 
-        //Capture currently selected measure.
-        var measure = this.controls.wrap
+        this.previousMeasure = this.currentMeasure;
+        this.currentMeasure = this.controls.wrap
             .selectAll('.control-group')
             .filter(function(d) {
                 return d.value_col && d.value_col === _this.config.measure_col;
             })
             .select('option:checked')
             .text();
+    }
 
-        //Filter data and nest data by visit and group.
+    function defineMeasureData() {
+        var _this = this;
+
         this.measure_data = this.raw_data.filter(function(d) {
-            return d[_this.config.measure_col] === measure;
+            return d[_this.config.measure_col] === _this.currentMeasure;
         });
-        var nested_data = d3
+        this.filtered_measure_data = this.measure_data.filter(function(d) {
+            var filtered = false;
+
+            _this.filters
+                .filter(function(filter) {
+                    return filter.value_col !== _this.config.measure_col;
+                })
+                .forEach(function(filter) {
+                    if (filtered === false && filter.val !== 'All')
+                        filtered =
+                            filter.val instanceof Array
+                                ? filter.val.indexOf(d[filter.col]) < 0
+                                : filter.val !== d[filter.col];
+                });
+
+            return !filtered;
+        });
+        this.nested_measure_data = d3
             .nest()
             .key(function(d) {
                 return d[_this.config.x.column];
@@ -661,44 +687,110 @@
                     return +m[_this.config.y.column];
                 });
             })
-            .entries(this.measure_data);
+            .entries(this.filtered_measure_data);
+    }
 
-        //Define y-axis range based on currently selected measure.
-        if (!this.config.violins) {
-            var y_05s = [];
-            var y_95s = [];
-            nested_data.forEach(function(visit) {
-                visit.values.forEach(function(group) {
-                    var results = group.values.sort(d3.ascending);
-                    y_05s.push(d3.quantile(results, 0.05));
-                    y_95s.push(d3.quantile(results, 0.95));
-                });
+    function removeVisitsWithoutData() {
+        var _this = this;
+
+        if (!this.config.visits_without_data)
+            this.config.x.domain = this.config.x.domain.filter(function(visit) {
+                return (
+                    d3
+                        .set(
+                            _this.filtered_measure_data.map(function(d) {
+                                return d[_this.config.time_settings.value_col];
+                            })
+                        )
+                        .values()
+                        .indexOf(visit) > -1
+                );
             });
-            this.config.y.domain = [Math.min.apply(null, y_05s), Math.max.apply(null, y_95s)];
-        } else
+    }
+
+    function removeUnscheduledVisits() {
+        var _this = this;
+
+        if (!this.config.unscheduled_visits) {
+            if (this.config.unscheduled_visit_values)
+                this.config.x.domain = this.config.x.domain.filter(function(visit) {
+                    return _this.config.unscheduled_visit_values.indexOf(visit) < 0;
+                });
+            else if (this.config.unscheduled_visit_pattern)
+                this.config.x.domain = this.config.x.domain.filter(function(visit) {
+                    return !_this.config.unscheduled_visit_pattern.test(visit);
+                });
+        }
+    }
+
+    function setXdomain() {
+        this.config.x.domain = this.config.x.order;
+        removeVisitsWithoutData.call(this);
+        removeUnscheduledVisits.call(this);
+    }
+
+    function setYdomain() {
+        var _this = this;
+
+        //Define y-domain.
+        if (this.currentMeasure !== this.previousMeasure)
             this.config.y.domain = d3.extent(
                 this.measure_data.map(function(d) {
                     return +d[_this.config.y.column];
                 })
             );
+        else if (this.config.y.domain[0] > this.config.y.domain[1])
+            // new measure
+            this.config.y.domain.reverse();
+        else if (this.config.y.domain[0] === this.config.y.domain[1])
+            // invalid domain
+            this.config.y.domain = this.config.y.domain.map(function(d, i) {
+                return i === 0 ? d - d * 0.01 : d + d * 0.01;
+            }); // domain with zero range
+    }
 
-        //Check if the selected measure has changed.
-        var prevMeasure = this.currentMeasure;
-        this.currentMeasure = this.controls.wrap
+    function updateYaxisLimitControls() {
+        //Update y-axis limit controls.
+        this.controls.wrap
             .selectAll('.control-group')
-            .filter(function(d) {
-                return d.value_col && d.value_col === _this.config.measure_col;
+            .filter(function(f) {
+                return f.option === 'y.domain[0]';
             })
-            .select('option:checked')
-            .text();
-        var changedMeasureFlag = this.currentMeasure !== prevMeasure;
+            .select('input')
+            .property('value', this.config.y.domain[0]);
+        this.controls.wrap
+            .selectAll('.control-group')
+            .filter(function(f) {
+                return f.option === 'y.domain[1]';
+            })
+            .select('input')
+            .property('value', this.config.y.domain[1]);
+    }
 
-        //Set y-axis domain.
-        if (changedMeasureFlag) {
-            //reset axis to full range when measure changes
-            this.config.y.domain = d3.extent(this.measure_data, function(d) {
-                return +d[_this.config.value_col];
-            });
+    function setYaxisLabel() {
+        this.config.y.label =
+            this.currentMeasure +
+            (this.config.unit_col && this.measure_data[0][this.config.unit_col]
+                ? ' (' + this.measure_data[0][this.config.unit_col] + ')'
+                : '');
+    }
+
+    function setLegendLabel() {
+        this.config.legend.label =
+            this.config.color_by !== 'NONE'
+                ? this.config.groups[
+                      this.config.groups
+                          .map(function(group) {
+                              return group.value_col;
+                          })
+                          .indexOf(this.config.color_by)
+                  ].label
+                : '';
+    }
+
+    function updateYaxisResetButton() {
+        //Update tooltip of y-axis domain reset button.
+        if (this.currentMeasure !== this.previousMeasure)
             this.controls.wrap
                 .selectAll('.y-axis')
                 .property(
@@ -709,45 +801,48 @@
                         this.config.y.domain[1] +
                         ']'
                 );
+    }
 
-            //Set y-axis domain controls.
-            this.controls.wrap
-                .selectAll('.control-group')
-                .filter(function(f) {
-                    return f.option === 'y.domain[0]';
-                })
-                .select('input')
-                .property('value', this.config.y.domain[0]);
-            this.controls.wrap
-                .selectAll('.control-group')
-                .filter(function(f) {
-                    return f.option === 'y.domain[1]';
-                })
-                .select('input')
-                .property('value', this.config.y.domain[1]);
-        }
+    function onPreprocess() {
+        // 1. Capture currently selected measure.
+        getCurrentMeasure.call(this);
+
+        // 2. Filter data on currently selected measure.
+        defineMeasureData.call(this);
+
+        // 3a Set x-domain given current visit settings.
+        setXdomain.call(this);
+
+        // 3b Set y-domain given currently selected measure.
+        setYdomain.call(this);
+
+        // 3c Set y-axis label to current measure.
+        setYaxisLabel.call(this);
+
+        // 4a Update y-axis reset button when measure changes.
+        updateYaxisResetButton.call(this);
+
+        // 4b Update y-axis limit controls to match y-axis domain.
+        updateYaxisLimitControls.call(this);
+
+        //Set legend label to current group.
+        setLegendLabel.call(this);
+    }
+
+    function removeUnscheduledVists() {
+        var _this = this;
+
+        if (!this.config.unscheduled_visits)
+            this.current_data.forEach(function(d) {
+                d.values = d.values.filter(function(di) {
+                    return _this.config.x.domain.indexOf(di.key) > -1;
+                });
+            });
     }
 
     function onDataTransform() {
-        //Redefine y-axis label.
-        this.config.y.label =
-            this.measure_data[0][this.config.measure_col] +
-            ' (' +
-            this.measure_data[0][this.config.unit_col] +
-            ')';
-
-        //Redefine legend label.
-        var group_value_cols = this.config.groups.map(function(group) {
-            return group.value_col ? group.value_col : group;
-        });
-        var group_labels = this.config.groups.map(function(group) {
-            return group.label ? group.label : group.value_col ? group.value_col : group;
-        });
-        var group = this.config.color_by;
-
-        if (group !== 'NONE')
-            this.config.legend.label = group_labels[group_value_cols.indexOf(group)];
-        else this.config.legend.label = '';
+        //Remove unscheduled visits from current_data array.
+        removeUnscheduledVists.call(this);
     }
 
     // Takes a webcharts object creates a text annotation giving the
@@ -789,90 +884,9 @@
         );
     }
 
-    function updateYdomain() {
-        var yMinSelect = this.controls.wrap
-            .selectAll('.control-group')
-            .filter(function(f) {
-                return f.option === 'y.domain[0]';
-            })
-            .select('input');
-
-        var yMaxSelect = this.controls.wrap
-            .selectAll('.control-group')
-            .filter(function(f) {
-                return f.option === 'y.domain[1]';
-            })
-            .select('input');
-
-        //switch the values if min > max
-        var range = [yMinSelect.node().value, yMaxSelect.node().value].sort(function(a, b) {
-            return a - b;
-        });
-        yMinSelect.node().value = range[0];
-        yMaxSelect.node().value = range[1];
-
-        //apply custom domain to the this
-        this.config.y.domain = range;
-        this.y_dom = range;
-    }
-
     function onDraw() {
-        var _this = this;
-
         //Annotate population count.
         updateParticipantCount(this, '#populationCount');
-
-        //idk
-        this.marks[0].data.forEach(function(d) {
-            d.values.sort(function(a, b) {
-                return a.key === 'NA' ? 1 : b.key === 'NA' ? -1 : d3.ascending(a.key, b.key);
-            });
-        });
-
-        //Nest filtered data.
-        this.nested_data = d3
-            .nest()
-            .key(function(d) {
-                return d[_this.config.x.column];
-            })
-            .key(function(d) {
-                return d[_this.config.color_by];
-            })
-            .rollup(function(d) {
-                return d.map(function(m) {
-                    return +m[_this.config.y.column];
-                });
-            })
-            .entries(this.filtered_data);
-
-        //Clear y-axis ticks.
-        this.svg.selectAll('.y .tick').remove();
-
-        //Make nested data set for boxplots
-        this.nested_data = d3
-            .nest()
-            .key(function(d) {
-                return d[_this.config.x.column];
-            })
-            .key(function(d) {
-                return d[_this.config.marks[0].per[0]];
-            })
-            .rollup(function(d) {
-                return d.map(function(m) {
-                    return +m[_this.config.y.column];
-                });
-            })
-            .entries(this.filtered_data);
-
-        //hack to avoid domains with 0 extent
-        if (this.y_dom[0] == this.y_dom[1]) {
-            var jitter = this.y_dom[0] / 10;
-            this.y_dom[0] = this.y_dom[0] - jitter;
-            this.y_dom[1] = this.y_dom[1] + jitter;
-        }
-
-        //update the y domain using the custom controsl
-        updateYdomain.call(this);
     }
 
     function addBoxPlot(chart, group) {
@@ -1239,7 +1253,7 @@
         //Draw reference boxplot.
         this.svg.selectAll('.boxplot-wrap').remove();
 
-        this.nested_data.forEach(function(e) {
+        this.nested_measure_data.forEach(function(e) {
             //Sort [ config.color_by ] groups.
             e.values = e.values.sort(function(a, b) {
                 return _this.colorScale.domain().indexOf(a.key) <
