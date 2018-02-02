@@ -899,7 +899,7 @@
             });
     }
 
-    function onDataTransform() {
+    function onDatatransform() {
         //Remove unscheduled visits from current_data array.
         removeUnscheduledVists.call(this);
     }
@@ -1386,7 +1386,7 @@
         chart.on('init', onInit);
         chart.on('layout', onLayout);
         chart.on('preprocess', onPreprocess);
-        chart.on('datatransform', onDataTransform);
+        chart.on('datatransform', onDatatransform);
         chart.on('draw', onDraw);
         chart.on('resize', onResize);
 
