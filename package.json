@@ -1,7 +1,7 @@
 {
   "name": "safety-results-over-time",
   "description": "Chart showing population averages for lab measures, vital signs and other related measures during the course of a clinical trial.",
-  "version": "2.2.0",
+  "version": "2.2.1",
   "author": "Rho, Inc.",
   "license": "MIT",
   "homepage": "https://github.com/rhoinc/safety-results-over-time#readme",

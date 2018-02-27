@@ -12,7 +12,7 @@ export default function addResetButton() {
             }),
         resetLabel = resetContainer
             .append('span')
-            .attr('class', 'control-label')
+            .attr('class', 'wc-control-label')
             .style('text-align', 'right')
             .text('Y-axis:'),
         resetButton = resetContainer
