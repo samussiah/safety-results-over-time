@@ -10,9 +10,9 @@ Users can specify grouping variables and overlay violin plots:
 
 ![Example](https://github.com/RhoInc/safety-results-over-time/wiki/img/customized.PNG)
 
-Users can view any outcome in the data and stratify that outcome by sex or treatment, for example; the full functionality is described [here](https://github.com/RhoInc/safety-results-over-time/wiki/User-Requirements).
+Users can view any outcome in the data and stratify that outcome by sex or treatment, for example; the full functionality is described [here](https://github.com/RhoInc/safety-results-over-time/wiki/Technical-Documentation).
 The library expects an [ADaM-esque data structure](https://www.cdisc.org/system/files/members/standard/foundational/adam/analysis_data_model_v2.1.pdf) by default but can be customized to use any dataset that is one row per participant per timepoint per measure.
-Full details about chart configuration are [here](Configuration).
+Full details about chart configuration are [here](https://github.com/RhoInc/safety-results-over-time/wiki/Configuration).
 
 Users can interact with the display in real time to:
 * See the chart compare lab and vital sign values at different time points
@@ -71,11 +71,11 @@ The chart can be configured to facilitate non-standard data formats and to alter
 
 ```
 
-Click [here](https://rhoinc.github.io/viz-library/examples/0008-safetyExplorer-default/safety-results-over-time/) to open an interactive example of the Safety Results Over Time.
+Click [here](https://rhoinc.github.io/safety-results-over-time/build/test-page/) to open an interactive example of the Safety Results Over Time.
 
 ## Links 
 
-- [Interactive Example](https://rhoinc.github.io/viz-library/examples/0008-safetyExplorer-default/safety-results-over-time/)
+- [Interactive Example](https://rhoinc.github.io/safety-results-over-time/build/test-page/)
 - [Configuration](https://github.com/RhoInc/safety-results-over-time/wiki/Configuration) 
 - [API](https://github.com/RhoInc/safety-results-over-time/wiki/API)
 - [Technical Documentation](https://github.com/RhoInc/safety-results-over-time/wiki/Technical-Documentation) 
