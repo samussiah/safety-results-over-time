@@ -2,6 +2,7 @@ import clone from '../util/clone';
 import { ascending } from 'd3';
 import addBoxPlot from './drawPlots/addBoxPlot';
 import addViolinPlot from './drawPlots/addViolinPlot';
+import addSummaryStatistics from './drawPlots/addSummaryStatistics';
 
 export default function drawPlots() {
     this.nested_measure_data.filter(d => this.x_dom.indexOf(d.key) > -1).forEach(d => {
@@ -42,8 +43,8 @@ export default function drawPlots() {
             group.subgroups.push(subgroup);
 
             if (this.config.boxplots) addBoxPlot(this, subgroup);
-
             if (this.config.violins) addViolinPlot(this, subgroup, this.colorScale(subgroup.key));
+            addSummaryStatistics(subgroup);
         });
     });
 }
