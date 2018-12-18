@@ -4,12 +4,12 @@
     "overview": "The most straightforward way to customize the Safety Results Over Time is by using a configuration object whose properties describe the behavior and appearance of the chart. Since the Safety Results Over Time is a Webcharts `chart` object, many default Webcharts settings are set in the [defaultSettings.js file](https://github.com/RhoInc/safety-results-over-time/blob/master/src/defaultSettings.js) as [described below](#webcharts-settings). Refer to the [Webcharts documentation](https://github.com/RhoInc/Webcharts/wiki/Chart-Configuration) for more details on these settings.\nIn addition to the standard Webcharts settings several custom settings not available in the base Webcharts library have been added to the Safety Results Over Time to facilitate data mapping and other custom functionality. These custom settings are described in detail below. All defaults can be overwritten by users.",
     "version": "2.2.0",
     "type": "object",
-    "data-guidelines": "The Query Overview accepts [JSON](https://en.wikipedia.org/wiki/JSON) data of the format returned by [`d3.csv()`](https://github.com/d3/d3-3.x-api-reference/blob/master/CSV.md). The renderer visualizes clinical query data with **one row per query** plus the required variables specified below.",
-    "data-structure": "one record per query",
+    "data-guidelines": "The Safety Results Over Time accepts [JSON](https://en.wikipedia.org/wiki/JSON) data of the format returned by [`d3.csv()`](https://github.com/d3/d3-3.x-api-reference/blob/master/CSV.md). The renderer visualizes clinical medical signs data with **one row per participant per visit per medical sign** plus the required variables specified below.",
+    "data-structure": "one record per participant per visit per medical sign",
     "properties": {
         "id_col": {
             "title": "ID",
-            "description": "unique identifier variable name",
+            "description": "name of variable that captures unique identifier of participant",
             "default": "USUBJID",
             "type": "string",
             "data-mapping": true,
@@ -22,7 +22,8 @@
             "type": "object",
             "properties": {
                 "value_col": {
-                    "title": "Visit variable name",
+                    "title": "Visit",
+                    "description": "name of variable that captures visit name",
                     "default": "VISIT",
                     "type": "string",
                     "data-mapping": true,
@@ -35,12 +36,13 @@
                     "type": "string"
                 },
                 "order_col": {
-                    "title": "Visit ordering variable name",
+                    "title": "Visit Order",
+                    "description": "name of variable that captures visit order",
                     "default":  "VISITNUM",
                     "type": "string",
                     "data-mapping": true,
                     "data-type": "numeric",
-                    "required": true
+                    "required": false
                 },
                 "order": {
                     "title": "Visit order",
@@ -60,11 +62,12 @@
                     "default":  100,
                     "type": "number"
                 }
-            }
+            },
+            "data-mapping": true
         },
         "measure_col": {
             "title": "Measure",
-            "description": "measure variable name",
+            "description": "name of variable that captures measure name",
             "default": "TEST",
             "type": "string",
             "data-mapping": true,
@@ -73,16 +76,16 @@
         },
         "unit_col": {
             "title": "Unit",
-            "description": "measure unit variable name",
+            "description": "name of variable that captures measure unit",
             "default": "STRESU",
             "type": "string",
             "data-mapping": true,
             "data-type": "character",
-            "required": true
+            "required": false
         },
         "value_col": {
             "title": "Result",
-            "description": "result variable name",
+            "description": "name of variable that captures measure result",
             "default": "STRESN",
             "type": "string",
             "data-mapping": true,
@@ -91,21 +94,21 @@
         },
         "normal_col_low": {
             "title": "Lower Limit of Normal",
-            "description": "LLN variable name",
+            "description": "name of variable that captures LLN of measure",
             "default": "STNRLO",
             "type": "string",
             "data-mapping": true,
             "data-type": "numeric",
-            "required": true
+            "required": false
         },
         "normal_col_high": {
             "title": "Upper Limit of Normal",
-            "description": "ULN variable name",
+            "description": "name of variable that captures ULN of measure",
             "default": "STNRHI",
             "type": "string",
             "data-mapping": true,
             "data-type": "numeric",
-            "required": true
+            "required": false
         },
         "start_value": {
             "title": "Initially Displayed Measure",
@@ -131,7 +134,7 @@
             },
             "data-mapping": true,
             "data-type": "either",
-            "required": true
+            "required": false
         },
         "groups": {
             "title": "Groupings",
@@ -152,7 +155,7 @@
             },
             "data-mapping": true,
             "data-type": "either",
-            "required": true
+            "required": false
         },
         "boxplots": {
             "title": "Display box plots?",
@@ -197,7 +200,7 @@
             "default": "/unscheduled|early termination/i",
             "type": "string"
         },
-        "unscheduled_visits_values": {
+        "unscheduled_visit_values": {
             "title": "Unscheduled Visit List",
             "description": "an array of strings that identify unscheduled visits; overrides unscheduled_visit_pattern",
             "type": "array",

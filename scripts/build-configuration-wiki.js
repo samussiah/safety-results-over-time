@@ -4,7 +4,6 @@ const pkg = require('../package');
 const schema = require('../settings-schema');
 const properties = schema.properties;
 const settings = require('../src/defaultSettings.js');
-console.log(settings);
 const rendererSettings = settings.rendererSpecificSettings;
 const webchartsSettings = settings.webchartsSettings;
 const markdown = [];
@@ -102,20 +101,11 @@ function setDefault(setting) {
 
     markdown.push(``);
     markdown.push(`# Webcharts settings`);
-    markdown.push(`The objects below contain Webcharts settings for each display as of version ${schema.version} of the ${pkg.name.split('-').map(str => str.substring(0,1).toUpperCase() + str.substring(1).toLowerCase()).join(' ')}.`);
-
-    [
-        rendererSettings
-    ].forEach(settingsFx => {
-        const settings = JSON.stringify(settingsFx(), null, 4);
-        const display = settingsFx.name.replace('Settings', '');
-
-        markdown.push(``);
-        markdown.push(`## ${display.substring(0,1).toUpperCase()}${display.substring(1)}`);
-        markdown.push('```');
-        markdown.push(settings);
-        markdown.push('```');
-    });
+    markdown.push(`The object below contains Webcharts settings as of version ${schema.version} of the ${pkg.name.split('-').map(str => str.substring(0,1).toUpperCase() + str.substring(1).toLowerCase()).join(' ')}.`);
+    markdown.push(``);
+    markdown.push('```');
+    markdown.push(JSON.stringify(webchartsSettings, null, 4));
+    markdown.push('```');
 
 /*------------------------------------------------------------------------------------------------\
   Configuration markdown

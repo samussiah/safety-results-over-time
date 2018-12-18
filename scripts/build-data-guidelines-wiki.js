@@ -62,6 +62,22 @@ variables.forEach(variable => {
                     variable.required ? '**Yes**' : ''
                 }|`
             );
+    } else if (variable.type === 'object') {
+        const keys = Object.keys(variable.properties);
+        keys.filter(key => variable.properties[key]['data-mapping'])
+            .forEach(key => {
+                const subVariable = variable.properties[key];
+                markdown.push(
+                    `|\`${
+                        `${variable.setting}.${key}`}\`|${
+                            subVariable.default ? `_${subVariable.default}_` : ''
+                        }|**${
+                        subVariable['data-type']}**|${
+                        subVariable.description.replace(/name of variable that (captures )?/, '')}|${
+                        subVariable.required ? '**Yes**' : ''
+                    }|`
+                );
+            });
     } else
         console.warn(`This wiki can't handle ${variable.type}s! Get outta here!`);
 });

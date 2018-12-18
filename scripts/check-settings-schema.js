@@ -8,7 +8,7 @@ const properties = schema.properties;
 const expectedSettings = Object.keys(properties);
 
 //renderer settings
-const settings = require('../src/configuration/rendererSettings.js').default();
+const settings = require('../src/defaultSettings.js').rendererSpecificSettings;
 const actualSettings = Object.keys(settings);
 
 //differences
