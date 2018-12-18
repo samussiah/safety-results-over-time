@@ -8,7 +8,6 @@
     'use strict';
 
     if (typeof Object.assign != 'function') {
-        // Must be writable: true, enumerable: false, configurable: true
         Object.defineProperty(Object, 'assign', {
             value: function assign(target, varArgs) {
                 if (target == null) {
@@ -31,10 +30,99 @@
                         }
                     }
                 }
+
                 return to;
             },
             writable: true,
             configurable: true
+        });
+    }
+
+    if (!Array.prototype.find) {
+        Object.defineProperty(Array.prototype, 'find', {
+            value: function value(predicate) {
+                // 1. Let O be ? ToObject(this value).
+                if (this == null) {
+                    throw new TypeError('"this" is null or not defined');
+                }
+
+                var o = Object(this);
+
+                // 2. Let len be ? ToLength(? Get(O, 'length')).
+                var len = o.length >>> 0;
+
+                // 3. If IsCallable(predicate) is false, throw a TypeError exception.
+                if (typeof predicate !== 'function') {
+                    throw new TypeError('predicate must be a function');
+                }
+
+                // 4. If thisArg was supplied, let T be thisArg; else let T be undefined.
+                var thisArg = arguments[1];
+
+                // 5. Let k be 0.
+                var k = 0;
+
+                // 6. Repeat, while k < len
+                while (k < len) {
+                    // a. Let Pk be ! ToString(k).
+                    // b. Let kValue be ? Get(O, Pk).
+                    // c. Let testResult be ToBoolean(? Call(predicate, T, � kValue, k, O �)).
+                    // d. If testResult is true, return kValue.
+                    var kValue = o[k];
+                    if (predicate.call(thisArg, kValue, k, o)) {
+                        return kValue;
+                    }
+                    // e. Increase k by 1.
+                    k++;
+                }
+
+                // 7. Return undefined.
+                return undefined;
+            }
+        });
+    }
+
+    if (!Array.prototype.findIndex) {
+        Object.defineProperty(Array.prototype, 'findIndex', {
+            value: function value(predicate) {
+                // 1. Let O be ? ToObject(this value).
+                if (this == null) {
+                    throw new TypeError('"this" is null or not defined');
+                }
+
+                var o = Object(this);
+
+                // 2. Let len be ? ToLength(? Get(O, "length")).
+                var len = o.length >>> 0;
+
+                // 3. If IsCallable(predicate) is false, throw a TypeError exception.
+                if (typeof predicate !== 'function') {
+                    throw new TypeError('predicate must be a function');
+                }
+
+                // 4. If thisArg was supplied, let T be thisArg; else let T be undefined.
+                var thisArg = arguments[1];
+
+                // 5. Let k be 0.
+                var k = 0;
+
+                // 6. Repeat, while k < len
+                while (k < len) {
+                    // a. Let Pk be ! ToString(k).
+                    // b. Let kValue be ? Get(O, Pk).
+                    // c. Let testResult be ToBoolean(? Call(predicate, T, � kValue, k, O �)).
+                    // d. If testResult is true, return k.
+                    var kValue = o[k];
+                    if (predicate.call(thisArg, kValue, k, o)) {
+                        return k;
+                    }
+                    // e. Increase k by 1.
+                    k++;
+                }
+
+                // 7. Return -1.
+                return -1;
+            }
         });
     }
 
@@ -508,6 +596,26 @@
         setInitialMeasure.call(this);
     }
 
+    function classControlGroups() {
+        this.controls.wrap.selectAll('.control-group').each(function(d) {
+            var controlGroup = d3.select(this);
+            controlGroup.classed(d.label.toLowerCase().replace(' ', '-'), true);
+            if (['Lower Limit', 'Upper Limit'].indexOf(d.label) > -1)
+                controlGroup.classed('y-axis', true);
+        });
+    }
+
+    function removeGroupControl() {
+        var groupControl = this.controls.wrap
+            .selectAll('.control-group')
+            .filter(function(controlGroup) {
+                return controlGroup.label === 'Group';
+            });
+        groupControl.style('display', function(d) {
+            return d.values.length === 1 ? 'none' : groupControl.style('display');
+        });
+    }
+
     function addResetButton() {
         var context = this,
             resetContainer = this.controls.wrap
@@ -554,28 +662,18 @@
                 });
     }
 
-    function onLayout() {
-        //Add population count container.
-        this.controls.wrap
+    function addPopulationCountContainer() {
+        this.populationCountContainer = this.controls.wrap
             .append('div')
-            .attr('id', 'populationCount')
+            .classed('population-count', true)
             .style('font-style', 'italic');
+    }
 
-        //Distinguish controls to insert y-axis reset button in the correct position.
-        this.controls.wrap.selectAll('.control-group').attr('id', function(d) {
-            return d.label.toLowerCase().replace(' ', '-');
-        });
-
-        //Add a button to reset the y-domain
+    function onLayout() {
+        classControlGroups.call(this);
+        removeGroupControl.call(this);
         addResetButton.call(this);
-
-        //Add y-axis class to y-axis limit controls.
-        this.controls.wrap
-            .selectAll('.control-group')
-            .filter(function(d) {
-                return ['Lower Limit', 'Upper Limit'].indexOf(d.label) > -1;
-            })
-            .classed('y-axis', true);
+        addPopulationCountContainer.call(this);
     }
 
     function getCurrentMeasure() {
@@ -785,58 +883,84 @@
         removeUnscheduledVists.call(this);
     }
 
-    // Takes a webcharts object creates a text annotation giving the
+    function updateParticipantCount() {
+        var _this = this;
 
-    function updateParticipantCount(chart, selector, id_unit) {
-        //count the number of unique ids in the current chart and calculate the percentage
-        var currentObs = d3
+        this.populationCountContainer.selectAll('*').remove();
+        var subpopulationCount = d3
             .set(
-                chart.filtered_data.map(function(d) {
-                    return d[chart.config.id_col];
+                this.filtered_data.map(function(d) {
+                    return d[_this.config.id_col];
                 })
             )
             .values().length;
-        var percentage = d3.format('0.1%')(currentObs / chart.populationCount);
-
-        //clear the annotation
-        var annotation = d3.select(selector);
-        d3
-            .select(selector)
-            .selectAll('*')
-            .remove();
-
-        //update the annotation
-        var units = id_unit ? ' ' + id_unit : ' participant(s)';
-        annotation.text(
+        var percentage = d3.format('0.1%')(subpopulationCount / this.populationCount);
+        this.populationCountContainer.text(
             '\n' +
-                currentObs +
+                subpopulationCount +
                 ' of ' +
-                chart.populationCount +
-                units +
-                ' shown (' +
+                this.populationCount +
+                ' participants  shown (' +
                 percentage +
                 ')'
         );
     }
 
     function onDraw() {
-        //Annotate population count.
-        updateParticipantCount(this, '#populationCount');
+        updateParticipantCount.call(this);
     }
 
-    function addBoxPlot(chart, group) {
+    function addYAxisTicks() {
+        var _this = this;
+
+        //Manually draw y-axis ticks when none exist.
+        if (!this.svg.selectAll('.y .tick')[0].length) {
+            var probs = [
+                { probability: 0.05 },
+                { probability: 0.25 },
+                { probability: 0.5 },
+                { probability: 0.75 },
+                { probability: 0.95 }
+            ];
+
+            for (var i = 0; i < probs.length; i++) {
+                probs[i].quantile = d3.quantile(
+                    this.measure_data
+                        .map(function(d) {
+                            return +d[_this.config.y.column];
+                        })
+                        .sort(),
+                    probs[i].probability
+                );
+            }
+
+            var ticks = [probs[1].quantile, probs[3].quantile];
+            this.yAxis.tickValues(ticks);
+            this.svg
+                .select('g.y.axis')
+                .transition()
+                .call(this.yAxis);
+            this.drawGridlines();
+        }
+    }
+
+    function clearCanvas() {
+        this.svg.selectAll('.boxplot-wrap').remove();
+    }
+
+    function addBoxPlot(chart, subgroup) {
         var boxInsideColor =
             arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '#eee';
         var precision = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
 
         //Make the numericResults numeric and sort.
-        var numericResults = group.results
+        var numericResults = subgroup.results
             .map(function(d) {
                 return +d;
             })
             .sort(d3.ascending);
         var boxPlotWidth = 0.75 / chart.colorScale.domain().length;
-        var boxColor = chart.colorScale(group.key);
+        var boxColor = chart.colorScale(subgroup.key);
 
         //Define x - and y - scales.
         var x = d3.scale.linear().range([0, chart.x.rangeBand()]);
@@ -859,7 +983,7 @@
         }
 
         //Define box plot container.
-        var boxplot = group.svg
+        var boxplot = subgroup.svg
             .append('g')
             .attr('class', 'boxplot')
             .datum({
@@ -977,7 +1101,7 @@
             });
     }
 
-    function addViolinPlot(chart, group) {
+    function addViolinPlot(chart, subgroup) {
         var violinColor =
             arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '#ccc7d6';
         var precision = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
@@ -987,14 +1111,14 @@
             .histogram()
             .bins(10)
             .frequency(0);
-        var data = histogram(group.results);
+        var data = histogram(subgroup.results);
         data.unshift({
-            x: d3.min(group.results),
+            x: d3.min(subgroup.results),
             dx: 0,
             y: data[0].y
         });
         data.push({
-            x: d3.max(group.results),
+            x: d3.max(subgroup.results),
             dx: 0,
             y: data[data.length - 1].y
         });
@@ -1016,7 +1140,7 @@
             .domain([
                 0,
                 Math.max(
-                    1 - 1 / group.x.nGroups,
+                    1 - 1 / subgroup.group.x.nGroups,
                     d3.max(data, function(d) {
                         return d.y;
                     })
@@ -1044,7 +1168,7 @@
             .y(function(d) {
                 return y(d.y);
             });
-        var violinplot = group.svg
+        var violinplot = subgroup.svg
             .append('g')
             .attr('class', 'violinplot')
             .attr('clip-path', 'url(#' + chart.id + ')');
@@ -1097,85 +1221,92 @@
         var format0 = d3.format('.' + (precision + 0) + 'f');
         var format1 = d3.format('.' + (precision + 1) + 'f');
         var format2 = d3.format('.' + (precision + 2) + 'f');
-        group.svg
+        subgroup.svg
             .selectAll('g')
             .append('title')
             .text(function(d) {
                 return (
                     'N = ' +
-                    group.results.length +
+                    subgroup.results.length +
                     '\nMin = ' +
-                    d3.min(group.results) +
+                    d3.min(subgroup.results) +
                     '\n5th % = ' +
-                    format1(d3.quantile(group.results, 0.05)) +
+                    format1(d3.quantile(subgroup.results, 0.05)) +
                     '\nQ1 = ' +
-                    format1(d3.quantile(group.results, 0.25)) +
+                    format1(d3.quantile(subgroup.results, 0.25)) +
                     '\nMedian = ' +
-                    format1(d3.median(group.results)) +
+                    format1(d3.median(subgroup.results)) +
                     '\nQ3 = ' +
-                    format1(d3.quantile(group.results, 0.75)) +
+                    format1(d3.quantile(subgroup.results, 0.75)) +
                     '\n95th % = ' +
-                    format1(d3.quantile(group.results, 0.95)) +
+                    format1(d3.quantile(subgroup.results, 0.95)) +
                     '\nMax = ' +
-                    d3.max(group.results) +
+                    d3.max(subgroup.results) +
                     '\nMean = ' +
-                    format1(d3.mean(group.results)) +
+                    format1(d3.mean(subgroup.results)) +
                     '\nStDev = ' +
-                    format2(d3.deviation(group.results))
+                    format2(d3.deviation(subgroup.results))
                 );
             });
     }
 
-    function onResize() {
+    function drawPlots() {
         var _this = this;
 
-        var config = this.config;
+        this.nested_measure_data
+            .filter(function(d) {
+                return _this.x_dom.indexOf(d.key) > -1;
+            })
+            .forEach(function(d) {
+                //Sort [ config.color_by ] groups.
+                d.values = d.values.sort(function(a, b) {
+                    return _this.colorScale.domain().indexOf(a.key) <
+                        _this.colorScale.domain().indexOf(b.key)
+                        ? -1
+                        : 1;
+                });
 
-        //Remove legend when chart is ungrouped.
-        if (this.config.color_by === 'NONE') this.wrap.select('.legend').remove();
+                //Define group object.
+                var group = {
+                    x: {
+                        key: d.key, // x-axis value
+                        nGroups: _this.colorScale.domain().length, // number of groups at x-axis value
+                        width: _this.x.rangeBand() // width of x-axis value
+                    },
+                    subgroups: []
+                };
+                group.x.start = -(group.x.nGroups / 2) + 0.5;
+                group.distance = group.x.width / group.x.nGroups;
 
-        //Hide Group control if only one grouping is specified.
-        var groupControl = this.controls.wrap
-            .selectAll('.control-group')
-            .filter(function(controlGroup) {
-                return controlGroup.label === 'Group';
-            });
-        groupControl.style('display', function(d) {
-            return d.values.length === 1 ? 'none' : groupControl.style('display');
-        });
-
-        //Manually draw y-axis ticks when none exist.
-        if (!this.svg.selectAll('.y .tick')[0].length) {
-            var probs = [
-                { probability: 0.05 },
-                { probability: 0.25 },
-                { probability: 0.5 },
-                { probability: 0.75 },
-                { probability: 0.95 }
-            ];
-
-            for (var i = 0; i < probs.length; i++) {
-                probs[i].quantile = d3.quantile(
-                    this.measure_data
-                        .map(function(d) {
-                            return +d[_this.config.y.column];
+                d.values.forEach(function(di, i) {
+                    var subgroup = {
+                        group: group,
+                        key: di.key,
+                        offset: (group.x.start + i) * group.distance,
+                        results: di.values.sort(d3.ascending).map(function(value) {
+                            return +value;
                         })
-                        .sort(),
-                    probs[i].probability
-                );
-            }
+                    };
+                    subgroup.svg = _this.svg
+                        .append('g')
+                        .attr({
+                            class: 'boxplot-wrap overlay-item',
+                            transform:
+                                'translate(' + (_this.x(group.x.key) + subgroup.offset) + ',0)'
+                        })
+                        .datum({ values: subgroup.results });
+                    group.subgroups.push(subgroup);
 
-            var ticks = [probs[1].quantile, probs[3].quantile];
-            this.yAxis.tickValues(ticks);
-            this.svg
-                .select('g.y.axis')
-                .transition()
-                .call(this.yAxis);
-            this.drawGridlines();
-        }
+                    if (_this.config.boxplots) addBoxPlot(_this, subgroup);
 
-        //Rotate x-axis tick labels.
-        if (config.time_settings.rotate_tick_labels)
+                    if (_this.config.violins)
+                        addViolinPlot(_this, subgroup, _this.colorScale(subgroup.key));
+                });
+            });
+    }
+
+    function rotateXAxisTickLabels() {
+        if (this.config.time_settings.rotate_tick_labels)
             this.svg
                 .selectAll('.x.axis .tick text')
                 .attr({
@@ -1184,65 +1315,18 @@
                     dy: 10
                 })
                 .style('text-anchor', 'end');
+    }
 
-        //Draw reference boxplot.
-        this.svg.selectAll('.boxplot-wrap').remove();
+    function removeLegend() {
+        if (this.config.color_by === 'NONE') this.wrap.select('.legend').remove();
+    }
 
-        this.nested_measure_data.forEach(function(e) {
-            //Sort [ config.color_by ] groups.
-            e.values = e.values.sort(function(a, b) {
-                return _this.colorScale.domain().indexOf(a.key) <
-                    _this.colorScale.domain().indexOf(b.key)
-                    ? -1
-                    : 1;
-            });
-
-            //Define group object.
-            var group = {};
-            group.x = {
-                key: e.key, // x-axis value
-                nGroups: _this.colorScale.domain().length, // number of groups at x-axis value
-                width: _this.x.rangeBand() // width of x-axis value
-            };
-            //Given an odd number of groups, center first box and offset the rest.
-            //Given an even number of groups, offset all boxes.
-            group.x.start = group.x.nGroups % 2 ? 0 : 1;
-
-            e.values.forEach(function(v, i) {
-                group.key = v.key;
-                //Calculate direction in which to offset each box plot.
-                group.direction =
-                    i > 0 ? Math.pow(-1, i % 2) * (group.x.start ? 1 : -1) : group.x.start;
-                //Calculate multiplier of offset distance.
-                group.multiplier = Math.round((i + group.x.start) / 2);
-                //Calculate offset distance as a function of the x-axis range band, number of groups, and whether
-                //the number of groups is even or odd.
-                group.distance = group.x.width / group.x.nGroups;
-                group.distanceOffset =
-                    group.x.start * -1 * group.direction * group.x.width / group.x.nGroups / 2;
-                //Calculate offset.
-                group.offset =
-                    group.direction * group.multiplier * group.distance + group.distanceOffset;
-                //Capture all results within visit and group.
-                group.results = v.values.sort(d3.ascending).map(function(d) {
-                    return +d;
-                });
-
-                if (_this.x_dom.indexOf(group.x.key) > -1) {
-                    group.svg = _this.svg
-                        .append('g')
-                        .attr({
-                            class: 'boxplot-wrap overlay-item',
-                            transform: 'translate(' + (_this.x(group.x.key) + group.offset) + ',0)'
-                        })
-                        .datum({ values: group.results });
-
-                    if (config.boxplots) addBoxPlot(_this, group);
-
-                    if (config.violins) addViolinPlot(_this, group, _this.colorScale(group.key));
-                }
-            });
-        });
+    function onResize() {
+        addYAxisTicks.call(this);
+        clearCanvas.call(this);
+        drawPlots.call(this);
+        rotateXAxisTickLabels.call(this);
+        removeLegend.call(this);
     }
 
     function safetyResultsOverTime(element, settings) {
