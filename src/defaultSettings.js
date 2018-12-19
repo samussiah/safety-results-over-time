@@ -40,7 +40,7 @@ export const webchartsSettings = {
         label: null,
         behavior: 'flex',
         stat: 'mean',
-        format: '0.2f'
+        format: null // set in ./onPreprocess/setYprecision()
     },
     marks: [
         {

@@ -44,7 +44,7 @@ export default function drawPlots() {
 
             if (this.config.boxplots) addBoxPlot(this, subgroup);
             if (this.config.violins) addViolinPlot(this, subgroup, this.colorScale(subgroup.key));
-            addSummaryStatistics(subgroup);
+            addSummaryStatistics.call(this, subgroup);
         });
     });
 }

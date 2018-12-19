@@ -1,13 +1,15 @@
-(function (global, factory) {
-    typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('d3'), require('webcharts')) :
-    typeof define === 'function' && define.amd ? define(['d3', 'webcharts'], factory) :
-    (global.safetyResultsOverTime = factory(global.d3,global.webCharts));
-}(this, (function (d3,webcharts) { 'use strict';
+(function(global, factory) {
+    typeof exports === 'object' && typeof module !== 'undefined'
+        ? (module.exports = factory(require('d3'), require('webcharts')))
+        : typeof define === 'function' && define.amd
+          ? define(['d3', 'webcharts'], factory)
+          : (global.safetyResultsOverTime = factory(global.d3, global.webCharts));
+})(this, function(d3, webcharts) {
+    'use strict';
 
     if (typeof Object.assign != 'function') {
         Object.defineProperty(Object, 'assign', {
             value: function assign(target, varArgs) {
-
                 if (target == null) {
                     // TypeError if undefined or null
                     throw new TypeError('Cannot convert undefined or null to object');
@@ -124,11 +126,19 @@
         });
     }
 
-    var _typeof = typeof Symbol === "function" && typeof Symbol.iterator === "symbol" ? function (obj) {
-      return typeof obj;
-    } : function (obj) {
-      return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj;
-    };
+    var _typeof =
+        typeof Symbol === 'function' && typeof Symbol.iterator === 'symbol'
+            ? function(obj) {
+                  return typeof obj;
+              }
+            : function(obj) {
+                  return obj &&
+                      typeof Symbol === 'function' &&
+                      obj.constructor === Symbol &&
+                      obj !== Symbol.prototype
+                      ? 'symbol'
+                      : typeof obj;
+              };
 
     var hasOwnProperty = Object.prototype.hasOwnProperty;
     var propIsEnumerable = Object.prototype.propertyIsEnumerable;
@@ -159,7 +169,9 @@
             }
         }
 
-        if (!hasOwnProperty.call(to, key) || !isObj(val)) to[key] = val;else if (val instanceof Array) to[key] = from[key]; // figure out how to merge arrays without converting them into objects
+        if (!hasOwnProperty.call(to, key) || !isObj(val)) to[key] = val;
+        else if (val instanceof Array)
+            to[key] = from[key]; // figure out how to merge arrays without converting them into objects
         else to[key] = assign(Object(to[key]), from[key]);
     }
 
@@ -241,17 +253,19 @@
             label: null,
             behavior: 'flex',
             stat: 'mean',
-            format: '0.2f'
+            format: null // set in ./onPreprocess/setYprecision()
         },
-        marks: [{
-            type: 'line',
-            per: null, // set in syncSettings()
-            attributes: {
-                'stroke-width': 2,
-                'stroke-opacity': 1,
-                display: 'none'
+        marks: [
+            {
+                type: 'line',
+                per: null, // set in syncSettings()
+                attributes: {
+                    'stroke-width': 2,
+                    'stroke-opacity': 1,
+                    display: 'none'
+                }
             }
-        }],
+        ],
         legend: {
             mark: 'square'
         },
@@ -269,20 +283,31 @@
         settings.x.label = settings.time_settings.label;
         settings.x.behavior = settings.visits_without_data ? 'raw' : 'flex';
         settings.y.column = settings.value_col;
-        if (!(settings.groups instanceof Array && settings.groups.length)) settings.groups = [{ value_col: 'NONE', label: 'None' }];else settings.groups = settings.groups.map(function (group) {
-            return {
-                value_col: group.value_col || group,
-                label: group.label || group.value_col || group
-            };
-        });
-        settings.color_by = settings.groups[0].value_col ? settings.groups[0].value_col : settings.groups[0];
+        if (!(settings.groups instanceof Array && settings.groups.length))
+            settings.groups = [{ value_col: 'NONE', label: 'None' }];
+        else
+            settings.groups = settings.groups.map(function(group) {
+                return {
+                    value_col: group.value_col || group,
+                    label: group.label || group.value_col || group
+                };
+            });
+        settings.color_by = settings.groups[0].value_col
+            ? settings.groups[0].value_col
+            : settings.groups[0];
         settings.marks[0].per = [settings.color_by];
         settings.margin = settings.margin || { bottom: settings.time_settings.vertical_space };
 
         //Convert unscheduled_visit_pattern from string to regular expression.
-        if (typeof settings.unscheduled_visit_pattern === 'string' && settings.unscheduled_visit_pattern !== '') {
+        if (
+            typeof settings.unscheduled_visit_pattern === 'string' &&
+            settings.unscheduled_visit_pattern !== ''
+        ) {
             var flags = settings.unscheduled_visit_pattern.replace(/.*?\/([gimy]*)$/, '$1'),
-                pattern = settings.unscheduled_visit_pattern.replace(new RegExp('^/(.*?)/' + flags + '$'), '$1');
+                pattern = settings.unscheduled_visit_pattern.replace(
+                    new RegExp('^/(.*?)/' + flags + '$'),
+                    '$1'
+                );
             settings.unscheduled_visit_regex = new RegExp(pattern, flags);
         }
 
@@ -290,66 +315,98 @@
     }
 
     // Default Control objects
-    var controlInputs = [{
-        type: 'subsetter',
-        label: 'Measure',
-        description: 'filter',
-        value_col: null, // set in syncControlInputs()
-        start: null // set in syncControlInputs()
-    }, {
-        type: 'dropdown',
-        label: 'Group',
-        description: 'stratification',
-        options: ['marks.0.per.0', 'color_by'],
-        start: null, // set in syncControlInputs()
-        values: ['NONE'], // set in syncControlInputs()
-        require: true
-    }, { type: 'number', label: 'Lower Limit', option: 'y.domain[0]', require: true }, { type: 'number', label: 'Upper Limit', option: 'y.domain[1]', require: true }, { type: 'checkbox', inline: true, option: 'visits_without_data', label: 'Visits without data' }, { type: 'checkbox', inline: true, option: 'unscheduled_visits', label: 'Unscheduled visits' }, { type: 'checkbox', inline: true, option: 'boxplots', label: 'Box plots' }, { type: 'checkbox', inline: true, option: 'violins', label: 'Violin plots' }];
+    var controlInputs = [
+        {
+            type: 'subsetter',
+            label: 'Measure',
+            description: 'filter',
+            value_col: null, // set in syncControlInputs()
+            start: null // set in syncControlInputs()
+        },
+        {
+            type: 'dropdown',
+            label: 'Group',
+            description: 'stratification',
+            options: ['marks.0.per.0', 'color_by'],
+            start: null, // set in syncControlInputs()
+            values: ['NONE'], // set in syncControlInputs()
+            require: true
+        },
+        { type: 'number', label: 'Lower Limit', option: 'y.domain[0]', require: true },
+        { type: 'number', label: 'Upper Limit', option: 'y.domain[1]', require: true },
+        {
+            type: 'checkbox',
+            inline: true,
+            option: 'visits_without_data',
+            label: 'Visits without data'
+        },
+        {
+            type: 'checkbox',
+            inline: true,
+            option: 'unscheduled_visits',
+            label: 'Unscheduled visits'
+        },
+        { type: 'checkbox', inline: true, option: 'boxplots', label: 'Box plots' },
+        { type: 'checkbox', inline: true, option: 'violins', label: 'Violin plots' }
+    ];
 
     // Map values from settings to control inputs
     function syncControlInputs(controlInputs, settings) {
         //Sync measure control.
-        var measureControl = controlInputs.filter(function (controlInput) {
+        var measureControl = controlInputs.filter(function(controlInput) {
             return controlInput.label === 'Measure';
         })[0];
         measureControl.value_col = settings.measure_col;
         measureControl.start = settings.start_value;
 
         //Sync group control.
-        var groupControl = controlInputs.filter(function (controlInput) {
+        var groupControl = controlInputs.filter(function(controlInput) {
             return controlInput.label === 'Group';
         })[0];
         groupControl.start = settings.color_by;
-        settings.groups.filter(function (group) {
-            return group.value_col !== 'NONE';
-        }).forEach(function (group) {
-            groupControl.values.push(group.value_col);
-        });
+        settings.groups
+            .filter(function(group) {
+                return group.value_col !== 'NONE';
+            })
+            .forEach(function(group) {
+                groupControl.values.push(group.value_col);
+            });
 
         //Add custom filters to control inputs.
         if (settings.filters) {
-            settings.filters.reverse().forEach(function (filter) {
+            settings.filters.reverse().forEach(function(filter) {
                 var thisFilter = {
                     type: 'subsetter',
                     value_col: filter.value_col ? filter.value_col : filter,
-                    label: filter.label ? filter.label : filter.value_col ? filter.value_col : filter,
+                    label: filter.label
+                        ? filter.label
+                        : filter.value_col ? filter.value_col : filter,
                     description: 'filter'
                 };
 
                 //add the filter to the control inputs (as long as it's not already there)
-                var current_value_cols = controlInputs.filter(function (f) {
-                    return f.type == 'subsetter';
-                }).map(function (m) {
-                    return m.value_col;
-                });
-                if (current_value_cols.indexOf(thisFilter.value_col) == -1) controlInputs.splice(1, 0, thisFilter);
+                var current_value_cols = controlInputs
+                    .filter(function(f) {
+                        return f.type == 'subsetter';
+                    })
+                    .map(function(m) {
+                        return m.value_col;
+                    });
+                if (current_value_cols.indexOf(thisFilter.value_col) == -1)
+                    controlInputs.splice(1, 0, thisFilter);
             });
         }
 
         //Remove unscheduled visit control if unscheduled visit pattern is unscpecified.
-        if (!settings.unscheduled_visit_regex) controlInputs.splice(controlInputs.map(function (controlInput) {
-            return controlInput.label;
-        }).indexOf('Unscheduled visits'), 1);
+        if (!settings.unscheduled_visit_regex)
+            controlInputs.splice(
+                controlInputs
+                    .map(function(controlInput) {
+                        return controlInput.label;
+                    })
+                    .indexOf('Unscheduled visits'),
+                1
+            );
 
         return controlInputs;
     }
@@ -357,9 +414,13 @@
     function countParticipants() {
         var _this = this;
 
-        this.populationCount = d3.set(this.raw_data.map(function (d) {
-            return d[_this.config.id_col];
-        })).values().length;
+        this.populationCount = d3
+            .set(
+                this.raw_data.map(function(d) {
+                    return d[_this.config.id_col];
+                })
+            )
+            .values().length;
     }
 
     function cleanData() {
@@ -367,30 +428,48 @@
 
         //Remove missing and non-numeric data.
         var preclean = this.raw_data,
-            clean = this.raw_data.filter(function (d) {
-            return (/^-?[0-9.]+$/.test(d[_this.config.value_col])
-            );
-        }),
+            clean = this.raw_data.filter(function(d) {
+                return /^-?[0-9.]+$/.test(d[_this.config.value_col]);
+            }),
             nPreclean = preclean.length,
             nClean = clean.length,
             nRemoved = nPreclean - nClean;
 
         //Warn user of removed records.
-        if (nRemoved > 0) console.warn(nRemoved + ' missing or non-numeric result' + (nRemoved > 1 ? 's have' : ' has') + ' been removed.');
+        if (nRemoved > 0)
+            console.warn(
+                nRemoved +
+                    ' missing or non-numeric result' +
+                    (nRemoved > 1 ? 's have' : ' has') +
+                    ' been removed.'
+            );
         this.raw_data = clean;
 
         //Attach array of continuous measures to chart object.
-        this.measures = d3.set(this.raw_data.map(function (d) {
-            return d[_this.config.measure_col];
-        })).values().sort();
+        this.measures = d3
+            .set(
+                this.raw_data.map(function(d) {
+                    return d[_this.config.measure_col];
+                })
+            )
+            .values()
+            .sort();
     }
 
     function addVariables() {
         var _this = this;
 
-        this.raw_data.forEach(function (d) {
+        this.raw_data.forEach(function(d) {
             d.NONE = 'All Participants'; // placeholder variable for non-grouped comparisons
-            d.unscheduled = _this.config.unscheduled_visit_values ? _this.config.unscheduled_visit_values.indexOf(d[_this.config.time_settings.value_col]) > -1 : _this.config.unscheduled_visit_regex ? _this.config.unscheduled_visit_regex.test(d[_this.config.time_settings.value_col]) : false;
+            d.unscheduled = _this.config.unscheduled_visit_values
+                ? _this.config.unscheduled_visit_values.indexOf(
+                      d[_this.config.time_settings.value_col]
+                  ) > -1
+                : _this.config.unscheduled_visit_regex
+                  ? _this.config.unscheduled_visit_regex.test(
+                        d[_this.config.time_settings.value_col]
+                    )
+                  : false;
         });
     }
 
@@ -401,27 +480,44 @@
             visitOrder = void 0;
 
         //Given an ordering variable sort a unique set of visits by the ordering variable.
-        if (this.config.time_settings.order_col && this.raw_data[0].hasOwnProperty(this.config.time_settings.order_col)) {
+        if (
+            this.config.time_settings.order_col &&
+            this.raw_data[0].hasOwnProperty(this.config.time_settings.order_col)
+        ) {
             //Define a unique set of visits with visit order concatenated.
-            visits = d3.set(this.raw_data.map(function (d) {
-                return d[_this.config.time_settings.order_col] + '|' + d[_this.config.time_settings.value_col];
-            })).values();
+            visits = d3
+                .set(
+                    this.raw_data.map(function(d) {
+                        return (
+                            d[_this.config.time_settings.order_col] +
+                            '|' +
+                            d[_this.config.time_settings.value_col]
+                        );
+                    })
+                )
+                .values();
 
             //Sort visits.
-            visitOrder = visits.sort(function (a, b) {
-                var aOrder = a.split('|')[0],
-                    bOrder = b.split('|')[0],
-                    diff = +aOrder - +bOrder;
-                return diff ? diff : d3.ascending(a, b);
-            }).map(function (visit) {
-                return visit.split('|')[1];
-            });
+            visitOrder = visits
+                .sort(function(a, b) {
+                    var aOrder = a.split('|')[0],
+                        bOrder = b.split('|')[0],
+                        diff = +aOrder - +bOrder;
+                    return diff ? diff : d3.ascending(a, b);
+                })
+                .map(function(visit) {
+                    return visit.split('|')[1];
+                });
         } else {
             //Otherwise sort a unique set of visits alphanumerically.
             //Define a unique set of visits.
-            visits = d3.set(this.raw_data.map(function (d) {
-                return d[_this.config.time_settings.value_col];
-            })).values();
+            visits = d3
+                .set(
+                    this.raw_data.map(function(d) {
+                        return d[_this.config.time_settings.value_col];
+                    })
+                )
+                .values();
 
             //Sort visits;
             visitOrder = visits.sort();
@@ -430,9 +526,11 @@
         //Set x-axis domain.
         if (this.config.time_settings.order) {
             //If a visit order is specified, use it and concatenate any unspecified visits at the end.
-            this.config.x.order = this.config.time_settings.order.concat(visitOrder.filter(function (visit) {
-                return _this.config.time_settings.order.indexOf(visit) < 0;
-            }));
+            this.config.x.order = this.config.time_settings.order.concat(
+                visitOrder.filter(function(visit) {
+                    return _this.config.time_settings.order.indexOf(visit) < 0;
+                })
+            );
         } else
             //Otherwise use data-driven visit order.
             this.config.x.order = visitOrder;
@@ -441,17 +539,30 @@
     function checkFilters() {
         var _this = this;
 
-        this.controls.config.inputs = this.controls.config.inputs.filter(function (input) {
+        this.controls.config.inputs = this.controls.config.inputs.filter(function(input) {
             if (input.type != 'subsetter') {
                 return true;
             } else if (!_this.raw_data[0].hasOwnProperty(input.value_col)) {
-                console.warn('The [ ' + input.label + ' ] filter has been removed because the variable does not exist.');
+                console.warn(
+                    'The [ ' +
+                        input.label +
+                        ' ] filter has been removed because the variable does not exist.'
+                );
             } else {
-                var levels = d3.set(_this.raw_data.map(function (d) {
-                    return d[input.value_col];
-                })).values();
+                var levels = d3
+                    .set(
+                        _this.raw_data.map(function(d) {
+                            return d[input.value_col];
+                        })
+                    )
+                    .values();
 
-                if (levels.length === 1) console.warn('The [ ' + input.label + ' ] filter has been removed because the variable has only one level.');
+                if (levels.length === 1)
+                    console.warn(
+                        'The [ ' +
+                            input.label +
+                            ' ] filter has been removed because the variable has only one level.'
+                    );
 
                 return levels.length > 1;
             }
@@ -459,9 +570,10 @@
     }
 
     function setInitialMeasure() {
-        this.controls.config.inputs.filter(function (input) {
+        this.controls.config.inputs.filter(function(input) {
             return input.label === 'Measure';
-        })[0].start = this.config.start_value || this.measures[0];
+        })[0].start =
+            this.config.start_value || this.measures[0];
     }
 
     function onInit() {
@@ -485,52 +597,76 @@
     }
 
     function classControlGroups() {
-        this.controls.wrap.selectAll('.control-group').each(function (d) {
+        this.controls.wrap.selectAll('.control-group').each(function(d) {
             var controlGroup = d3.select(this);
             controlGroup.classed(d.label.toLowerCase().replace(' ', '-'), true);
-            if (['Lower Limit', 'Upper Limit'].indexOf(d.label) > -1) controlGroup.classed('y-axis', true);
+            if (['Lower Limit', 'Upper Limit'].indexOf(d.label) > -1)
+                controlGroup.classed('y-axis', true);
         });
     }
 
     function removeGroupControl() {
-        var groupControl = this.controls.wrap.selectAll('.control-group').filter(function (controlGroup) {
-            return controlGroup.label === 'Group';
-        });
-        groupControl.style('display', function (d) {
+        var groupControl = this.controls.wrap
+            .selectAll('.control-group')
+            .filter(function(controlGroup) {
+                return controlGroup.label === 'Group';
+            });
+        groupControl.style('display', function(d) {
             return d.values.length === 1 ? 'none' : groupControl.style('display');
         });
     }
 
     function addResetButton() {
         var context = this,
-            resetContainer = this.controls.wrap.insert('div', '#lower-limit').classed('control-group y-axis', true).datum({
-            type: 'button',
-            option: 'y.domain',
-            label: 'Y-axis:'
-        }),
-            resetLabel = resetContainer.append('span').attr('class', 'wc-control-label').style('text-align', 'right').text('Y-axis:'),
-            resetButton = resetContainer.append('button').text('Reset Limits').on('click', function () {
-            var measure_data = context.raw_data.filter(function (d) {
-                return d[context.config.measure_col] === context.currentMeasure;
-            });
-            context.config.y.domain = d3.extent(measure_data, function (d) {
-                return +d[context.config.value_col];
-            }); //reset axis to full range
+            resetContainer = this.controls.wrap
+                .insert('div', '#lower-limit')
+                .classed('control-group y-axis', true)
+                .datum({
+                    type: 'button',
+                    option: 'y.domain',
+                    label: 'Y-axis:'
+                }),
+            resetLabel = resetContainer
+                .append('span')
+                .attr('class', 'wc-control-label')
+                .style('text-align', 'right')
+                .text('Y-axis:'),
+            resetButton = resetContainer
+                .append('button')
+                .text('Reset Limits')
+                .on('click', function() {
+                    var measure_data = context.raw_data.filter(function(d) {
+                        return d[context.config.measure_col] === context.currentMeasure;
+                    });
+                    context.config.y.domain = d3.extent(measure_data, function(d) {
+                        return +d[context.config.value_col];
+                    }); //reset axis to full range
 
-            context.controls.wrap.selectAll('.control-group').filter(function (f) {
-                return f.option === 'y.domain[0]';
-            }).select('input').property('value', context.config.y.domain[0]);
+                    context.controls.wrap
+                        .selectAll('.control-group')
+                        .filter(function(f) {
+                            return f.option === 'y.domain[0]';
+                        })
+                        .select('input')
+                        .property('value', context.config.y.domain[0]);
 
-            context.controls.wrap.selectAll('.control-group').filter(function (f) {
-                return f.option === 'y.domain[1]';
-            }).select('input').property('value', context.config.y.domain[1]);
+                    context.controls.wrap
+                        .selectAll('.control-group')
+                        .filter(function(f) {
+                            return f.option === 'y.domain[1]';
+                        })
+                        .select('input')
+                        .property('value', context.config.y.domain[1]);
 
-            context.draw();
-        });
+                    context.draw();
+                });
     }
 
     function addPopulationCountContainer() {
-        this.populationCountContainer = this.controls.wrap.append('div').classed('population-count', true).style('font-style', 'italic');
+        this.populationCountContainer = this.controls.wrap
+            .append('div')
+            .classed('population-count', true)
+            .style('font-style', 'italic');
     }
 
     function onLayout() {
@@ -544,58 +680,84 @@
         var _this = this;
 
         this.previousMeasure = this.currentMeasure;
-        this.currentMeasure = this.controls.wrap.selectAll('.control-group').filter(function (d) {
-            return d.value_col && d.value_col === _this.config.measure_col;
-        }).select('option:checked').text();
+        this.currentMeasure = this.controls.wrap
+            .selectAll('.control-group')
+            .filter(function(d) {
+                return d.value_col && d.value_col === _this.config.measure_col;
+            })
+            .select('option:checked')
+            .text();
     }
 
     function defineMeasureData() {
         var _this = this;
 
-        this.measure_data = this.raw_data.filter(function (d) {
+        this.measure_data = this.raw_data.filter(function(d) {
             return d[_this.config.measure_col] === _this.currentMeasure;
         });
-        this.filtered_measure_data = this.measure_data.filter(function (d) {
+        this.filtered_measure_data = this.measure_data.filter(function(d) {
             var filtered = false;
 
-            _this.filters.filter(function (filter) {
-                return filter.value_col !== _this.config.measure_col;
-            }).forEach(function (filter) {
-                if (filtered === false && filter.val !== 'All') filtered = filter.val instanceof Array ? filter.val.indexOf(d[filter.col]) < 0 : filter.val !== d[filter.col];
-            });
+            _this.filters
+                .filter(function(filter) {
+                    return filter.value_col !== _this.config.measure_col;
+                })
+                .forEach(function(filter) {
+                    if (filtered === false && filter.val !== 'All')
+                        filtered =
+                            filter.val instanceof Array
+                                ? filter.val.indexOf(d[filter.col]) < 0
+                                : filter.val !== d[filter.col];
+                });
 
             return !filtered;
         });
-        this.nested_measure_data = d3.nest().key(function (d) {
-            return d[_this.config.x.column];
-        }).key(function (d) {
-            return d[_this.config.color_by];
-        }).rollup(function (d) {
-            return d.map(function (m) {
-                return +m[_this.config.y.column];
-            });
-        }).entries(this.filtered_measure_data);
+        this.nested_measure_data = d3
+            .nest()
+            .key(function(d) {
+                return d[_this.config.x.column];
+            })
+            .key(function(d) {
+                return d[_this.config.color_by];
+            })
+            .rollup(function(d) {
+                return d.map(function(m) {
+                    return +m[_this.config.y.column];
+                });
+            })
+            .entries(this.filtered_measure_data);
     }
 
     function removeVisitsWithoutData() {
         var _this = this;
 
-        if (!this.config.visits_without_data) this.config.x.domain = this.config.x.domain.filter(function (visit) {
-            return d3.set(_this.filtered_measure_data.map(function (d) {
-                return d[_this.config.time_settings.value_col];
-            })).values().indexOf(visit) > -1;
-        });
+        if (!this.config.visits_without_data)
+            this.config.x.domain = this.config.x.domain.filter(function(visit) {
+                return (
+                    d3
+                        .set(
+                            _this.filtered_measure_data.map(function(d) {
+                                return d[_this.config.time_settings.value_col];
+                            })
+                        )
+                        .values()
+                        .indexOf(visit) > -1
+                );
+            });
     }
 
     function removeUnscheduledVisits() {
         var _this = this;
 
         if (!this.config.unscheduled_visits) {
-            if (this.config.unscheduled_visit_values) this.config.x.domain = this.config.x.domain.filter(function (visit) {
-                return _this.config.unscheduled_visit_values.indexOf(visit) < 0;
-            });else if (this.config.unscheduled_visit_regex) this.config.x.domain = this.config.x.domain.filter(function (visit) {
-                return !_this.config.unscheduled_visit_regex.test(visit);
-            });
+            if (this.config.unscheduled_visit_values)
+                this.config.x.domain = this.config.x.domain.filter(function(visit) {
+                    return _this.config.unscheduled_visit_values.indexOf(visit) < 0;
+                });
+            else if (this.config.unscheduled_visit_regex)
+                this.config.x.domain = this.config.x.domain.filter(function(visit) {
+                    return !_this.config.unscheduled_visit_regex.test(visit);
+                });
         }
     }
 
@@ -609,40 +771,99 @@
         var _this = this;
 
         //Define y-domain.
-        if (this.currentMeasure !== this.previousMeasure) this.config.y.domain = d3.extent(this.measure_data.map(function (d) {
-            return +d[_this.config.y.column];
-        }));else if (this.config.y.domain[0] > this.config.y.domain[1])
+        if (this.currentMeasure !== this.previousMeasure)
+            this.config.y.domain = d3.extent(
+                this.measure_data.map(function(d) {
+                    return +d[_this.config.y.column];
+                })
+            );
+        else if (this.config.y.domain[0] > this.config.y.domain[1])
             // new measure
-            this.config.y.domain.reverse();else if (this.config.y.domain[0] === this.config.y.domain[1])
+            this.config.y.domain.reverse();
+        else if (this.config.y.domain[0] === this.config.y.domain[1])
             // invalid domain
-            this.config.y.domain = this.config.y.domain.map(function (d, i) {
+            this.config.y.domain = this.config.y.domain.map(function(d, i) {
                 return i === 0 ? d - d * 0.01 : d + d * 0.01;
             }); // domain with zero range
     }
 
-    function updateYaxisLimitControls() {
-        //Update y-axis limit controls.
-        this.controls.wrap.selectAll('.control-group').filter(function (f) {
-            return f.option === 'y.domain[0]';
-        }).select('input').property('value', this.config.y.domain[0]);
-        this.controls.wrap.selectAll('.control-group').filter(function (f) {
-            return f.option === 'y.domain[1]';
-        }).select('input').property('value', this.config.y.domain[1]);
-    }
-
     function setYaxisLabel() {
-        this.config.y.label = this.currentMeasure + (this.config.unit_col && this.measure_data[0][this.config.unit_col] ? ' (' + this.measure_data[0][this.config.unit_col] + ')' : '');
+        this.config.y.label =
+            this.currentMeasure +
+            (this.config.unit_col && this.measure_data[0][this.config.unit_col]
+                ? ' (' + this.measure_data[0][this.config.unit_col] + ')'
+                : '');
     }
 
-    function setLegendLabel() {
-        this.config.legend.label = this.config.color_by !== 'NONE' ? this.config.groups[this.config.groups.map(function (group) {
-            return group.value_col;
-        }).indexOf(this.config.color_by)].label : '';
+    function setYprecision() {
+        var _this = this;
+
+        //Calculate range of current measure and the log10 of the range to choose an appropriate precision.
+        this.config.y.range = this.config.y.domain[1] - this.config.y.domain[0];
+        this.config.y.log10range = Math.log10(this.config.y.range);
+        this.config.y.roundedLog10range = Math.round(this.config.y.log10range);
+        this.config.y.precision1 = -1 * (this.config.y.roundedLog10range - 1);
+        this.config.y.precision2 = -1 * (this.config.y.roundedLog10range - 2);
+
+        //Define the format of the y-axis tick labels and y-domain controls.
+        this.config.y.precision = this.config.y.log10range > 0.5 ? 0 : this.config.y.precision1;
+        this.config.y.format =
+            this.config.y.log10range > 0.5 ? '1f' : '.' + this.config.y.precision1 + 'f';
+        this.config.y.d3_format = d3.format(this.config.y.format);
+        this.config.y.formatted_domain = this.config.y.domain.map(function(d) {
+            return _this.config.y.d3_format(d);
+        });
+
+        //Define the bin format: one less than the y-axis format.
+        this.config.y.format1 =
+            this.config.y.log10range > 5 ? '1f' : '.' + this.config.y.precision2 + 'f';
+        this.config.y.d3_format1 = d3.format(this.config.y.format1);
     }
 
     function updateYaxisResetButton() {
         //Update tooltip of y-axis domain reset button.
-        if (this.currentMeasure !== this.previousMeasure) this.controls.wrap.selectAll('.y-axis').property('title', 'Initial Limits: [' + this.config.y.domain[0] + ' - ' + this.config.y.domain[1] + ']');
+        if (this.currentMeasure !== this.previousMeasure)
+            this.controls.wrap
+                .selectAll('.y-axis')
+                .property(
+                    'title',
+                    'Initial Limits: [' +
+                        this.config.y.domain[0] +
+                        ' - ' +
+                        this.config.y.domain[1] +
+                        ']'
+                );
+    }
+
+    function updateYaxisLimitControls() {
+        //Update y-axis limit controls.
+        this.controls.wrap
+            .selectAll('.control-group')
+            .filter(function(f) {
+                return f.option === 'y.domain[0]';
+            })
+            .select('input')
+            .property('value', this.config.y.domain[0]);
+        this.controls.wrap
+            .selectAll('.control-group')
+            .filter(function(f) {
+                return f.option === 'y.domain[1]';
+            })
+            .select('input')
+            .property('value', this.config.y.domain[1]);
+    }
+
+    function setLegendLabel() {
+        this.config.legend.label =
+            this.config.color_by !== 'NONE'
+                ? this.config.groups[
+                      this.config.groups
+                          .map(function(group) {
+                              return group.value_col;
+                          })
+                          .indexOf(this.config.color_by)
+                  ].label
+                : '';
     }
 
     function onPreprocess() {
@@ -661,10 +882,13 @@
         // 3c Set y-axis label to current measure.
         setYaxisLabel.call(this);
 
-        // 4a Update y-axis reset button when measure changes.
+        // 4a Define precision of measure.
+        setYprecision.call(this);
+
+        // 4b Update y-axis reset button when measure changes.
         updateYaxisResetButton.call(this);
 
-        // 4b Update y-axis limit controls to match y-axis domain.
+        // 4c Update y-axis limit controls to match y-axis domain.
         updateYaxisLimitControls.call(this);
 
         //Set legend label to current group.
@@ -674,11 +898,12 @@
     function removeUnscheduledVists() {
         var _this = this;
 
-        if (!this.config.unscheduled_visits) this.current_data.forEach(function (d) {
-            d.values = d.values.filter(function (di) {
-                return _this.config.x.domain.indexOf(di.key) > -1;
+        if (!this.config.unscheduled_visits)
+            this.current_data.forEach(function(d) {
+                d.values = d.values.filter(function(di) {
+                    return _this.config.x.domain.indexOf(di.key) > -1;
+                });
             });
-        });
     }
 
     function onDatatransform() {
@@ -690,11 +915,23 @@
         var _this = this;
 
         this.populationCountContainer.selectAll('*').remove();
-        var subpopulationCount = d3.set(this.filtered_data.map(function (d) {
-            return d[_this.config.id_col];
-        })).values().length;
+        var subpopulationCount = d3
+            .set(
+                this.filtered_data.map(function(d) {
+                    return d[_this.config.id_col];
+                })
+            )
+            .values().length;
         var percentage = d3.format('0.1%')(subpopulationCount / this.populationCount);
-        this.populationCountContainer.text('\n' + subpopulationCount + ' of ' + this.populationCount + ' participants  shown (' + percentage + ')');
+        this.populationCountContainer.text(
+            '\n' +
+                subpopulationCount +
+                ' of ' +
+                this.populationCount +
+                ' participants  shown (' +
+                percentage +
+                ')'
+        );
     }
 
     function onDraw() {
@@ -706,17 +943,31 @@
 
         //Manually draw y-axis ticks when none exist.
         if (!this.svg.selectAll('.y .tick')[0].length) {
-            var probs = [{ probability: 0.05 }, { probability: 0.25 }, { probability: 0.5 }, { probability: 0.75 }, { probability: 0.95 }];
+            var probs = [
+                { probability: 0.05 },
+                { probability: 0.25 },
+                { probability: 0.5 },
+                { probability: 0.75 },
+                { probability: 0.95 }
+            ];
 
             for (var i = 0; i < probs.length; i++) {
-                probs[i].quantile = d3.quantile(this.measure_data.map(function (d) {
-                    return +d[_this.config.y.column];
-                }).sort(), probs[i].probability);
+                probs[i].quantile = d3.quantile(
+                    this.measure_data
+                        .map(function(d) {
+                            return +d[_this.config.y.column];
+                        })
+                        .sort(),
+                    probs[i].probability
+                );
             }
 
             var ticks = [probs[1].quantile, probs[3].quantile];
             this.yAxis.tickValues(ticks);
-            this.svg.select('g.y.axis').transition().call(this.yAxis);
+            this.svg
+                .select('g.y.axis')
+                .transition()
+                .call(this.yAxis);
             this.drawGridlines();
         }
     }
@@ -726,18 +977,30 @@
     }
 
     function addBoxPlot(chart, subgroup) {
-        var boxInsideColor = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '#eee';
+        var boxInsideColor =
+            arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '#eee';
 
         //Make the numericResults numeric and sort.
-        var numericResults = subgroup.results.map(function (d) {
-            return +d;
-        }).sort(d3.ascending);
+        var numericResults = subgroup.results
+            .map(function(d) {
+                return +d;
+            })
+            .sort(d3.ascending);
         var boxPlotWidth = 0.75 / chart.colorScale.domain().length;
         var boxColor = chart.colorScale(subgroup.key);
 
         //Define x - and y - scales.
         var x = d3.scale.linear().range([0, chart.x.rangeBand()]);
-        var y = chart.config.y.type === 'linear' ? d3.scale.linear().range([chart.plot_height, 0]).domain(chart.y.domain()) : d3.scale.log().range([chart.plot_height, 0]).domain(chart.y.domain());
+        var y =
+            chart.config.y.type === 'linear'
+                ? d3.scale
+                      .linear()
+                      .range([chart.plot_height, 0])
+                      .domain(chart.y.domain())
+                : d3.scale
+                      .log()
+                      .range([chart.plot_height, 0])
+                      .domain(chart.y.domain());
 
         //Define quantiles of interest.
         var probs = [0.05, 0.25, 0.5, 0.75, 0.95],
@@ -747,78 +1010,101 @@
         }
 
         //Define box plot container.
-        var boxplot = subgroup.svg.append('g').attr('class', 'boxplot').datum({
-            values: numericResults,
-            probs: probs
-        }).attr('clip-path', 'url(#' + chart.id + ')');
+        var boxplot = subgroup.svg
+            .append('g')
+            .attr('class', 'boxplot')
+            .datum({
+                values: numericResults,
+                probs: probs
+            })
+            .attr('clip-path', 'url(#' + chart.id + ')');
         var left = x(0.5 - boxPlotWidth / 2);
         var right = x(0.5 + boxPlotWidth / 2);
 
         //Draw box.
-        boxplot.append('rect').attr({
-            class: 'boxplot fill',
-            x: left,
-            width: right - left,
-            y: y(probs[3]),
-            height: y(probs[1]) - y(probs[3])
-        }).style('fill', boxColor);
+        boxplot
+            .append('rect')
+            .attr({
+                class: 'boxplot fill',
+                x: left,
+                width: right - left,
+                y: y(probs[3]),
+                height: y(probs[1]) - y(probs[3])
+            })
+            .style('fill', boxColor);
 
         //Draw horizontal lines at 5th percentile, median, and 95th percentile.
         iS = [0, 2, 4];
         var iSclass = ['', 'median', ''];
         var iSColor = [boxColor, boxInsideColor, boxColor];
         for (var _i2 = 0; _i2 < iS.length; _i2++) {
-            boxplot.append('line').attr({
-                class: 'boxplot ' + iSclass[_i2],
-                x1: left,
-                x2: right,
-                y1: y(probs[iS[_i2]]),
-                y2: y(probs[iS[_i2]])
-            }).style({
-                fill: iSColor[_i2],
-                stroke: iSColor[_i2]
-            });
+            boxplot
+                .append('line')
+                .attr({
+                    class: 'boxplot ' + iSclass[_i2],
+                    x1: left,
+                    x2: right,
+                    y1: y(probs[iS[_i2]]),
+                    y2: y(probs[iS[_i2]])
+                })
+                .style({
+                    fill: iSColor[_i2],
+                    stroke: iSColor[_i2]
+                });
         }
 
         //Draw vertical lines from the 5th percentile to the 25th percentile and from the 75th percentile to the 95th percentile.
         iS = [[0, 1], [3, 4]];
         for (var i = 0; i < iS.length; i++) {
-            boxplot.append('line').attr({
-                class: 'boxplot',
-                x1: x(0.5),
-                x2: x(0.5),
-                y1: y(probs[iS[i][0]]),
-                y2: y(probs[iS[i][1]])
-            }).style('stroke', boxColor);
+            boxplot
+                .append('line')
+                .attr({
+                    class: 'boxplot',
+                    x1: x(0.5),
+                    x2: x(0.5),
+                    y1: y(probs[iS[i][0]]),
+                    y2: y(probs[iS[i][1]])
+                })
+                .style('stroke', boxColor);
         }
         //Draw outer circle.
-        boxplot.append('circle').attr({
-            class: 'boxplot mean',
-            cx: x(0.5),
-            cy: y(d3.mean(numericResults)),
-            r: Math.min(x(boxPlotWidth / 3), 10)
-        }).style({
-            fill: boxInsideColor,
-            stroke: boxColor
-        });
+        boxplot
+            .append('circle')
+            .attr({
+                class: 'boxplot mean',
+                cx: x(0.5),
+                cy: y(d3.mean(numericResults)),
+                r: Math.min(x(boxPlotWidth / 3), 10)
+            })
+            .style({
+                fill: boxInsideColor,
+                stroke: boxColor
+            });
 
         //Draw inner circle.
-        boxplot.append('circle').attr({
-            class: 'boxplot mean',
-            cx: x(0.5),
-            cy: y(d3.mean(numericResults)),
-            r: Math.min(x(boxPlotWidth / 6), 5)
-        }).style({
-            fill: boxColor,
-            stroke: 'none'
-        });
+        boxplot
+            .append('circle')
+            .attr({
+                class: 'boxplot mean',
+                cx: x(0.5),
+                cy: y(d3.mean(numericResults)),
+                r: Math.min(x(boxPlotWidth / 6), 5)
+            })
+            .style({
+                fill: boxColor,
+                stroke: 'none'
+            });
     }
 
     function addViolinPlot(chart, subgroup) {
-        var violinColor = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '#ccc7d6';
+        var violinColor =
+            arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '#ccc7d6';
 
         //Define histogram data.
-        var histogram = d3.layout.histogram().bins(10).frequency(0);
+        var histogram = d3.layout
+            .histogram()
+            .bins(10)
+            .frequency(0);
         var data = histogram(subgroup.results);
         data.unshift({
             x: d3.min(subgroup.results),
@@ -833,148 +1119,200 @@
 
         //Define plot properties.
         var width = chart.x.rangeBand();
-        var x = chart.config.y.type === 'linear' ? d3.scale.linear().domain(chart.y.domain()).range([chart.plot_height, 0]) : d3.scale.log().domain(chart.y.domain()).range([chart.plot_height, 0]);
-        var y = d3.scale.linear().domain([0, Math.max(1 - 1 / subgroup.group.x.nGroups, d3.max(data, function (d) {
-            return d.y;
-        }))]).range([width / 2, 0]);
+        var x =
+            chart.config.y.type === 'linear'
+                ? d3.scale
+                      .linear()
+                      .domain(chart.y.domain())
+                      .range([chart.plot_height, 0])
+                : d3.scale
+                      .log()
+                      .domain(chart.y.domain())
+                      .range([chart.plot_height, 0]);
+        var y = d3.scale
+            .linear()
+            .domain([
+                0,
+                Math.max(
+                    1 - 1 / subgroup.group.x.nGroups,
+                    d3.max(data, function(d) {
+                        return d.y;
+                    })
+                )
+            ])
+            .range([width / 2, 0]);
 
         //Define violin shapes.
-        var area = d3.svg.area().interpolate('basis').x(function (d) {
-            return x(d.x + d.dx / 2);
-        }).y0(width / 2).y1(function (d) {
-            return y(d.y);
-        });
-        var line = d3.svg.line().interpolate('basis').x(function (d) {
-            return x(d.x + d.dx / 2);
-        }).y(function (d) {
-            return y(d.y);
-        });
-        var violinplot = subgroup.svg.append('g').attr('class', 'violinplot').attr('clip-path', 'url(#' + chart.id + ')');
+        var area = d3.svg
+            .area()
+            .interpolate('basis')
+            .x(function(d) {
+                return x(d.x + d.dx / 2);
+            })
+            .y0(width / 2)
+            .y1(function(d) {
+                return y(d.y);
+            });
+        var line = d3.svg
+            .line()
+            .interpolate('basis')
+            .x(function(d) {
+                return x(d.x + d.dx / 2);
+            })
+            .y(function(d) {
+                return y(d.y);
+            });
+        var violinplot = subgroup.svg
+            .append('g')
+            .attr('class', 'violinplot')
+            .attr('clip-path', 'url(#' + chart.id + ')');
 
         //Define left half of violin plot.
         var gMinus = violinplot.append('g').attr('transform', 'rotate(90,0,0) scale(1,-1)');
-        gMinus.append('path').datum(data).attr({
-            class: 'area',
-            d: area,
-            fill: violinColor,
-            'fill-opacity': 0.75
-        });
-        gMinus.append('path').datum(data).attr({
-            class: 'violin',
-            d: line,
-            stroke: violinColor,
-            fill: 'none'
-        });
+        gMinus
+            .append('path')
+            .datum(data)
+            .attr({
+                class: 'area',
+                d: area,
+                fill: violinColor,
+                'fill-opacity': 0.75
+            });
+        gMinus
+            .append('path')
+            .datum(data)
+            .attr({
+                class: 'violin',
+                d: line,
+                stroke: violinColor,
+                fill: 'none'
+            });
 
         //Define right half of violin plot.
-        var gPlus = violinplot.append('g').attr('transform', 'rotate(90,0,0) translate(0,-' + width + ')');
-        gPlus.append('path').datum(data).attr({
-            class: 'area',
-            d: area,
-            fill: violinColor,
-            'fill-opacity': 0.75
-        });
-        gPlus.append('path').datum(data).attr({
-            class: 'violin',
-            d: line,
-            stroke: violinColor,
-            fill: 'none'
-        });
+        var gPlus = violinplot
+            .append('g')
+            .attr('transform', 'rotate(90,0,0) translate(0,-' + width + ')');
+        gPlus
+            .append('path')
+            .datum(data)
+            .attr({
+                class: 'area',
+                d: area,
+                fill: violinColor,
+                'fill-opacity': 0.75
+            });
+        gPlus
+            .append('path')
+            .datum(data)
+            .attr({
+                class: 'violin',
+                d: line,
+                stroke: violinColor,
+                fill: 'none'
+            });
     }
 
     function addSummaryStatistics(subgroup) {
-        var precision = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 0;
-
-        var format0 = d3.format('.' + (precision + 0) + 'f');
-        var format1 = d3.format('.' + (precision + 1) + 'f');
-        var format2 = d3.format('.' + (precision + 2) + 'f');
-        subgroup.svg.selectAll('g').append('title').text(function (d) {
-            return 'N = ' + subgroup.results.length + '\nMin = ' + d3.min(subgroup.results) + '\n5th % = ' + format1(d3.quantile(subgroup.results, 0.05)) + '\nQ1 = ' + format1(d3.quantile(subgroup.results, 0.25)) + '\nMedian = ' + format1(d3.median(subgroup.results)) + '\nQ3 = ' + format1(d3.quantile(subgroup.results, 0.75)) + '\n95th % = ' + format1(d3.quantile(subgroup.results, 0.95)) + '\nMax = ' + d3.max(subgroup.results) + '\nMean = ' + format1(d3.mean(subgroup.results)) + '\nStDev = ' + format2(d3.deviation(subgroup.results));
-        });
-
-        //Annotate statistics.
-        //const format0 = format(`.${precision + 0}f`);
-        //const format1 = format(`.${precision + 1}f`);
-        //const format2 = format(`.${precision + 2}f`);
-        //boxplot
-        //    .selectAll('.boxplot')
-        //    .append('title')
-        //    .text(
-        //        d =>
-        //            'N = ' +
-        //            d.values.length +
-        //            '\nMin = ' +
-        //            min(d.values) +
-        //            '\n5th % = ' +
-        //            format1(quantile(d.values, 0.05)) +
-        //            '\nQ1 = ' +
-        //            format1(quantile(d.values, 0.25)) +
-        //            '\nMedian = ' +
-        //            format1(median(d.values)) +
-        //            '\nQ3 = ' +
-        //            format1(quantile(d.values, 0.75)) +
-        //            '\n95th % = ' +
-        //            format1(quantile(d.values, 0.95)) +
-        //            '\nMax = ' +
-        //            max(d.values) +
-        //            '\nMean = ' +
-        //            format1(mean(d.values)) +
-        //            '\nStDev = ' +
-        //            format2(deviation(d.values))
-        //    );
+        var format0 = d3.format('.' + (this.config.y.precision + 0) + 'f');
+        var format1 = d3.format('.' + (this.config.y.precision + 1) + 'f');
+        var format2 = d3.format('.' + (this.config.y.precision + 2) + 'f');
+        subgroup.svg
+            .selectAll('g')
+            .append('title')
+            .html(function(d) {
+                return (
+                    subgroup.key +
+                    ' at ' +
+                    subgroup.group.x.key +
+                    ':\n&nbsp;&nbsp;&nbsp;&nbsp;N = ' +
+                    subgroup.results.length +
+                    '\n&nbsp;&nbsp;&nbsp;&nbsp;Min = ' +
+                    format0(d3.min(subgroup.results)) +
+                    '\n&nbsp;&nbsp;&nbsp;&nbsp;5th % = ' +
+                    format1(d3.quantile(subgroup.results, 0.05)) +
+                    '\n&nbsp;&nbsp;&nbsp;&nbsp;Q1 = ' +
+                    format1(d3.quantile(subgroup.results, 0.25)) +
+                    '\n&nbsp;&nbsp;&nbsp;&nbsp;Median = ' +
+                    format1(d3.median(subgroup.results)) +
+                    '\n&nbsp;&nbsp;&nbsp;&nbsp;Q3 = ' +
+                    format1(d3.quantile(subgroup.results, 0.75)) +
+                    '\n&nbsp;&nbsp;&nbsp;&nbsp;95th % = ' +
+                    format1(d3.quantile(subgroup.results, 0.95)) +
+                    '\n&nbsp;&nbsp;&nbsp;&nbsp;Max = ' +
+                    format0(d3.max(subgroup.results)) +
+                    '\n&nbsp;&nbsp;&nbsp;&nbsp;Mean = ' +
+                    format1(d3.mean(subgroup.results)) +
+                    '\n&nbsp;&nbsp;&nbsp;&nbsp;StDev = ' +
+                    format2(d3.deviation(subgroup.results))
+                );
+            });
     }
 
     function drawPlots() {
         var _this = this;
 
-        this.nested_measure_data.filter(function (d) {
-            return _this.x_dom.indexOf(d.key) > -1;
-        }).forEach(function (d) {
-            //Sort [ config.color_by ] groups.
-            d.values = d.values.sort(function (a, b) {
-                return _this.colorScale.domain().indexOf(a.key) < _this.colorScale.domain().indexOf(b.key) ? -1 : 1;
-            });
+        this.nested_measure_data
+            .filter(function(d) {
+                return _this.x_dom.indexOf(d.key) > -1;
+            })
+            .forEach(function(d) {
+                //Sort [ config.color_by ] groups.
+                d.values = d.values.sort(function(a, b) {
+                    return _this.colorScale.domain().indexOf(a.key) <
+                        _this.colorScale.domain().indexOf(b.key)
+                        ? -1
+                        : 1;
+                });
 
-            //Define group object.
-            var group = {
-                x: {
-                    key: d.key, // x-axis value
-                    nGroups: _this.colorScale.domain().length, // number of groups at x-axis value
-                    width: _this.x.rangeBand() // width of x-axis value
-                },
-                subgroups: []
-            };
-            group.x.start = -(group.x.nGroups / 2) + 0.5;
-            group.distance = group.x.width / group.x.nGroups;
-
-            d.values.forEach(function (di, i) {
-                var subgroup = {
-                    group: group,
-                    key: di.key,
-                    offset: (group.x.start + i) * group.distance,
-                    results: di.values.sort(d3.ascending).map(function (value) {
-                        return +value;
-                    })
+                //Define group object.
+                var group = {
+                    x: {
+                        key: d.key, // x-axis value
+                        nGroups: _this.colorScale.domain().length, // number of groups at x-axis value
+                        width: _this.x.rangeBand() // width of x-axis value
+                    },
+                    subgroups: []
                 };
-                subgroup.svg = _this.svg.append('g').attr({
-                    class: 'boxplot-wrap overlay-item',
-                    transform: 'translate(' + (_this.x(group.x.key) + subgroup.offset) + ',0)'
-                }).datum({ values: subgroup.results });
-                group.subgroups.push(subgroup);
+                group.x.start = -(group.x.nGroups / 2) + 0.5;
+                group.distance = group.x.width / group.x.nGroups;
 
-                if (_this.config.boxplots) addBoxPlot(_this, subgroup);
-                if (_this.config.violins) addViolinPlot(_this, subgroup, _this.colorScale(subgroup.key));
-                addSummaryStatistics(subgroup);
+                d.values.forEach(function(di, i) {
+                    var subgroup = {
+                        group: group,
+                        key: di.key,
+                        offset: (group.x.start + i) * group.distance,
+                        results: di.values.sort(d3.ascending).map(function(value) {
+                            return +value;
+                        })
+                    };
+                    subgroup.svg = _this.svg
+                        .append('g')
+                        .attr({
+                            class: 'boxplot-wrap overlay-item',
+                            transform:
+                                'translate(' + (_this.x(group.x.key) + subgroup.offset) + ',0)'
+                        })
+                        .datum({ values: subgroup.results });
+                    group.subgroups.push(subgroup);
+
+                    if (_this.config.boxplots) addBoxPlot(_this, subgroup);
+                    if (_this.config.violins)
+                        addViolinPlot(_this, subgroup, _this.colorScale(subgroup.key));
+                    addSummaryStatistics.call(_this, subgroup);
+                });
             });
-        });
     }
 
     function rotateXAxisTickLabels() {
-        if (this.config.time_settings.rotate_tick_labels) this.svg.selectAll('.x.axis .tick text').attr({
-            transform: 'rotate(-45)',
-            dx: -10,
-            dy: 10
-        }).style('text-anchor', 'end');
+        if (this.config.time_settings.rotate_tick_labels)
+            this.svg
+                .selectAll('.x.axis .tick text')
+                .attr({
+                    transform: 'rotate(-45)',
+                    dx: -10,
+                    dy: 10
+                })
+                .style('text-anchor', 'end');
     }
 
     function removeLegend() {
@@ -992,13 +1330,16 @@
     function safetyResultsOverTime(element, settings) {
         var mergedSettings = merge(defaultSettings, settings),
             //Merge user settings onto default settings.
-        syncedSettings = syncSettings(mergedSettings),
+            syncedSettings = syncSettings(mergedSettings),
             //Sync properties within merged settings, e.g. data mappings.
-        syncedControlInputs = syncControlInputs(controlInputs, syncedSettings),
+            syncedControlInputs = syncControlInputs(controlInputs, syncedSettings),
             //Sync merged settings with controls.
-        controls = webcharts.createControls(element, { location: 'top', inputs: syncedControlInputs }),
+            controls = webcharts.createControls(element, {
+                location: 'top',
+                inputs: syncedControlInputs
+            }),
             //Define controls.
-        chart = webcharts.createChart(element, mergedSettings, controls); //Define chart.
+            chart = webcharts.createChart(element, mergedSettings, controls); //Define chart.
 
         chart.on('init', onInit);
         chart.on('layout', onLayout);
@@ -1011,5 +1352,4 @@
     }
 
     return safetyResultsOverTime;
-
-})));
+});

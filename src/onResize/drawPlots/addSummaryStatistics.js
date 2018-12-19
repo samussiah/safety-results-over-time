@@ -1,64 +1,31 @@
 import { format, min, quantile, median, max, mean, deviation } from 'd3';
 
-export default function addSummaryStatistics(subgroup, precision = 0) {
-    const format0 = format(`.${precision + 0}f`);
-    const format1 = format(`.${precision + 1}f`);
-    const format2 = format(`.${precision + 2}f`);
+export default function addSummaryStatistics(subgroup) {
+    const format0 = format(`.${this.config.y.precision + 0}f`);
+    const format1 = format(`.${this.config.y.precision + 1}f`);
+    const format2 = format(`.${this.config.y.precision + 2}f`);
     subgroup.svg
         .selectAll('g')
         .append('title')
-        .text(
+        .html(
             d =>
-                'N = ' +
-                subgroup.results.length +
-                '\nMin = ' +
-                min(subgroup.results) +
-                '\n5th % = ' +
-                format1(quantile(subgroup.results, 0.05)) +
-                '\nQ1 = ' +
-                format1(quantile(subgroup.results, 0.25)) +
-                '\nMedian = ' +
-                format1(median(subgroup.results)) +
-                '\nQ3 = ' +
-                format1(quantile(subgroup.results, 0.75)) +
-                '\n95th % = ' +
-                format1(quantile(subgroup.results, 0.95)) +
-                '\nMax = ' +
-                max(subgroup.results) +
-                '\nMean = ' +
-                format1(mean(subgroup.results)) +
-                '\nStDev = ' +
-                format2(deviation(subgroup.results))
+                `${subgroup.key} at ${subgroup.group.x.key}:\n&nbsp;&nbsp;&nbsp;&nbsp;N = ${subgroup
+                    .results.length}\n&nbsp;&nbsp;&nbsp;&nbsp;Min = ${format0(
+                    min(subgroup.results)
+                )}\n&nbsp;&nbsp;&nbsp;&nbsp;5th % = ${format1(
+                    quantile(subgroup.results, 0.05)
+                )}\n&nbsp;&nbsp;&nbsp;&nbsp;Q1 = ${format1(
+                    quantile(subgroup.results, 0.25)
+                )}\n&nbsp;&nbsp;&nbsp;&nbsp;Median = ${format1(
+                    median(subgroup.results)
+                )}\n&nbsp;&nbsp;&nbsp;&nbsp;Q3 = ${format1(
+                    quantile(subgroup.results, 0.75)
+                )}\n&nbsp;&nbsp;&nbsp;&nbsp;95th % = ${format1(
+                    quantile(subgroup.results, 0.95)
+                )}\n&nbsp;&nbsp;&nbsp;&nbsp;Max = ${format0(
+                    max(subgroup.results)
+                )}\n&nbsp;&nbsp;&nbsp;&nbsp;Mean = ${format1(
+                    mean(subgroup.results)
+                )}\n&nbsp;&nbsp;&nbsp;&nbsp;StDev = ${format2(deviation(subgroup.results))}`
         );
-
-    //Annotate statistics.
-    //const format0 = format(`.${precision + 0}f`);
-    //const format1 = format(`.${precision + 1}f`);
-    //const format2 = format(`.${precision + 2}f`);
-    //boxplot
-    //    .selectAll('.boxplot')
-    //    .append('title')
-    //    .text(
-    //        d =>
-    //            'N = ' +
-    //            d.values.length +
-    //            '\nMin = ' +
-    //            min(d.values) +
-    //            '\n5th % = ' +
-    //            format1(quantile(d.values, 0.05)) +
-    //            '\nQ1 = ' +
-    //            format1(quantile(d.values, 0.25)) +
-    //            '\nMedian = ' +
-    //            format1(median(d.values)) +
-    //            '\nQ3 = ' +
-    //            format1(quantile(d.values, 0.75)) +
-    //            '\n95th % = ' +
-    //            format1(quantile(d.values, 0.95)) +
-    //            '\nMax = ' +
-    //            max(d.values) +
-    //            '\nMean = ' +
-    //            format1(mean(d.values)) +
-    //            '\nStDev = ' +
-    //            format2(deviation(d.values))
-    //    );
 }
