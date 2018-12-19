@@ -5,9 +5,10 @@ import addViolinPlot from './drawPlots/addViolinPlot';
 import addSummaryStatistics from './drawPlots/addSummaryStatistics';
 
 export default function drawPlots() {
-    this.nested_measure_data.filter(d => this.x_dom.indexOf(d.key) > -1).forEach(d => {
+    this.nested_measure_data.filter(visit => this.x_dom.indexOf(visit.key) > -1).forEach(visit => {
+        // iterate over groups
         //Sort [ config.color_by ] groups.
-        d.values = d.values.sort(
+        visit.values = visit.values.sort(
             (a, b) =>
                 this.colorScale.domain().indexOf(a.key) < this.colorScale.domain().indexOf(b.key)
                     ? -1
@@ -15,36 +16,40 @@ export default function drawPlots() {
         );
 
         //Define group object.
-        const group = {
+        const groupObject = {
             x: {
-                key: d.key, // x-axis value
+                key: visit.key, // x-axis value
                 nGroups: this.colorScale.domain().length, // number of groups at x-axis value
                 width: this.x.rangeBand() // width of x-axis value
             },
             subgroups: []
         };
-        group.x.start = -(group.x.nGroups / 2) + 0.5;
-        group.distance = group.x.width / group.x.nGroups;
+        groupObject.x.start = -(groupObject.x.nGroups / 2) + 0.5;
+        groupObject.distance = groupObject.x.width / groupObject.x.nGroups;
 
-        d.values.forEach((di, i) => {
+        visit.values.forEach((group, i) => {
+            // iterate over visits
             const subgroup = {
-                group,
-                key: di.key,
-                offset: (group.x.start + i) * group.distance,
-                results: di.values.sort(ascending).map(value => +value)
+                group: groupObject,
+                key: group.key,
+                offset: (groupObject.x.start + i) * groupObject.distance,
+                results: group.values
             };
             subgroup.svg = this.svg
                 .append('g')
                 .attr({
                     class: 'boxplot-wrap overlay-item',
-                    transform: 'translate(' + (this.x(group.x.key) + subgroup.offset) + ',0)'
+                    transform: 'translate(' + (this.x(groupObject.x.key) + subgroup.offset) + ',0)'
                 })
                 .datum({ values: subgroup.results });
-            group.subgroups.push(subgroup);
+            groupObject.subgroups.push(subgroup);
 
-            if (this.config.boxplots) addBoxPlot(this, subgroup);
-            if (this.config.violins) addViolinPlot(this, subgroup, this.colorScale(subgroup.key));
+            if (this.config.boxplots) addBoxPlot.call(this, subgroup);
+            if (this.config.violins) addViolinPlot.call(this, subgroup);
             addSummaryStatistics.call(this, subgroup);
+            this.circles.groups
+                .filter(d => d.visit === visit.key && d.group === group.key)
+                .attr('transform', `translate(${subgroup.offset},0)`);
         });
     });
 }

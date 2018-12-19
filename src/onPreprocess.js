@@ -1,5 +1,6 @@
 import getCurrentMeasure from './onPreprocess/getCurrentMeasure';
 import defineMeasureData from './onPreprocess/defineMeasureData';
+import flagOutliers from './onPreprocess/flagOutliers';
 import setXdomain from './onPreprocess/setXdomain';
 import setYdomain from './onPreprocess/setYdomain';
 import setYaxisLabel from './onPreprocess/setYaxisLabel';
@@ -14,6 +15,9 @@ export default function onPreprocess() {
 
     // 2. Filter data on currently selected measure.
     defineMeasureData.call(this);
+
+    // 3a Flag outliers with quantiles calculated in defineMeasureData().
+    flagOutliers.call(this);
 
     // 3a Set x-domain given current visit settings.
     setXdomain.call(this);

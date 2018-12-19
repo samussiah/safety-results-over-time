@@ -254,6 +254,17 @@ The object below contains Webcharts settings as of version 2.2.0 of the Safety R
                 "stroke-opacity": 1,
                 "display": "none"
             }
+        },
+        {
+            "type": "circle",
+            "per": null,
+            "attributes": {},
+            "values": {
+                "outlier": [
+                    true
+                ]
+            },
+            "radius": 1.5
         }
     ],
     "legend": {

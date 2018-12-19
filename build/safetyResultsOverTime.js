@@ -230,6 +230,7 @@
         filters: null,
         groups: null,
         boxplots: true,
+        outliers: true,
         violins: false,
         missingValues: ['', 'NA', 'N/A'],
         visits_without_data: false,
@@ -264,6 +265,15 @@
                     'stroke-opacity': 1,
                     display: 'none'
                 }
+            },
+            {
+                type: 'circle',
+                per: null, // set in syncSettings()
+                attributes: {},
+                values: {
+                    outlier: [true]
+                },
+                radius: 1.5
             }
         ],
         legend: {
@@ -296,6 +306,13 @@
             ? settings.groups[0].value_col
             : settings.groups[0];
         settings.marks[0].per = [settings.color_by];
+        settings.marks[1].per = [
+            settings.id_col,
+            settings.measure_col,
+            settings.time_settings.value_col,
+            settings.value_col
+        ];
+        settings.marks[1].tooltip = '[' + settings.id_col + '] at [' + settings.x.column + ']: $y';
         settings.margin = settings.margin || { bottom: settings.time_settings.vertical_space };
 
         //Convert unscheduled_visit_pattern from string to regular expression.
@@ -347,7 +364,8 @@
             label: 'Unscheduled visits'
         },
         { type: 'checkbox', inline: true, option: 'boxplots', label: 'Box plots' },
-        { type: 'checkbox', inline: true, option: 'violins', label: 'Violin plots' }
+        { type: 'checkbox', inline: true, option: 'violins', label: 'Violin plots' },
+        { type: 'checkbox', inline: true, option: 'outliers', label: 'Outliers' }
     ];
 
     // Map values from settings to control inputs
@@ -460,6 +478,7 @@
         var _this = this;
 
         this.raw_data.forEach(function(d) {
+            d[_this.config.y.column] = parseFloat(d[_this.config.y.column]);
             d.NONE = 'All Participants'; // placeholder variable for non-grouped comparisons
             d.unscheduled = _this.config.unscheduled_visit_values
                 ? _this.config.unscheduled_visit_values.indexOf(
@@ -470,6 +489,7 @@
                         d[_this.config.time_settings.value_col]
                     )
                   : false;
+            d.outlier = null;
         });
     }
 
@@ -619,7 +639,7 @@
     function addResetButton() {
         var context = this,
             resetContainer = this.controls.wrap
-                .insert('div', '#lower-limit')
+                .insert('div', '.lower-limit')
                 .classed('control-group y-axis', true)
                 .datum({
                     type: 'button',
@@ -692,26 +712,22 @@
     function defineMeasureData() {
         var _this = this;
 
+        //Filter raw data on selected measure.
         this.measure_data = this.raw_data.filter(function(d) {
             return d[_this.config.measure_col] === _this.currentMeasure;
         });
-        this.filtered_measure_data = this.measure_data.filter(function(d) {
-            var filtered = false;
 
-            _this.filters
-                .filter(function(filter) {
-                    return filter.value_col !== _this.config.measure_col;
-                })
-                .forEach(function(filter) {
-                    if (filtered === false && filter.val !== 'All')
-                        filtered =
-                            filter.val instanceof Array
-                                ? filter.val.indexOf(d[filter.col]) < 0
-                                : filter.val !== d[filter.col];
-                });
-
-            return !filtered;
+        //Apply filter to measure data.
+        this.filtered_measure_data = this.measure_data;
+        this.filters.forEach(function(filter) {
+            _this.filtered_measure_data = _this.filtered_measure_data.filter(function(d) {
+                return Array.isArray(filter.val)
+                    ? filter.val.indexOf(d[filter.col]) > -1
+                    : filter.val === d[filter.col] || filter.val === 'All';
+            });
         });
+
+        //Nest data and calculate summary statistics for each visit-group combination.
         this.nested_measure_data = d3
             .nest()
             .key(function(d) {
@@ -721,11 +737,59 @@
                 return d[_this.config.color_by];
             })
             .rollup(function(d) {
-                return d.map(function(m) {
-                    return +m[_this.config.y.column];
+                var results = {
+                    values: d
+                        .map(function(m) {
+                            return +m[_this.config.y.column];
+                        })
+                        .sort(d3.ascending),
+                    n: d.length
+                };
+
+                //Calculate summary statistics.
+                [
+                    'min',
+                    ['quantile', 0.05],
+                    ['quantile', 0.25],
+                    'median',
+                    ['quantile', 0.75],
+                    ['quantile', 0.95],
+                    'max',
+                    'mean',
+                    'deviation'
+                ].forEach(function(item) {
+                    var fx = Array.isArray(item) ? item[0] : item;
+                    var stat = Array.isArray(item) ? '' + fx.substring(0, 1) + item[1] * 100 : fx;
+                    results[stat] = Array.isArray(item)
+                        ? d3[fx](results.values, item[1])
+                        : d3[fx](results.values);
                 });
+
+                return results;
             })
             .entries(this.filtered_measure_data);
+    }
+
+    function flagOutliers() {
+        var _this = this;
+
+        this.quantileMap = new Map();
+        this.nested_measure_data.forEach(function(visit) {
+            visit.values.forEach(function(group) {
+                _this.quantileMap.set(
+                    visit.key + '|' + group.key, // key
+                    [group.values.q5, group.values.q95] // value
+                );
+            });
+        });
+        this.filtered_measure_data.forEach(function(d) {
+            var quantiles = _this.quantileMap.get(
+                d[_this.config.x.column] + '|' + d[_this.config.color_by]
+            );
+            d.outlier = _this.config.outliers
+                ? d[_this.config.y.column] < quantiles[0] || quantiles[1] < d[_this.config.y.column]
+                : false;
+        });
     }
 
     function removeVisitsWithoutData() {
@@ -873,6 +937,9 @@
         // 2. Filter data on currently selected measure.
         defineMeasureData.call(this);
 
+        // 3a Flag outliers with quantiles calculated in defineMeasureData().
+        flagOutliers.call(this);
+
         // 3a Set x-domain given current visit settings.
         setXdomain.call(this);
 
@@ -895,20 +962,26 @@
         setLegendLabel.call(this);
     }
 
-    function removeUnscheduledVists() {
-        var _this = this;
-
-        if (!this.config.unscheduled_visits)
-            this.current_data.forEach(function(d) {
-                d.values = d.values.filter(function(di) {
-                    return _this.config.x.domain.indexOf(di.key) > -1;
-                });
-            });
+    function removeUnscheduledVisits$1() {
+        //if (!this.config.unscheduled_visits) {
+        //    if (Array.isArray(this.current_data[0].values))
+        //        this.current_data
+        //            .forEach(d => {
+        //                d.values = d.values.filter(di => this.config.x.domain.indexOf(di.key) > -1);
+        //            });
+        //    else {
+        //        console.log(this.marks);
+        //        console.log(this.current_data.length);
+        //        this.current_data = this.current_data
+        //            .filter(d => this.config.x.domain.indexOf(d.values.x) > -1);
+        //        console.log(this.current_data.length);
+        //    }
+        //}
     }
 
     function onDatatransform() {
         //Remove unscheduled visits from current_data array.
-        removeUnscheduledVists.call(this);
+        removeUnscheduledVisits$1.call(this);
     }
 
     function updateParticipantCount() {
@@ -934,8 +1007,31 @@
         );
     }
 
+    function removeUnscheduledVisits$2() {
+        var _this = this;
+
+        if (!this.config.unscheduled_visits)
+            this.marks.forEach(function(mark) {
+                if (mark.type === 'line')
+                    mark.data.forEach(function(d) {
+                        d.values = d.values.filter(function(di) {
+                            return _this.config.x.domain.indexOf(di.key) > -1;
+                        });
+                    });
+                else if (mark.type === 'circle') {
+                    _this.circles = mark;
+                    mark.data = mark.data.filter(function(d) {
+                        d.visit = d.values.x;
+                        d.group = d.values.raw[0][_this.config.color_by];
+                        return _this.config.x.domain.indexOf(d.values.x) > -1;
+                    });
+                }
+            });
+    }
+
     function onDraw() {
         updateParticipantCount.call(this);
+        removeUnscheduledVisits$2.call(this);
     }
 
     function addYAxisTicks() {
@@ -976,240 +1072,268 @@
         this.svg.selectAll('.boxplot-wrap').remove();
     }
 
-    function addBoxPlot(chart, subgroup) {
-        var boxInsideColor =
-            arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '#eee';
-
-        //Make the numericResults numeric and sort.
-        var numericResults = subgroup.results
-            .map(function(d) {
-                return +d;
-            })
-            .sort(d3.ascending);
-        var boxPlotWidth = 0.75 / chart.colorScale.domain().length;
-        var boxColor = chart.colorScale(subgroup.key);
-
-        //Define x - and y - scales.
-        var x = d3.scale.linear().range([0, chart.x.rangeBand()]);
-        var y =
-            chart.config.y.type === 'linear'
+    function defineScales(subgroup) {
+        subgroup.boxplot.x = d3.scale.linear().range([0, this.x.rangeBand()]);
+        subgroup.boxplot.left = subgroup.boxplot.x(0.5 - subgroup.boxplot.boxPlotWidth / 2);
+        subgroup.boxplot.right = subgroup.boxplot.x(0.5 + subgroup.boxplot.boxPlotWidth / 2);
+        subgroup.boxplot.y =
+            this.config.y.type === 'linear'
                 ? d3.scale
                       .linear()
-                      .range([chart.plot_height, 0])
-                      .domain(chart.y.domain())
+                      .range([this.plot_height, 0])
+                      .domain(this.y.domain())
                 : d3.scale
                       .log()
-                      .range([chart.plot_height, 0])
-                      .domain(chart.y.domain());
+                      .range([this.plot_height, 0])
+                      .domain(this.y.domain());
+    }
 
-        //Define quantiles of interest.
-        var probs = [0.05, 0.25, 0.5, 0.75, 0.95],
-            iS = void 0;
-        for (var _i = 0; _i < probs.length; _i++) {
-            probs[_i] = d3.quantile(numericResults, probs[_i]);
-        }
-
-        //Define box plot container.
-        var boxplot = subgroup.svg
+    function addContainer(subgroup) {
+        subgroup.boxplot.container = subgroup.svg
             .append('g')
             .attr('class', 'boxplot')
             .datum({
-                values: numericResults,
-                probs: probs
+                values: subgroup.results.values,
+                probs: subgroup.boxplot.probs
             })
-            .attr('clip-path', 'url(#' + chart.id + ')');
-        var left = x(0.5 - boxPlotWidth / 2);
-        var right = x(0.5 + boxPlotWidth / 2);
+            .attr('clip-path', 'url(#' + this.id + ')');
+    }
 
-        //Draw box.
-        boxplot
+    function drawBox(subgroup) {
+        subgroup.boxplot.container
             .append('rect')
             .attr({
                 class: 'boxplot fill',
-                x: left,
-                width: right - left,
-                y: y(probs[3]),
-                height: y(probs[1]) - y(probs[3])
+                x: subgroup.boxplot.left,
+                width: subgroup.boxplot.right - subgroup.boxplot.left,
+                y: subgroup.boxplot.y(subgroup.boxplot.probs[3]),
+                height:
+                    subgroup.boxplot.y(subgroup.boxplot.probs[1]) -
+                    subgroup.boxplot.y(subgroup.boxplot.probs[3])
             })
-            .style('fill', boxColor);
+            .style('fill', subgroup.boxplot.boxColor);
+    }
 
-        //Draw horizontal lines at 5th percentile, median, and 95th percentile.
-        iS = [0, 2, 4];
+    function drawHorizontalLines(subgroup) {
+        var iS = [0, 2, 4];
         var iSclass = ['', 'median', ''];
-        var iSColor = [boxColor, boxInsideColor, boxColor];
-        for (var _i2 = 0; _i2 < iS.length; _i2++) {
-            boxplot
+        var iSColor = [
+            subgroup.boxplot.boxColor,
+            subgroup.boxplot.boxInsideColor,
+            subgroup.boxplot.boxColor
+        ];
+        for (var i = 0; i < iS.length; i++) {
+            subgroup.boxplot.container
                 .append('line')
                 .attr({
-                    class: 'boxplot ' + iSclass[_i2],
-                    x1: left,
-                    x2: right,
-                    y1: y(probs[iS[_i2]]),
-                    y2: y(probs[iS[_i2]])
+                    class: 'boxplot ' + iSclass[i],
+                    x1: subgroup.boxplot.left,
+                    x2: subgroup.boxplot.right,
+                    y1: subgroup.boxplot.y(subgroup.boxplot.probs[iS[i]]),
+                    y2: subgroup.boxplot.y(subgroup.boxplot.probs[iS[i]])
                 })
                 .style({
-                    fill: iSColor[_i2],
-                    stroke: iSColor[_i2]
+                    fill: iSColor[i],
+                    stroke: iSColor[i]
                 });
         }
+    }
 
-        //Draw vertical lines from the 5th percentile to the 25th percentile and from the 75th percentile to the 95th percentile.
-        iS = [[0, 1], [3, 4]];
+    function drawVerticalLines(subgroup) {
+        var iS = [[0, 1], [3, 4]];
         for (var i = 0; i < iS.length; i++) {
-            boxplot
+            subgroup.boxplot.container
                 .append('line')
                 .attr({
                     class: 'boxplot',
-                    x1: x(0.5),
-                    x2: x(0.5),
-                    y1: y(probs[iS[i][0]]),
-                    y2: y(probs[iS[i][1]])
+                    x1: subgroup.boxplot.x(0.5),
+                    x2: subgroup.boxplot.x(0.5),
+                    y1: subgroup.boxplot.y(subgroup.boxplot.probs[iS[i][0]]),
+                    y2: subgroup.boxplot.y(subgroup.boxplot.probs[iS[i][1]])
                 })
-                .style('stroke', boxColor);
+                .style('stroke', subgroup.boxplot.boxColor);
         }
-        //Draw outer circle.
-        boxplot
-            .append('circle')
-            .attr({
-                class: 'boxplot mean',
-                cx: x(0.5),
-                cy: y(d3.mean(numericResults)),
-                r: Math.min(x(boxPlotWidth / 3), 10)
-            })
-            .style({
-                fill: boxInsideColor,
-                stroke: boxColor
-            });
+    }
 
-        //Draw inner circle.
-        boxplot
+    function drawOuterCircle(subgroup) {
+        subgroup.boxplot.container
             .append('circle')
             .attr({
                 class: 'boxplot mean',
-                cx: x(0.5),
-                cy: y(d3.mean(numericResults)),
-                r: Math.min(x(boxPlotWidth / 6), 5)
+                cx: subgroup.boxplot.x(0.5),
+                cy: subgroup.boxplot.y(subgroup.results.mean),
+                r: Math.min(subgroup.boxplot.x(subgroup.boxplot.boxPlotWidth / 3), 10)
             })
             .style({
-                fill: boxColor,
+                fill: subgroup.boxplot.boxInsideColor,
+                stroke: subgroup.boxplot.boxColor
+            });
+    }
+
+    function drawInnerCircle(subgroup) {
+        subgroup.boxplot.container
+            .append('circle')
+            .attr({
+                class: 'boxplot mean',
+                cx: subgroup.boxplot.x(0.5),
+                cy: subgroup.boxplot.y(subgroup.results.mean),
+                r: Math.min(subgroup.boxplot.x(subgroup.boxplot.boxPlotWidth / 6), 5)
+            })
+            .style({
+                fill: subgroup.boxplot.boxColor,
                 stroke: 'none'
             });
     }
 
-    function addViolinPlot(chart, subgroup) {
-        var violinColor =
-            arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '#ccc7d6';
+    function addBoxPlot(subgroup) {
+        //Attach needed stuff to subgroup object.
+        subgroup.boxplot = {
+            boxPlotWidth: 0.75 / this.colorScale.domain().length,
+            boxColor: this.colorScale(subgroup.key),
+            boxInsideColor: '#eee',
+            probs: ['q5', 'q25', 'median', 'q75', 'q95'].map(function(prob) {
+                return subgroup.results[prob];
+            })
+        };
 
+        //Draw box plot.
+        defineScales.call(this, subgroup);
+        addContainer.call(this, subgroup);
+        drawBox.call(this, subgroup);
+        drawHorizontalLines.call(this, subgroup);
+        drawVerticalLines.call(this, subgroup);
+        drawOuterCircle.call(this, subgroup);
+        drawInnerCircle.call(this, subgroup);
+    }
+
+    function defineData(subgroup) {
         //Define histogram data.
-        var histogram = d3.layout
-            .histogram()
-            .bins(10)
-            .frequency(0);
-        var data = histogram(subgroup.results);
-        data.unshift({
-            x: d3.min(subgroup.results),
+        subgroup.violinPlot = {
+            histogram: d3.layout
+                .histogram()
+                .bins(10)
+                .frequency(0)
+        };
+        (subgroup.violinPlot.data = subgroup.violinPlot.histogram(subgroup.results.values)),
+            subgroup.violinPlot.data.unshift({
+                x: subgroup.results.min,
+                dx: 0,
+                y: subgroup.violinPlot.data[0].y
+            });
+        subgroup.violinPlot.data.push({
+            x: subgroup.results.max,
             dx: 0,
-            y: data[0].y
+            y: subgroup.violinPlot.data[subgroup.violinPlot.data.length - 1].y
         });
-        data.push({
-            x: d3.max(subgroup.results),
-            dx: 0,
-            y: data[data.length - 1].y
-        });
+    }
 
-        //Define plot properties.
-        var width = chart.x.rangeBand();
-        var x =
-            chart.config.y.type === 'linear'
+    function defineScales$1(subgroup) {
+        subgroup.violinPlot.width = this.x.rangeBand();
+        subgroup.violinPlot.x =
+            this.config.y.type === 'linear'
                 ? d3.scale
                       .linear()
-                      .domain(chart.y.domain())
-                      .range([chart.plot_height, 0])
+                      .domain(this.y.domain())
+                      .range([this.plot_height, 0])
                 : d3.scale
                       .log()
-                      .domain(chart.y.domain())
-                      .range([chart.plot_height, 0]);
-        var y = d3.scale
+                      .domain(this.y.domain())
+                      .range([this.plot_height, 0]);
+        subgroup.violinPlot.y = d3.scale
             .linear()
             .domain([
                 0,
                 Math.max(
                     1 - 1 / subgroup.group.x.nGroups,
-                    d3.max(data, function(d) {
+                    d3.max(subgroup.violinPlot.data, function(d) {
                         return d.y;
                     })
                 )
             ])
-            .range([width / 2, 0]);
+            .range([subgroup.violinPlot.width / 2, 0]);
+    }
 
+    function addContainer$1(subgroup) {
         //Define violin shapes.
-        var area = d3.svg
+        subgroup.violinPlot.area = d3.svg
             .area()
             .interpolate('basis')
             .x(function(d) {
-                return x(d.x + d.dx / 2);
+                return subgroup.violinPlot.x(d.x + d.dx / 2);
             })
-            .y0(width / 2)
+            .y0(subgroup.violinPlot.width / 2)
             .y1(function(d) {
-                return y(d.y);
+                return subgroup.violinPlot.y(d.y);
             });
-        var line = d3.svg
+        subgroup.violinPlot.line = d3.svg
             .line()
             .interpolate('basis')
             .x(function(d) {
-                return x(d.x + d.dx / 2);
+                return subgroup.violinPlot.x(d.x + d.dx / 2);
             })
             .y(function(d) {
-                return y(d.y);
+                return subgroup.violinPlot.y(d.y);
             });
-        var violinplot = subgroup.svg
+        subgroup.violinPlot.container = subgroup.svg
             .append('g')
             .attr('class', 'violinplot')
-            .attr('clip-path', 'url(#' + chart.id + ')');
+            .attr('clip-path', 'url(#' + this.id + ')');
+    }
 
-        //Define left half of violin plot.
-        var gMinus = violinplot.append('g').attr('transform', 'rotate(90,0,0) scale(1,-1)');
-        gMinus
-            .append('path')
-            .datum(data)
-            .attr({
-                class: 'area',
-                d: area,
-                fill: violinColor,
-                'fill-opacity': 0.75
-            });
-        gMinus
-            .append('path')
-            .datum(data)
-            .attr({
-                class: 'violin',
-                d: line,
-                stroke: violinColor,
-                fill: 'none'
-            });
-
-        //Define right half of violin plot.
-        var gPlus = violinplot
+    function drawLeftSide(subgroup) {
+        subgroup.violinPlot.gMinus = subgroup.violinPlot.container
             .append('g')
-            .attr('transform', 'rotate(90,0,0) translate(0,-' + width + ')');
-        gPlus
+            .attr('transform', 'rotate(90,0,0) scale(1,-1)');
+        subgroup.violinPlot.gMinus
             .append('path')
-            .datum(data)
+            .datum(subgroup.violinPlot.data)
             .attr({
                 class: 'area',
-                d: area,
-                fill: violinColor,
+                d: subgroup.violinPlot.area,
+                fill: this.colorScale(subgroup.key),
                 'fill-opacity': 0.75
             });
-        gPlus
+        subgroup.violinPlot.gMinus
             .append('path')
-            .datum(data)
+            .datum(subgroup.violinPlot.data)
             .attr({
                 class: 'violin',
-                d: line,
-                stroke: violinColor,
+                d: subgroup.violinPlot.line,
+                stroke: this.colorScale(subgroup.key),
                 fill: 'none'
             });
+    }
+
+    function drawRightSide(subgroup) {
+        subgroup.violinPlot.gPlus = subgroup.violinPlot.container
+            .append('g')
+            .attr('transform', 'rotate(90,0,0) translate(0,-' + subgroup.violinPlot.width + ')');
+        subgroup.violinPlot.gPlus
+            .append('path')
+            .datum(subgroup.violinPlot.data)
+            .attr({
+                class: 'area',
+                d: subgroup.violinPlot.area,
+                fill: this.colorScale(subgroup.key),
+                'fill-opacity': 0.75
+            });
+        subgroup.violinPlot.gPlus
+            .append('path')
+            .datum(subgroup.violinPlot.data)
+            .attr({
+                class: 'violin',
+                d: subgroup.violinPlot.line,
+                stroke: this.colorScale(subgroup.key),
+                fill: 'none'
+            });
+    }
+
+    function addViolinPlot(subgroup) {
+        defineData.call(this, subgroup);
+        defineScales$1.call(this, subgroup);
+        addContainer$1.call(this, subgroup);
+        drawLeftSide.call(this, subgroup);
+        drawRightSide.call(this, subgroup);
     }
 
     function addSummaryStatistics(subgroup) {
@@ -1225,25 +1349,25 @@
                     ' at ' +
                     subgroup.group.x.key +
                     ':\n&nbsp;&nbsp;&nbsp;&nbsp;N = ' +
-                    subgroup.results.length +
+                    subgroup.results.n +
                     '\n&nbsp;&nbsp;&nbsp;&nbsp;Min = ' +
-                    format0(d3.min(subgroup.results)) +
+                    format0(subgroup.results.min) +
                     '\n&nbsp;&nbsp;&nbsp;&nbsp;5th % = ' +
-                    format1(d3.quantile(subgroup.results, 0.05)) +
+                    format1(subgroup.results.q5) +
                     '\n&nbsp;&nbsp;&nbsp;&nbsp;Q1 = ' +
-                    format1(d3.quantile(subgroup.results, 0.25)) +
+                    format1(subgroup.results.q25) +
                     '\n&nbsp;&nbsp;&nbsp;&nbsp;Median = ' +
-                    format1(d3.median(subgroup.results)) +
+                    format1(subgroup.results.median) +
                     '\n&nbsp;&nbsp;&nbsp;&nbsp;Q3 = ' +
-                    format1(d3.quantile(subgroup.results, 0.75)) +
+                    format1(subgroup.results.q75) +
                     '\n&nbsp;&nbsp;&nbsp;&nbsp;95th % = ' +
-                    format1(d3.quantile(subgroup.results, 0.95)) +
+                    format1(subgroup.results.q95) +
                     '\n&nbsp;&nbsp;&nbsp;&nbsp;Max = ' +
-                    format0(d3.max(subgroup.results)) +
+                    format0(subgroup.results.max) +
                     '\n&nbsp;&nbsp;&nbsp;&nbsp;Mean = ' +
-                    format1(d3.mean(subgroup.results)) +
+                    format1(subgroup.results.mean) +
                     '\n&nbsp;&nbsp;&nbsp;&nbsp;StDev = ' +
-                    format2(d3.deviation(subgroup.results))
+                    format2(subgroup.results.deviation)
                 );
             });
     }
@@ -1252,12 +1376,13 @@
         var _this = this;
 
         this.nested_measure_data
-            .filter(function(d) {
-                return _this.x_dom.indexOf(d.key) > -1;
+            .filter(function(visit) {
+                return _this.x_dom.indexOf(visit.key) > -1;
             })
-            .forEach(function(d) {
+            .forEach(function(visit) {
+                // iterate over groups
                 //Sort [ config.color_by ] groups.
-                d.values = d.values.sort(function(a, b) {
+                visit.values = visit.values.sort(function(a, b) {
                     return _this.colorScale.domain().indexOf(a.key) <
                         _this.colorScale.domain().indexOf(b.key)
                         ? -1
@@ -1265,40 +1390,45 @@
                 });
 
                 //Define group object.
-                var group = {
+                var groupObject = {
                     x: {
-                        key: d.key, // x-axis value
+                        key: visit.key, // x-axis value
                         nGroups: _this.colorScale.domain().length, // number of groups at x-axis value
                         width: _this.x.rangeBand() // width of x-axis value
                     },
                     subgroups: []
                 };
-                group.x.start = -(group.x.nGroups / 2) + 0.5;
-                group.distance = group.x.width / group.x.nGroups;
+                groupObject.x.start = -(groupObject.x.nGroups / 2) + 0.5;
+                groupObject.distance = groupObject.x.width / groupObject.x.nGroups;
 
-                d.values.forEach(function(di, i) {
+                visit.values.forEach(function(group, i) {
+                    // iterate over visits
                     var subgroup = {
-                        group: group,
-                        key: di.key,
-                        offset: (group.x.start + i) * group.distance,
-                        results: di.values.sort(d3.ascending).map(function(value) {
-                            return +value;
-                        })
+                        group: groupObject,
+                        key: group.key,
+                        offset: (groupObject.x.start + i) * groupObject.distance,
+                        results: group.values
                     };
                     subgroup.svg = _this.svg
                         .append('g')
                         .attr({
                             class: 'boxplot-wrap overlay-item',
                             transform:
-                                'translate(' + (_this.x(group.x.key) + subgroup.offset) + ',0)'
+                                'translate(' +
+                                (_this.x(groupObject.x.key) + subgroup.offset) +
+                                ',0)'
                         })
                         .datum({ values: subgroup.results });
-                    group.subgroups.push(subgroup);
+                    groupObject.subgroups.push(subgroup);
 
-                    if (_this.config.boxplots) addBoxPlot(_this, subgroup);
-                    if (_this.config.violins)
-                        addViolinPlot(_this, subgroup, _this.colorScale(subgroup.key));
+                    if (_this.config.boxplots) addBoxPlot.call(_this, subgroup);
+                    if (_this.config.violins) addViolinPlot.call(_this, subgroup);
                     addSummaryStatistics.call(_this, subgroup);
+                    _this.circles.groups
+                        .filter(function(d) {
+                            return d.visit === visit.key && d.group === group.key;
+                        })
+                        .attr('transform', 'translate(' + subgroup.offset + ',0)');
                 });
             });
     }
