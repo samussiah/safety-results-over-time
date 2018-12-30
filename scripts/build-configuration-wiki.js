@@ -3,9 +3,8 @@ const fs = require('fs');
 const pkg = require('../package');
 const schema = require('../settings-schema');
 const properties = schema.properties;
-const settings = require('../src/defaultSettings.js');
-const rendererSettings = settings.rendererSpecificSettings;
-const webchartsSettings = settings.webchartsSettings;
+const rendererSettings = require('../src/configuration/rendererSettings.js').default();
+const webchartsSettings = require('../src/configuration/webchartsSettings.js').default();
 const markdown = [];
 
 function setDefault(setting) {

@@ -6,7 +6,7 @@
     "license": "MIT",
     "homepage": "https://github.com/rhoinc/safety-results-over-time#readme",
     "main": "./build/safetyResultsOverTime.js",
-    "module": "./src/wrapper.js",
+    "module": "./src/index.js",
     "keywords": [
         "labs",
         "vitals",

@@ -172,6 +172,15 @@ controls initial display of box plots
 
 
 
+## settings.outliers
+`boolean`
+
+controls initial display of outliers outside the 5th and 95th percentiles
+
+**default:** `true`
+
+
+
 ## settings.violins
 `boolean`
 

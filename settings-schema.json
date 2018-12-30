@@ -163,6 +163,12 @@
             "default":  true,
             "type": "boolean"
         },
+        "outliers": {
+            "title": "Display outliers?",
+            "description": "controls initial display of outliers outside the 5th and 95th percentiles",
+            "default":  true,
+            "type": "boolean"
+        },
         "violins": {
             "title": "Display violin plots?",
             "description": "controls initial display of violin plots",
