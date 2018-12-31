@@ -32,6 +32,7 @@ export default function controlInputs() {
         },
         { type: 'checkbox', inline: true, option: 'boxplots', label: 'Box plots' },
         { type: 'checkbox', inline: true, option: 'violins', label: 'Violin plots' },
-        { type: 'checkbox', inline: true, option: 'outliers', label: 'Outliers' }
+        { type: 'checkbox', inline: true, option: 'outliers', label: 'Outliers' },
+        { type: 'radio', option: 'y.type', values: ['linear', 'log'], label: 'Axis type' }
     ];
 }

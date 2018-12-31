@@ -11,6 +11,9 @@ d3.csv(
             //filters: ['ARM', 'SEX', 'RACE', 'SITEID'],
             groups: ['ARM', 'SEX', 'RACE', 'SITEID'],
             //violins: true,
+            y: {type: 'log'},
+            //start_value: 'Aminotransferase, alanine (ALT)',
+            start_value: 'Temperature',
         };
         var instance = safetyResultsOverTime(
             '#container',
