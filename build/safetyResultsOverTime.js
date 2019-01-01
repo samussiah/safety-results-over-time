@@ -602,10 +602,18 @@
     }
 
     function setInitialMeasure() {
-        this.controls.config.inputs.filter(function(input) {
+        var measureInput = this.controls.config.inputs.find(function(input) {
             return input.label === 'Measure';
-        })[0].start =
-            this.config.start_value || this.measures[0];
+        });
+        if (this.config.start_value && this.measures.indexOf(this.config.start_value) < 0) {
+            measureInput.start = this.measures[0];
+            console.warn(
+                this.config.start_value +
+                    ' is an invalid measure. Defaulting to ' +
+                    measureInput.start +
+                    '.'
+            );
+        } else if (!this.config.start_value) measureInput.start = this.measures[0];
     }
 
     function onInit() {

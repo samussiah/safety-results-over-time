@@ -13,7 +13,8 @@ d3.csv(
             //violins: true,
             y: {type: 'log'},
             //start_value: 'Aminotransferase, alanine (ALT)',
-            start_value: 'Temperature',
+            //start_value: 'Temperature',
+            start_value: 'asdf',
         };
         var instance = safetyResultsOverTime(
             '#container',
