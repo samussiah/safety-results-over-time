@@ -34,9 +34,7 @@ export default function defineMeasureData() {
     this.raw_data = this.measure_data;
 
     //Apply filter to measure data.
-    this.filtered_measure_data = this.measure_data.filter(
-        d => !(this.config.y.type === 'log' && d[this.config.value_col] === 0)
-    );
+    this.filtered_measure_data = this.measure_data;
     this.filters.forEach(filter => {
         this.filtered_measure_data = this.filtered_measure_data.filter(d => {
             return Array.isArray(filter.val)

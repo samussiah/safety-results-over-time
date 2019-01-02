@@ -725,8 +725,10 @@
             .filter(function(d) {
                 return d.value_col && d.value_col === _this.config.measure_col;
             })
-            .select('option:checked')
+            .selectAll('option:checked')
             .text();
+        this.previousYAxis = this.currentYAxis;
+        this.currentYAxis = this.config.y.type;
     }
 
     function defineMeasureData() {
@@ -768,9 +770,7 @@
         this.raw_data = this.measure_data;
 
         //Apply filter to measure data.
-        this.filtered_measure_data = this.measure_data.filter(function(d) {
-            return !(_this.config.y.type === 'log' && d[_this.config.value_col] === 0);
-        });
+        this.filtered_measure_data = this.measure_data;
         this.filters.forEach(function(filter) {
             _this.filtered_measure_data = _this.filtered_measure_data.filter(function(d) {
                 return Array.isArray(filter.val)
@@ -887,7 +887,10 @@
         var _this = this;
 
         //Define y-domain.
-        if (this.currentMeasure !== this.previousMeasure)
+        if (
+            this.currentMeasure !== this.previousMeasure ||
+            this.currentYAxis !== this.previousYAxis
+        )
             this.config.y.domain = d3$1.extent(
                 this.measure_data.map(function(d) {
                     return +d[_this.config.y.column];
