@@ -12,7 +12,7 @@ export default function flagOutliers() {
         const quantiles = this.quantileMap.get(
             `${d[this.config.x.column]}|${d[this.config.color_by]}`
         );
-        d.outlier = this.config.outliers
+        d.srot_outlier = this.config.outliers
             ? d[this.config.y.column] < quantiles[0] || quantiles[1] < d[this.config.y.column]
             : false;
     });

@@ -4,7 +4,7 @@ export default function syncSettings(settings) {
     settings.x.behavior = settings.visits_without_data ? 'raw' : 'flex';
     settings.y.column = settings.value_col;
     if (!(settings.groups instanceof Array && settings.groups.length))
-        settings.groups = [{ value_col: 'NONE', label: 'None' }];
+        settings.groups = [{ value_col: 'srot_none', label: 'None' }];
     else
         settings.groups = settings.groups.map(group => {
             return {
@@ -16,12 +16,7 @@ export default function syncSettings(settings) {
         ? settings.groups[0].value_col
         : settings.groups[0];
     settings.marks[0].per = [settings.color_by];
-    settings.marks[1].per = [
-        settings.id_col,
-        settings.measure_col,
-        settings.time_settings.value_col,
-        settings.value_col
-    ];
+    settings.marks[1].per = [settings.id_col, settings.time_settings.value_col, settings.value_col];
     settings.marks[1].tooltip = `[${settings.id_col}] at [${settings.x.column}]: $y`;
     settings.margin = settings.margin || { bottom: settings.time_settings.vertical_space };
 

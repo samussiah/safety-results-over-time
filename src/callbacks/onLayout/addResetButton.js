@@ -20,7 +20,7 @@ export default function addResetButton() {
             .text('Reset Limits')
             .on('click', function() {
                 const measure_data = context.raw_data.filter(
-                    d => d[context.config.measure_col] === context.currentMeasure
+                    d => d.srot_measure === context.currentMeasure
                 );
                 context.config.y.domain = extent(measure_data, d => +d[context.config.value_col]); //reset axis to full range
 

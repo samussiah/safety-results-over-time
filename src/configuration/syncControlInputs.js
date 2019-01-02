@@ -1,15 +1,8 @@
 export default function syncControlInputs(controlInputs, settings) {
-    //Sync measure control.
-    const measureControl = controlInputs.filter(
-        controlInput => controlInput.label === 'Measure'
-    )[0];
-    measureControl.value_col = settings.measure_col;
-    measureControl.start = settings.start_value;
-
     //Sync group control.
     const groupControl = controlInputs.filter(controlInput => controlInput.label === 'Group')[0];
     groupControl.start = settings.color_by;
-    settings.groups.filter(group => group.value_col !== 'NONE').forEach(group => {
+    settings.groups.filter(group => group.value_col !== 'srot_none').forEach(group => {
         groupControl.values.push(group.value_col);
     });
 
