@@ -13,7 +13,7 @@ export default function controlInputs() {
             description: 'stratification',
             options: ['marks.0.per.0', 'color_by'],
             start: null, // set in ./syncControlInputs.js
-            values: ['srot_none'], // set in ./syncControlInputs.js
+            values: null, // set in ./syncControlInputs.js
             require: true
         },
         { type: 'number', label: 'Lower Limit', option: 'y.domain[0]', require: true },

@@ -8,9 +8,14 @@ d3.csv(
             console.log(error);
 
         var settings = {
-            filters: ['ARM', 'SEX', 'RACE', 'SITEID'].reverse(),
-            groups: ['ARM', 'SEX', 'RACE', 'SITEID'],
-            start_value: 'Aminotransferase, alanine (ALT) (pkat/L)',
+            groups: ['SEX', 'ARM', 'RACE', 'SITEID']
+                .map(group => {
+                    return {
+                        value_col: group,
+                        label: (group.substring(0,1).toUpperCase() + group.substring(1).toLowerCase())
+                            .replace('Siteid', 'Site ID'),
+                    };
+                }),
         };
         var instance = safetyResultsOverTime(
             '#container',

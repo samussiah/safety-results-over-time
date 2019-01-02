@@ -290,22 +290,36 @@
     }
 
     function syncSettings(settings) {
+        //groups
+        var defaultGroup = [{ value_col: 'srot_none', label: 'None' }];
+        if (!(settings.groups instanceof Array && settings.groups.length)) {
+            settings.groups = defaultGroup;
+        } else {
+            settings.groups = defaultGroup.concat(
+                settings.groups.map(function(group) {
+                    return {
+                        value_col: group.value_col || group,
+                        label: group.label || group.value_col || group
+                    };
+                })
+            );
+        }
+
+        //x-axis
         settings.x.column = settings.time_settings.value_col;
         settings.x.label = settings.time_settings.label;
         settings.x.behavior = settings.visits_without_data ? 'raw' : 'flex';
+
+        //y-axis
         settings.y.column = settings.value_col;
-        if (!(settings.groups instanceof Array && settings.groups.length))
-            settings.groups = [{ value_col: 'srot_none', label: 'None' }];
-        else
-            settings.groups = settings.groups.map(function(group) {
-                return {
-                    value_col: group.value_col || group,
-                    label: group.label || group.value_col || group
-                };
-            });
-        settings.color_by = settings.groups[0].value_col
-            ? settings.groups[0].value_col
-            : settings.groups[0];
+
+        //stratification
+        settings.color_by =
+            settings.groups.length > 1
+                ? settings.groups[1].value_col
+                : settings.groups[0].value_col;
+
+        //marks
         settings.marks[0].per = [settings.color_by];
         settings.marks[1].per = [
             settings.id_col,
@@ -313,6 +327,8 @@
             settings.value_col
         ];
         settings.marks[1].tooltip = '[' + settings.id_col + '] at [' + settings.x.column + ']: $y';
+
+        //margin
         settings.margin = settings.margin || { bottom: settings.time_settings.vertical_space };
 
         //Convert unscheduled_visit_pattern from string to regular expression.
@@ -346,7 +362,7 @@
                 description: 'stratification',
                 options: ['marks.0.per.0', 'color_by'],
                 start: null, // set in ./syncControlInputs.js
-                values: ['srot_none'], // set in ./syncControlInputs.js
+                values: null, // set in ./syncControlInputs.js
                 require: true
             },
             { type: 'number', label: 'Lower Limit', option: 'y.domain[0]', require: true },
@@ -372,17 +388,19 @@
 
     function syncControlInputs(controlInputs, settings) {
         //Sync group control.
-        var groupControl = controlInputs.filter(function(controlInput) {
+        var groupControl = controlInputs.find(function(controlInput) {
             return controlInput.label === 'Group';
-        })[0];
+        });
         groupControl.start = settings.color_by;
-        settings.groups
-            .filter(function(group) {
-                return group.value_col !== 'srot_none';
-            })
-            .forEach(function(group) {
-                groupControl.values.push(group.value_col);
-            });
+        groupControl.values = settings.groups.map(function(group) {
+            return group.label;
+        });
+        groupControl.value_cols = settings.groups.map(function(group) {
+            return group.value_col;
+        });
+        groupControl.labels = settings.groups.map(function(group) {
+            return group.label;
+        });
 
         //Add custom filters to control inputs.
         if (settings.filters) {
@@ -482,14 +500,6 @@
 
             //Add placeholder variable for non-grouped comparisons.
             d.srot_none = 'All Participants';
-
-            //Flag unscheduled visits.
-            //d.srot_unscheduled = this.config.unscheduled_visit_values
-            //    ? this.config.unscheduled_visit_values.indexOf(d[this.config.time_settings.value_col]) >
-            //      -1
-            //    : this.config.unscheduled_visit_regex
-            //      ? this.config.unscheduled_visit_regex.test(d[this.config.time_settings.value_col])
-            //      : false;
 
             //Add placeholder variable for outliers.
             d.srot_outlier = null;
@@ -675,14 +685,39 @@
         });
     }
 
-    function removeGroupControl() {
-        var groupControl = this.controls.wrap
-            .selectAll('.control-group')
-            .filter(function(controlGroup) {
-                return controlGroup.label === 'Group';
-            });
+    function customizeGroupControl() {
+        var _this = this;
+
+        var context = this;
+
+        //Select group control.
+        var groupControl = this.controls.wrap.selectAll('.control-group').filter(function(d) {
+            return d.type === 'dropdown' && d.label === 'Group';
+        });
+
+        //Hide group control when settings specify no groups.
         groupControl.style('display', function(d) {
             return d.values.length === 1 ? 'none' : groupControl.style('display');
+        });
+
+        //Customize group control event listener.
+        var groupSelect = groupControl.selectAll('select');
+        groupSelect.selectAll('option').property('selected', function(d) {
+            return (
+                d ===
+                _this.config.groups.find(function(group) {
+                    return group.value_col === _this.config.color_by;
+                }).label
+            );
+        });
+        groupSelect.on('change', function(d) {
+            var label = d3
+                .select(this)
+                .selectAll('option:checked')
+                .text();
+            var value_col = d.value_cols[d.labels.indexOf(label)];
+            context.config.color_by = value_col;
+            context.draw();
         });
     }
 
@@ -741,7 +776,7 @@
 
     function onLayout() {
         classControlGroups.call(this);
-        removeGroupControl.call(this);
+        customizeGroupControl.call(this);
         addResetButton.call(this);
         addPopulationCountContainer.call(this);
     }
@@ -976,21 +1011,29 @@
     }
 
     function updateYaxisLimitControls() {
+        var _this = this;
+
         //Update y-axis limit controls.
+        var step = Math.pow(10, -this.config.y.precision);
+        var yDomain = this.config.y.domain.map(function(limit) {
+            return _this.config.y.d3_format(limit);
+        });
         this.controls.wrap
             .selectAll('.control-group')
             .filter(function(f) {
                 return f.option === 'y.domain[0]';
             })
             .select('input')
-            .property('value', this.config.y.domain[0]);
+            .attr('step', step)
+            .property('value', yDomain[0]);
         this.controls.wrap
             .selectAll('.control-group')
             .filter(function(f) {
                 return f.option === 'y.domain[1]';
             })
             .select('input')
-            .property('value', this.config.y.domain[1]);
+            .attr('step', step)
+            .property('value', yDomain[1]);
     }
 
     function setLegendLabel() {
