@@ -49,13 +49,11 @@ export default function drawPlots() {
             addSummaryStatistics.call(this, subgroup);
 
             //Offset outliers.
-            this.marks
-                .filter(mark => mark.type === 'circle')
-                .forEach(mark => {
-                    mark.groups
-                        .filter(d => d.visit === visit.key && d.group === group.key)
-                        .attr('transform', `translate(${subgroup.offset},0)`);
-                });
+            this.marks.filter(mark => mark.type === 'circle').forEach(mark => {
+                mark.groups
+                    .filter(d => d.visit === visit.key && d.group === group.key)
+                    .attr('transform', `translate(${subgroup.offset},0)`);
+            });
         });
     });
 }

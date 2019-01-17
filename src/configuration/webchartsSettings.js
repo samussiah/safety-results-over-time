@@ -32,14 +32,14 @@ export default function webchartsSettings() {
                 attributes: {
                     stroke: 'black',
                     'stroke-opacity': 0,
-                    'fill-opacity': 0,
+                    'fill-opacity': 0
                 },
                 values: {
                     srot_outlier: [true]
                 },
                 radius: null, // set in syncSettings()
                 tooltip: null, // set in syncSettings()
-                hidden: true,
+                hidden: true
             },
             {
                 type: 'circle',
@@ -47,14 +47,14 @@ export default function webchartsSettings() {
                 attributes: {
                     stroke: 'black',
                     'stroke-opacity': 1,
-                    'fill-opacity': 1,
+                    'fill-opacity': 1
                 },
                 values: {
                     srot_outlier: [true]
                 },
                 radius: 1.75,
                 tooltip: null, // set in syncSettings()
-                hidden: false,
+                hidden: false
             }
         ],
         legend: {

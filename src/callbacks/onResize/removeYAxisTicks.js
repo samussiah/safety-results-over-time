@@ -1,6 +1,6 @@
 import { quantile } from 'd3';
 
-export default function addYAxisTicks() {
+export default function removeYAxisTicks() {
     //Manually remove excess y-axis ticks.
     if (this.config.y.type === 'log') {
         const tickValues = [];
