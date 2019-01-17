@@ -6,7 +6,6 @@ export default function removeUnscheduledVisits() {
                     d.values = d.values.filter(di => this.config.x.domain.indexOf(di.key) > -1);
                 });
             else if (mark.type === 'circle') {
-                this.circles = mark;
                 mark.data = mark.data.filter(d => {
                     d.visit = d.values.x;
                     d.group = d.values.raw[0][this.config.color_by];

@@ -15,9 +15,17 @@ export default function syncSettings(settings) {
     settings.color_by = settings.groups[0].value_col
         ? settings.groups[0].value_col
         : settings.groups[0];
-    settings.marks[0].per = [settings.color_by];
-    settings.marks[1].per = [settings.id_col, settings.time_settings.value_col, settings.value_col];
-    settings.marks[1].tooltip = `[${settings.id_col}] at [${settings.x.column}]: $y`;
+    const lines = settings.marks.find(mark => mark.type === 'line');
+    const hiddenOutliers = settings.marks.find(mark => mark.type === 'circle' && mark.hidden);
+    const visibleOutliers = settings.marks.find(mark => mark.type === 'circle' && !mark.hidden);
+    lines.per = [settings.color_by];
+    hiddenOutliers.radius = visibleOutliers.radius*4;
+    settings.marks
+        .filter(mark => mark.type === 'circle')
+        .forEach(mark => {
+            mark.per = [settings.id_col, settings.time_settings.value_col, settings.value_col];
+            mark.tooltip = `[${settings.id_col}] at [${settings.x.column}]: $y`;
+        });
     settings.margin = settings.margin || { bottom: settings.time_settings.vertical_space };
 
     //Convert unscheduled_visit_pattern from string to regular expression.

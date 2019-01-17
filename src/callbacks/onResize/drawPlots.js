@@ -28,7 +28,7 @@ export default function drawPlots() {
         groupObject.distance = groupObject.x.width / groupObject.x.nGroups;
 
         visit.values.forEach((group, i) => {
-            // iterate over visits
+            //Iterate over visits.
             const subgroup = {
                 group: groupObject,
                 key: group.key,
@@ -36,7 +36,7 @@ export default function drawPlots() {
                 results: group.values
             };
             subgroup.svg = this.svg
-                .append('g')
+                .insert('g', '.point-supergroup')
                 .attr({
                     class: 'boxplot-wrap overlay-item',
                     transform: 'translate(' + (this.x(groupObject.x.key) + subgroup.offset) + ',0)'
@@ -47,9 +47,15 @@ export default function drawPlots() {
             if (this.config.boxplots) addBoxPlot.call(this, subgroup);
             if (this.config.violins) addViolinPlot.call(this, subgroup);
             addSummaryStatistics.call(this, subgroup);
-            this.circles.groups
-                .filter(d => d.visit === visit.key && d.group === group.key)
-                .attr('transform', `translate(${subgroup.offset},0)`);
+
+            //Offset outliers.
+            this.marks
+                .filter(mark => mark.type === 'circle')
+                .forEach(mark => {
+                    mark.groups
+                        .filter(d => d.visit === visit.key && d.group === group.key)
+                        .attr('transform', `translate(${subgroup.offset},0)`);
+                });
         });
     });
 }
