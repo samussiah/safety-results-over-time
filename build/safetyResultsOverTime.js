@@ -311,10 +311,15 @@
     }
 
     function syncSettings(settings) {
+        //x-axis
         settings.x.column = settings.time_settings.value_col;
         settings.x.label = settings.time_settings.label;
         settings.x.behavior = settings.visits_without_data ? 'raw' : 'flex';
+
+        //y-axis
         settings.y.column = settings.value_col;
+
+        //stratification
         if (!(settings.groups instanceof Array && settings.groups.length))
             settings.groups = [{ value_col: 'srot_none', label: 'None' }];
         else
@@ -324,9 +329,11 @@
                     label: group.label || group.value_col || group
                 };
             });
-        settings.color_by = settings.groups[0].value_col
-            ? settings.groups[0].value_col
-            : settings.groups[0];
+        settings.color_by = settings.color_by
+            ? settings.color_by
+            : settings.groups[0].value_col ? settings.groups[0].value_col : settings.groups[0];
+
+        //marks
         var lines = settings.marks.find(function(mark) {
             return mark.type === 'line';
         });
@@ -346,6 +353,8 @@
                 mark.per = [settings.id_col, settings.time_settings.value_col, settings.value_col];
                 mark.tooltip = '[' + settings.id_col + '] at [' + settings.x.column + ']: $y';
             });
+
+        //miscellany
         settings.margin = settings.margin || { bottom: settings.time_settings.vertical_space };
 
         //Convert unscheduled_visit_pattern from string to regular expression.
@@ -1126,26 +1135,24 @@
         removeYAxisTicks.call(this);
     }
 
-    function removeYAxisTicks$1() {
-        //Manually remove excess y-axis ticks.
-        if (this.config.y.type === 'log') {
-            var tickValues = [];
-            this.svg.selectAll('.y.axis .tick').each(function(d) {
-                var tick = d3.select(this);
-                var tickValue = tick.select('text').text();
-
-                //Check if tick value already exists on axis and if so, remove.
-                if (tickValues.indexOf(tickValue) < 0) tickValues.push(tickValue);
-                else tick.remove();
-            });
-        }
+    function editXAxisTicks() {
+        //Rotate x-axis tick labels.
+        if (this.config.time_settings.rotate_tick_labels)
+            this.svg
+                .selectAll('.x.axis .tick text')
+                .attr({
+                    transform: 'rotate(-45)',
+                    dx: -10,
+                    dy: 10
+                })
+                .style('text-anchor', 'end');
     }
 
-    function addYAxisTicks() {
+    function editYAxisTicks() {
         var _this = this;
 
         //Manually draw y-axis ticks when none exist.
-        if (!this.svg.selectAll('.y .tick')[0].length) {
+        if (this.svg.selectAll('.y .tick').size() === 0) {
             //Define quantiles of current measure results.
             var probs = [
                 { probability: 0.05 },
@@ -1181,6 +1188,17 @@
 
             //Draw the gridlines.
             this.drawGridlines();
+        }
+
+        //Draw custom y-axis given a log scale.
+        if (this.config.y.type === 'log') {
+            var logYAxis = d3$1.svg
+                .axis()
+                .scale(this.y)
+                .orient('left')
+                .ticks(10, ',' + this.config.y.format)
+                .tickSize(6, 0);
+            this.svg.select('g.y.axis').call(logYAxis);
         }
     }
 
@@ -1589,29 +1607,16 @@
             });
     }
 
-    function rotateXAxisTickLabels() {
-        if (this.config.time_settings.rotate_tick_labels)
-            this.svg
-                .selectAll('.x.axis .tick text')
-                .attr({
-                    transform: 'rotate(-45)',
-                    dx: -10,
-                    dy: 10
-                })
-                .style('text-anchor', 'end');
-    }
-
     function removeLegend() {
         if (this.config.color_by === 'srot_none') this.wrap.select('.legend').remove();
     }
 
     function onResize() {
-        removeYAxisTicks$1.call(this);
-        addYAxisTicks.call(this);
+        editXAxisTicks.call(this);
+        editYAxisTicks.call(this);
         clearCanvas.call(this);
         drawPlots.call(this);
         addMouseoverToOutliers.call(this);
-        rotateXAxisTickLabels.call(this);
         removeLegend.call(this);
     }
 

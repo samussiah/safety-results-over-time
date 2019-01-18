@@ -1,8 +1,8 @@
-import { quantile } from 'd3';
+import { quantile, svg } from 'd3';
 
-export default function addYAxisTicks() {
+export default function editYAxisTicks() {
     //Manually draw y-axis ticks when none exist.
-    if (!this.svg.selectAll('.y .tick')[0].length) {
+    if (this.svg.selectAll('.y .tick').size() === 0) {
         //Define quantiles of current measure results.
         const probs = [
             { probability: 0.05 },
@@ -32,5 +32,16 @@ export default function addYAxisTicks() {
 
         //Draw the gridlines.
         this.drawGridlines();
+    }
+
+    //Draw custom y-axis given a log scale.
+    if (this.config.y.type === 'log') {
+        const logYAxis = svg
+            .axis()
+            .scale(this.y)
+            .orient('left')
+            .ticks(10, `,${this.config.y.format}`)
+            .tickSize(6, 0);
+        this.svg.select('g.y.axis').call(logYAxis);
     }
 }

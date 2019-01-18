@@ -1,8 +1,13 @@
 export default function syncSettings(settings) {
+    //x-axis
     settings.x.column = settings.time_settings.value_col;
     settings.x.label = settings.time_settings.label;
     settings.x.behavior = settings.visits_without_data ? 'raw' : 'flex';
+
+    //y-axis
     settings.y.column = settings.value_col;
+
+    //stratification
     if (!(settings.groups instanceof Array && settings.groups.length))
         settings.groups = [{ value_col: 'srot_none', label: 'None' }];
     else
@@ -12,9 +17,11 @@ export default function syncSettings(settings) {
                 label: group.label || group.value_col || group
             };
         });
-    settings.color_by = settings.groups[0].value_col
-        ? settings.groups[0].value_col
-        : settings.groups[0];
+    settings.color_by = settings.color_by
+        ? settings.color_by
+        : settings.groups[0].value_col ? settings.groups[0].value_col : settings.groups[0];
+
+    //marks
     const lines = settings.marks.find(mark => mark.type === 'line');
     const hiddenOutliers = settings.marks.find(mark => mark.type === 'circle' && mark.hidden);
     const visibleOutliers = settings.marks.find(mark => mark.type === 'circle' && !mark.hidden);
@@ -24,6 +31,8 @@ export default function syncSettings(settings) {
         mark.per = [settings.id_col, settings.time_settings.value_col, settings.value_col];
         mark.tooltip = `[${settings.id_col}] at [${settings.x.column}]: $y`;
     });
+
+    //miscellany
     settings.margin = settings.margin || { bottom: settings.time_settings.vertical_space };
 
     //Convert unscheduled_visit_pattern from string to regular expression.
