@@ -10,5 +10,10 @@ export default function removeUnscheduledVisits() {
             this.config.x.domain = this.config.x.domain.filter(
                 visit => !this.config.unscheduled_visit_regex.test(visit)
             );
+
+        //Remove unscheduled visits from raw data.
+        this.raw_data = this.raw_data.filter(
+            d => this.config.x.domain.indexOf(d[this.config.time_settings.value_col]) > -1
+        );
     }
 }

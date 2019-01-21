@@ -1,11 +1,8 @@
 export default function addMouseoverToOutliers() {
-    this.marks.forEach((mark, i) => (mark.hidden = this.config.marks[i].hidden));
     this.marks.filter(mark => mark.type === 'circle').forEach(mark => {
         mark.groups
             .each(function(d, i) {
-                d.id = `outlier-${i}`;
-                d.hidden = mark.hidden;
-                d3.select(this).classed(`hidden-${mark.hidden} ${d.id}`, true);
+                d3.select(this).classed(`hidden-${d.hidden} ${d.id}`, true);
             })
             .on('mouseover', d => {
                 this.svg.select(`.hidden-true.${d.id} circle`).attr({

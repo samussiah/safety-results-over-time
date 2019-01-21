@@ -18,6 +18,7 @@ export default function controlInputs() {
         },
         { type: 'number', label: 'Lower Limit', option: 'y.domain[0]', require: true },
         { type: 'number', label: 'Upper Limit', option: 'y.domain[1]', require: true },
+        { type: 'radio', option: 'y.type', values: ['linear', 'log'], label: 'Y-axis scale' },
         {
             type: 'checkbox',
             inline: true,
@@ -32,7 +33,6 @@ export default function controlInputs() {
         },
         { type: 'checkbox', inline: true, option: 'boxplots', label: 'Box plots' },
         { type: 'checkbox', inline: true, option: 'violins', label: 'Violin plots' },
-        { type: 'checkbox', inline: true, option: 'outliers', label: 'Outliers' },
-        { type: 'radio', option: 'y.type', values: ['linear', 'log'], label: 'Axis type' }
+        { type: 'checkbox', inline: true, option: 'outliers', label: 'Outliers' }
     ];
 }

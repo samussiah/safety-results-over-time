@@ -351,7 +351,14 @@
             })
             .forEach(function(mark) {
                 mark.per = [settings.id_col, settings.time_settings.value_col, settings.value_col];
-                mark.tooltip = '[' + settings.id_col + '] at [' + settings.x.column + ']: $y';
+                mark.tooltip =
+                    '[' +
+                    settings.id_col +
+                    '] at [' +
+                    settings.x.column +
+                    ']: [' +
+                    settings.value_col +
+                    ']';
             });
 
         //miscellany
@@ -393,6 +400,7 @@
             },
             { type: 'number', label: 'Lower Limit', option: 'y.domain[0]', require: true },
             { type: 'number', label: 'Upper Limit', option: 'y.domain[1]', require: true },
+            { type: 'radio', option: 'y.type', values: ['linear', 'log'], label: 'Y-axis scale' },
             {
                 type: 'checkbox',
                 inline: true,
@@ -407,8 +415,7 @@
             },
             { type: 'checkbox', inline: true, option: 'boxplots', label: 'Box plots' },
             { type: 'checkbox', inline: true, option: 'violins', label: 'Violin plots' },
-            { type: 'checkbox', inline: true, option: 'outliers', label: 'Outliers' },
-            { type: 'radio', option: 'y.type', values: ['linear', 'log'], label: 'Axis type' }
+            { type: 'checkbox', inline: true, option: 'outliers', label: 'Outliers' }
         ];
     }
 
@@ -711,9 +718,20 @@
     function classControlGroups() {
         this.controls.wrap.selectAll('.control-group').each(function(d) {
             var controlGroup = d3$1.select(this);
-            controlGroup.classed(d.label.toLowerCase().replace(' ', '-'), true);
+            controlGroup.classed(
+                d.type.toLowerCase().replace(' ', '-') +
+                    ' ' +
+                    d.label.toLowerCase().replace(' ', '-'),
+                true
+            );
             if (['Lower Limit', 'Upper Limit'].indexOf(d.label) > -1)
                 controlGroup.classed('y-axis', true);
+            if (d.type === 'checkbox')
+                controlGroup.style({
+                    float: 'right',
+                    clear: 'right',
+                    margin: '0'
+                });
         });
     }
 
@@ -945,6 +963,11 @@
                 this.config.x.domain = this.config.x.domain.filter(function(visit) {
                     return !_this.config.unscheduled_visit_regex.test(visit);
                 });
+
+            //Remove unscheduled visits from raw data.
+            this.raw_data = this.raw_data.filter(function(d) {
+                return _this.config.x.domain.indexOf(d[_this.config.time_settings.value_col]) > -1;
+            });
         }
     }
 
@@ -1115,24 +1138,44 @@
                             return _this.config.x.domain.indexOf(di.key) > -1;
                         });
                     });
-                else if (mark.type === 'circle') {
+                else if (mark.type === 'circle')
                     mark.data = mark.data.filter(function(d) {
-                        d.visit = d.values.x;
-                        d.group = d.values.raw[0][_this.config.color_by];
                         return _this.config.x.domain.indexOf(d.values.x) > -1;
                     });
-                }
             });
     }
 
-    function removeYAxisTicks() {
+    function clearCanvas() {
         this.svg.selectAll('.y.axis .tick').remove();
+        this.svg.selectAll('.point').remove(); // mark data doesn't necessarily get updated (?)
+        this.svg.selectAll('.boxplot-wrap').remove();
+    }
+
+    function updateMarkData() {
+        var _this = this;
+
+        this.marks.forEach(function(mark, i) {
+            mark.hidden = _this.config.marks[i].hidden;
+        });
+        this.marks
+            .filter(function(mark) {
+                return mark.type === 'circle';
+            })
+            .forEach(function(mark) {
+                mark.data.forEach(function(d, i) {
+                    d.id = 'outlier-' + i;
+                    d.hidden = mark.hidden;
+                    d.visit = d.values.x;
+                    d.group = d.values.raw[0][_this.config.color_by];
+                });
+            });
     }
 
     function onDraw() {
         updateParticipantCount.call(this);
+        clearCanvas.call(this);
         removeUnscheduledVisits$1.call(this);
-        removeYAxisTicks.call(this);
+        updateMarkData.call(this);
     }
 
     function editXAxisTicks() {
@@ -1148,18 +1191,31 @@
                 .style('text-anchor', 'end');
     }
 
-    function editYAxisTicks() {
+    function drawLogAxis() {
+        //Draw custom y-axis given a log scale.
+        if (this.config.y.type === 'log') {
+            var logYAxis = d3$1.svg
+                .axis()
+                .scale(this.y)
+                .orient('left')
+                .ticks(8, ',' + this.config.y.format)
+                .tickSize(6, 0);
+            this.svg.select('g.y.axis').call(logYAxis);
+        }
+    }
+
+    function handleEmptyAxis() {
         var _this = this;
 
         //Manually draw y-axis ticks when none exist.
-        if (this.svg.selectAll('.y .tick').size() === 0) {
+        if (this.svg.selectAll('.y .tick').size() < 2) {
             //Define quantiles of current measure results.
             var probs = [
-                { probability: 0.05 },
-                { probability: 0.25 },
+                { probability: 0.1 },
+                { probability: 0.3 },
                 { probability: 0.5 },
-                { probability: 0.75 },
-                { probability: 0.95 }
+                { probability: 0.7 },
+                { probability: 0.9 }
             ];
 
             for (var i = 0; i < probs.length; i++) {
@@ -1175,7 +1231,9 @@
                 );
             }
 
-            var ticks = [probs[1].quantile, probs[3].quantile];
+            var ticks = probs.map(function(prob) {
+                return prob.quantile;
+            });
 
             //Manually define y-axis tick values.
             this.yAxis.tickValues(ticks);
@@ -1189,20 +1247,42 @@
             //Draw the gridlines.
             this.drawGridlines();
         }
-
-        //Draw custom y-axis given a log scale.
-        if (this.config.y.type === 'log') {
-            var logYAxis = d3$1.svg
-                .axis()
-                .scale(this.y)
-                .orient('left')
-                .ticks(10, ',' + this.config.y.format)
-                .tickSize(6, 0);
-            this.svg.select('g.y.axis').call(logYAxis);
-        }
     }
 
-    function clearCanvas() {
+    function removeDuplicateTickLabels() {
+        //Manually remove excess y-axis ticks.
+        var tickLabels = [];
+        this.svg.selectAll('.y.axis .tick').each(function(d) {
+            var tick = d3.select(this);
+            var label = tick.select('text');
+
+            if (label.size()) {
+                var tickLabel = label.text();
+
+                //Check if tick value already exists on axis and if so, remove.
+                if (tickLabels.indexOf(tickLabel) < 0) tickLabels.push(tickLabel);
+                else label.remove();
+            }
+        });
+    }
+
+    function fixFloatingPointIssues() {
+        this.svg
+            .selectAll('.y.axis .tick text')
+            .filter(function(d) {
+                return /^\d*\.0*[1-9]0{5,}[1-9]$/.test(d);
+            }) // floating point issues, e.g. .2 + .1 !== .3
+            .remove();
+    }
+
+    function editYAxisTicks() {
+        drawLogAxis.call(this);
+        handleEmptyAxis.call(this);
+        removeDuplicateTickLabels.call(this);
+        fixFloatingPointIssues.call(this);
+    }
+
+    function clearCanvas$1() {
         this.svg.selectAll('.boxplot-wrap').remove();
     }
 
@@ -1578,9 +1658,6 @@
     function addMouseoverToOutliers() {
         var _this = this;
 
-        this.marks.forEach(function(mark, i) {
-            return (mark.hidden = _this.config.marks[i].hidden);
-        });
         this.marks
             .filter(function(mark) {
                 return mark.type === 'circle';
@@ -1588,9 +1665,7 @@
             .forEach(function(mark) {
                 mark.groups
                     .each(function(d, i) {
-                        d.id = 'outlier-' + i;
-                        d.hidden = mark.hidden;
-                        d3.select(this).classed('hidden-' + mark.hidden + ' ' + d.id, true);
+                        d3.select(this).classed('hidden-' + d.hidden + ' ' + d.id, true);
                     })
                     .on('mouseover', function(d) {
                         _this.svg.select('.hidden-true.' + d.id + ' circle').attr({
@@ -1614,7 +1689,7 @@
     function onResize() {
         editXAxisTicks.call(this);
         editYAxisTicks.call(this);
-        clearCanvas.call(this);
+        clearCanvas$1.call(this);
         drawPlots.call(this);
         addMouseoverToOutliers.call(this);
         removeLegend.call(this);

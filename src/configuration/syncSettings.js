@@ -29,7 +29,7 @@ export default function syncSettings(settings) {
     hiddenOutliers.radius = visibleOutliers.radius * 4;
     settings.marks.filter(mark => mark.type === 'circle').forEach(mark => {
         mark.per = [settings.id_col, settings.time_settings.value_col, settings.value_col];
-        mark.tooltip = `[${settings.id_col}] at [${settings.x.column}]: $y`;
+        mark.tooltip = `[${settings.id_col}] at [${settings.x.column}]: [${settings.value_col}]`;
     });
 
     //miscellany
