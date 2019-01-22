@@ -320,18 +320,24 @@
         settings.y.column = settings.value_col;
 
         //stratification
+        var defaultGroup = { value_col: 'srot_none', label: 'None' };
         if (!(settings.groups instanceof Array && settings.groups.length))
-            settings.groups = [{ value_col: 'srot_none', label: 'None' }];
+            settings.groups = [defaultGroup];
         else
-            settings.groups = settings.groups.map(function(group) {
-                return {
-                    value_col: group.value_col || group,
-                    label: group.label || group.value_col || group
-                };
-            });
+            settings.groups = [defaultGroup].concat(
+                settings.groups.map(function(group) {
+                    return {
+                        value_col: group.value_col || group,
+                        label: group.label || group.value_col || group
+                    };
+                })
+            );
         settings.color_by = settings.color_by
             ? settings.color_by
-            : settings.groups[0].value_col ? settings.groups[0].value_col : settings.groups[0];
+            : settings.groups.length > 1 ? settings.groups[1].value_col : defaultGroup.value_col;
+        settings.legend.label = settings.groups.find(function(group) {
+            return group.value_col === settings.color_by;
+        }).label;
 
         //marks
         var lines = settings.marks.find(function(mark) {
@@ -385,22 +391,38 @@
             {
                 type: 'subsetter',
                 label: 'Measure',
-                description: 'filter',
                 value_col: 'srot_measure', // set in syncControlInputs()
                 start: null // set in ../callbacks/onInit/setInitialMeasure.js
             },
             {
                 type: 'dropdown',
-                label: 'Group',
-                description: 'stratification',
+                label: 'Group by',
                 options: ['marks.0.per.0', 'color_by'],
                 start: null, // set in ./syncControlInputs.js
-                values: ['srot_none'], // set in ./syncControlInputs.js
+                values: null, // set in ./syncControlInputs.js
                 require: true
             },
-            { type: 'number', label: 'Lower Limit', option: 'y.domain[0]', require: true },
-            { type: 'number', label: 'Upper Limit', option: 'y.domain[1]', require: true },
-            { type: 'radio', option: 'y.type', values: ['linear', 'log'], label: 'Y-axis scale' },
+            {
+                type: 'number',
+                label: 'Lower',
+                grouping: 'y-axis',
+                option: 'y.domain[0]',
+                require: true
+            },
+            {
+                type: 'number',
+                label: 'Upper',
+                grouping: 'y-axis',
+                option: 'y.domain[1]',
+                require: true
+            },
+            {
+                type: 'radio',
+                option: 'y.type',
+                grouping: 'y-axis',
+                values: ['linear', 'log'],
+                label: 'Scale'
+            },
             {
                 type: 'checkbox',
                 inline: true,
@@ -421,17 +443,15 @@
 
     function syncControlInputs(controlInputs, settings) {
         //Sync group control.
-        var groupControl = controlInputs.filter(function(controlInput) {
-            return controlInput.label === 'Group';
-        })[0];
-        groupControl.start = settings.color_by;
-        settings.groups
-            .filter(function(group) {
-                return group.value_col !== 'srot_none';
-            })
-            .forEach(function(group) {
-                groupControl.values.push(group.value_col);
-            });
+        var groupControl = controlInputs.find(function(controlInput) {
+            return controlInput.label === 'Group by';
+        });
+        groupControl.start = settings.groups.find(function(group) {
+            return group.value_col === settings.color_by;
+        }).label;
+        groupControl.values = settings.groups.map(function(group) {
+            return group.label;
+        });
 
         //Add custom filters to control inputs.
         if (settings.filters) {
@@ -711,7 +731,7 @@
         // 4. Define set of measures.
         defineMeasureSet.call(this);
 
-        // 5. Choose the start value for the Test filter
+        // 5. Set the start value of the Measure filter.
         setInitialMeasure.call(this);
     }
 
@@ -724,8 +744,11 @@
                     d.label.toLowerCase().replace(' ', '-'),
                 true
             );
-            if (['Lower Limit', 'Upper Limit'].indexOf(d.label) > -1)
-                controlGroup.classed('y-axis', true);
+
+            //Add y-axis class to group y-axis controls.
+            if (d.grouping) controlGroup.classed(d.grouping, true);
+
+            //Float all checkboxes right.
             if (d.type === 'checkbox')
                 controlGroup.style({
                     float: 'right',
@@ -735,35 +758,53 @@
         });
     }
 
-    function removeGroupControl() {
-        var groupControl = this.controls.wrap
-            .selectAll('.control-group')
-            .filter(function(controlGroup) {
-                return controlGroup.label === 'Group';
-            });
-        groupControl.style('display', function(d) {
-            return d.values.length === 1 ? 'none' : groupControl.style('display');
-        });
+    function customizeGroupByControl() {
+        var _this = this;
+
+        var context = this;
+
+        var groupControl = this.controls.wrap.selectAll('.control-group.dropdown.group-by');
+        if (groupControl.datum().values.length === 1) groupControl.style('display', 'none');
+        else
+            groupControl
+                .selectAll('select')
+                .on('change', function(d) {
+                    var label = d3
+                        .select(this)
+                        .selectAll('option:checked')
+                        .text();
+                    var value_col = context.config.groups.find(function(group) {
+                        return group.label === label;
+                    }).value_col;
+                    context.config.marks[0].per[0] = value_col;
+                    context.config.color_by = value_col;
+                    context.config.legend.label = label;
+                    context.draw();
+                })
+                .selectAll('option')
+                .property('selected', function(d) {
+                    return d === _this.config.legend.label;
+                });
     }
 
-    function addResetButton() {
+    function addYDomainResetButton() {
         var context = this,
             resetContainer = this.controls.wrap
-                .insert('div', '.lower-limit')
+                .insert('div', '.lower')
                 .classed('control-group y-axis', true)
                 .datum({
                     type: 'button',
                     option: 'y.domain',
-                    label: 'Y-axis:'
+                    label: 'Limits'
                 }),
             resetLabel = resetContainer
                 .append('span')
                 .attr('class', 'wc-control-label')
-                .style('text-align', 'right')
-                .text('Y-axis:'),
+                .text('Limits'),
             resetButton = resetContainer
                 .append('button')
-                .text('Reset Limits')
+                .style('padding', '0px 5px')
+                .text('Reset')
                 .on('click', function() {
                     var measure_data = context.raw_data.filter(function(d) {
                         return d.srot_measure === context.currentMeasure;
@@ -792,6 +833,37 @@
                 });
     }
 
+    function groupYAxisControls() {
+        //Define a container in which to place y-axis controls.
+        var grouping = this.controls.wrap
+            .insert('div', '.y-axis')
+            .style({
+                display: 'inline-block',
+                'margin-right': '5px'
+            })
+            .append('fieldset')
+            .style('padding', '0px 2px');
+        grouping.append('legend').text('Y-axis');
+
+        //Move each y-axis control into container.
+        this.controls.wrap.selectAll('.y-axis').each(function(d) {
+            this.style.marginTop = '0px';
+            this.style.marginRight = '2px';
+            this.style.marginBottom = '2px';
+            this.style.marginLeft = '2px';
+            grouping.node().appendChild(this);
+
+            //Radio buttons sit too low.
+            if (d.option === 'y.type')
+                d3
+                    .select(this)
+                    .selectAll('input[type=radio]')
+                    .style({
+                        top: '-.1em'
+                    });
+        });
+    }
+
     function addPopulationCountContainer() {
         this.populationCountContainer = this.controls.wrap
             .append('div')
@@ -799,11 +871,17 @@
             .style('font-style', 'italic');
     }
 
+    function addBorderAboveChart() {
+        this.wrap.style('border-top', '1px solid #ccc');
+    }
+
     function onLayout() {
         classControlGroups.call(this);
-        removeGroupControl.call(this);
-        addResetButton.call(this);
+        customizeGroupByControl.call(this);
+        addYDomainResetButton.call(this);
+        groupYAxisControls.call(this);
         addPopulationCountContainer.call(this);
+        addBorderAboveChart.call(this);
     }
 
     function getCurrentMeasure() {
@@ -1058,19 +1136,6 @@
             .property('value', this.config.y.domain[1]);
     }
 
-    function setLegendLabel() {
-        this.config.legend.label =
-            this.config.color_by !== 'srot_none'
-                ? this.config.groups[
-                      this.config.groups
-                          .map(function(group) {
-                              return group.value_col;
-                          })
-                          .indexOf(this.config.color_by)
-                  ].label
-                : '';
-    }
-
     function onPreprocess() {
         // 1. Capture currently selected measure.
         getCurrentMeasure.call(this);
@@ -1095,9 +1160,6 @@
 
         // 4c Update y-axis limit controls to match y-axis domain.
         updateYaxisLimitControls.call(this);
-
-        //Set legend label to current group.
-        setLegendLabel.call(this);
     }
 
     function onDatatransform() {}

@@ -8,18 +8,24 @@ export default function syncSettings(settings) {
     settings.y.column = settings.value_col;
 
     //stratification
+    const defaultGroup = { value_col: 'srot_none', label: 'None' };
     if (!(settings.groups instanceof Array && settings.groups.length))
-        settings.groups = [{ value_col: 'srot_none', label: 'None' }];
+        settings.groups = [defaultGroup];
     else
-        settings.groups = settings.groups.map(group => {
-            return {
-                value_col: group.value_col || group,
-                label: group.label || group.value_col || group
-            };
-        });
+        settings.groups = [defaultGroup].concat(
+            settings.groups.map(group => {
+                return {
+                    value_col: group.value_col || group,
+                    label: group.label || group.value_col || group
+                };
+            })
+        );
     settings.color_by = settings.color_by
         ? settings.color_by
-        : settings.groups[0].value_col ? settings.groups[0].value_col : settings.groups[0];
+        : settings.groups.length > 1 ? settings.groups[1].value_col : defaultGroup.value_col;
+    settings.legend.label = settings.groups.find(
+        group => group.value_col === settings.color_by
+    ).label;
 
     //marks
     const lines = settings.marks.find(mark => mark.type === 'line');

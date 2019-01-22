@@ -7,8 +7,11 @@ export default function classControlGroups() {
             `${d.type.toLowerCase().replace(' ', '-')} ${d.label.toLowerCase().replace(' ', '-')}`,
             true
         );
-        if (['Lower Limit', 'Upper Limit'].indexOf(d.label) > -1)
-            controlGroup.classed('y-axis', true);
+
+        //Add y-axis class to group y-axis controls.
+        if (d.grouping) controlGroup.classed(d.grouping, true);
+
+        //Float all checkboxes right.
         if (d.type === 'checkbox')
             controlGroup.style({
                 float: 'right',

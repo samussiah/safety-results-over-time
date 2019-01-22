@@ -6,7 +6,6 @@ import setYdomain from './onPreprocess/setYdomain';
 import setYprecision from './onPreprocess/setYprecision';
 import updateYaxisResetButton from './onPreprocess/updateYaxisResetButton';
 import updateYaxisLimitControls from './onPreprocess/updateYaxisLimitControls';
-import setLegendLabel from './onPreprocess/setLegendLabel';
 
 export default function onPreprocess() {
     // 1. Capture currently selected measure.
@@ -32,7 +31,4 @@ export default function onPreprocess() {
 
     // 4c Update y-axis limit controls to match y-axis domain.
     updateYaxisLimitControls.call(this);
-
-    //Set legend label to current group.
-    setLegendLabel.call(this);
 }

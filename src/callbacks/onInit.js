@@ -25,6 +25,6 @@ export default function onInit() {
     // 4. Define set of measures.
     defineMeasureSet.call(this);
 
-    // 5. Choose the start value for the Test filter
+    // 5. Set the start value of the Measure filter.
     setInitialMeasure.call(this);
 }

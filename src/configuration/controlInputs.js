@@ -3,22 +3,38 @@ export default function controlInputs() {
         {
             type: 'subsetter',
             label: 'Measure',
-            description: 'filter',
             value_col: 'srot_measure', // set in syncControlInputs()
             start: null // set in ../callbacks/onInit/setInitialMeasure.js
         },
         {
             type: 'dropdown',
-            label: 'Group',
-            description: 'stratification',
+            label: 'Group by',
             options: ['marks.0.per.0', 'color_by'],
             start: null, // set in ./syncControlInputs.js
-            values: ['srot_none'], // set in ./syncControlInputs.js
+            values: null, // set in ./syncControlInputs.js
             require: true
         },
-        { type: 'number', label: 'Lower Limit', option: 'y.domain[0]', require: true },
-        { type: 'number', label: 'Upper Limit', option: 'y.domain[1]', require: true },
-        { type: 'radio', option: 'y.type', values: ['linear', 'log'], label: 'Y-axis scale' },
+        {
+            type: 'number',
+            label: 'Lower',
+            grouping: 'y-axis',
+            option: 'y.domain[0]',
+            require: true
+        },
+        {
+            type: 'number',
+            label: 'Upper',
+            grouping: 'y-axis',
+            option: 'y.domain[1]',
+            require: true
+        },
+        {
+            type: 'radio',
+            option: 'y.type',
+            grouping: 'y-axis',
+            values: ['linear', 'log'],
+            label: 'Scale'
+        },
         {
             type: 'checkbox',
             inline: true,
