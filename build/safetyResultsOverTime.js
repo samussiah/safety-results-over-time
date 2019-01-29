@@ -253,7 +253,7 @@
             label: null,
             behavior: 'flex',
             stat: 'mean',
-            format: '0.2f'
+            format: null // set in ./onPreprocess/setYprecision()
         },
         marks: [
             {
@@ -787,6 +787,54 @@
             }); // domain with zero range
     }
 
+    function setYaxisLabel() {
+        this.config.y.label =
+            this.currentMeasure +
+            (this.config.unit_col && this.measure_data[0][this.config.unit_col]
+                ? ' (' + this.measure_data[0][this.config.unit_col] + ')'
+                : '');
+    }
+
+    function setYprecision() {
+        var _this = this;
+
+        //Calculate range of current measure and the log10 of the range to choose an appropriate precision.
+        this.config.y.range = this.config.y.domain[1] - this.config.y.domain[0];
+        this.config.y.log10range = Math.log10(this.config.y.range);
+        this.config.y.roundedLog10range = Math.round(this.config.y.log10range);
+        this.config.y.precision1 = -1 * (this.config.y.roundedLog10range - 1);
+        this.config.y.precision2 = -1 * (this.config.y.roundedLog10range - 2);
+
+        //Define the format of the y-axis tick labels and y-domain controls.
+        this.config.y.precision = this.config.y.log10range > 0.5 ? 0 : this.config.y.precision1;
+        this.config.y.format =
+            this.config.y.log10range > 0.5 ? '1f' : '.' + this.config.y.precision1 + 'f';
+        this.config.y.d3_format = d3.format(this.config.y.format);
+        this.config.y.formatted_domain = this.config.y.domain.map(function(d) {
+            return _this.config.y.d3_format(d);
+        });
+
+        //Define the bin format: one less than the y-axis format.
+        this.config.y.format1 =
+            this.config.y.log10range > 5 ? '1f' : '.' + this.config.y.precision2 + 'f';
+        this.config.y.d3_format1 = d3.format(this.config.y.format1);
+    }
+
+    function updateYaxisResetButton() {
+        //Update tooltip of y-axis domain reset button.
+        if (this.currentMeasure !== this.previousMeasure)
+            this.controls.wrap
+                .selectAll('.y-axis')
+                .property(
+                    'title',
+                    'Initial Limits: [' +
+                        this.config.y.domain[0] +
+                        ' - ' +
+                        this.config.y.domain[1] +
+                        ']'
+                );
+    }
+
     function updateYaxisLimitControls() {
         //Update y-axis limit controls.
         this.controls.wrap
@@ -805,14 +853,6 @@
             .property('value', this.config.y.domain[1]);
     }
 
-    function setYaxisLabel() {
-        this.config.y.label =
-            this.currentMeasure +
-            (this.config.unit_col && this.measure_data[0][this.config.unit_col]
-                ? ' (' + this.measure_data[0][this.config.unit_col] + ')'
-                : '');
-    }
-
     function setLegendLabel() {
         this.config.legend.label =
             this.config.color_by !== 'NONE'
@@ -824,21 +864,6 @@
                           .indexOf(this.config.color_by)
                   ].label
                 : '';
-    }
-
-    function updateYaxisResetButton() {
-        //Update tooltip of y-axis domain reset button.
-        if (this.currentMeasure !== this.previousMeasure)
-            this.controls.wrap
-                .selectAll('.y-axis')
-                .property(
-                    'title',
-                    'Initial Limits: [' +
-                        this.config.y.domain[0] +
-                        ' - ' +
-                        this.config.y.domain[1] +
-                        ']'
-                );
     }
 
     function onPreprocess() {
@@ -857,10 +882,13 @@
         // 3c Set y-axis label to current measure.
         setYaxisLabel.call(this);
 
-        // 4a Update y-axis reset button when measure changes.
+        // 4a Define precision of measure.
+        setYprecision.call(this);
+
+        // 4b Update y-axis reset button when measure changes.
         updateYaxisResetButton.call(this);
 
-        // 4b Update y-axis limit controls to match y-axis domain.
+        // 4c Update y-axis limit controls to match y-axis domain.
         updateYaxisLimitControls.call(this);
 
         //Set legend label to current group.
@@ -951,7 +979,6 @@
     function addBoxPlot(chart, subgroup) {
         var boxInsideColor =
             arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '#eee';
-        var precision = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
 
         //Make the numericResults numeric and sort.
         var numericResults = subgroup.results
@@ -1067,44 +1094,11 @@
                 fill: boxColor,
                 stroke: 'none'
             });
-
-        //Annotate statistics.
-        var format0 = d3.format('.' + (precision + 0) + 'f');
-        var format1 = d3.format('.' + (precision + 1) + 'f');
-        var format2 = d3.format('.' + (precision + 2) + 'f');
-        boxplot
-            .selectAll('.boxplot')
-            .append('title')
-            .text(function(d) {
-                return (
-                    'N = ' +
-                    d.values.length +
-                    '\nMin = ' +
-                    d3.min(d.values) +
-                    '\n5th % = ' +
-                    format1(d3.quantile(d.values, 0.05)) +
-                    '\nQ1 = ' +
-                    format1(d3.quantile(d.values, 0.25)) +
-                    '\nMedian = ' +
-                    format1(d3.median(d.values)) +
-                    '\nQ3 = ' +
-                    format1(d3.quantile(d.values, 0.75)) +
-                    '\n95th % = ' +
-                    format1(d3.quantile(d.values, 0.95)) +
-                    '\nMax = ' +
-                    d3.max(d.values) +
-                    '\nMean = ' +
-                    format1(d3.mean(d.values)) +
-                    '\nStDev = ' +
-                    format2(d3.deviation(d.values))
-                );
-            });
     }
 
     function addViolinPlot(chart, subgroup) {
         var violinColor =
             arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : '#ccc7d6';
-        var precision = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 0;
 
         //Define histogram data.
         var histogram = d3.layout
@@ -1216,35 +1210,39 @@
                 stroke: violinColor,
                 fill: 'none'
             });
+    }
 
-        //Annotate statistics.
-        var format0 = d3.format('.' + (precision + 0) + 'f');
-        var format1 = d3.format('.' + (precision + 1) + 'f');
-        var format2 = d3.format('.' + (precision + 2) + 'f');
+    function addSummaryStatistics(subgroup) {
+        var format0 = d3.format('.' + (this.config.y.precision + 0) + 'f');
+        var format1 = d3.format('.' + (this.config.y.precision + 1) + 'f');
+        var format2 = d3.format('.' + (this.config.y.precision + 2) + 'f');
         subgroup.svg
             .selectAll('g')
             .append('title')
-            .text(function(d) {
+            .html(function(d) {
                 return (
-                    'N = ' +
+                    subgroup.key +
+                    ' at ' +
+                    subgroup.group.x.key +
+                    ':\n&nbsp;&nbsp;&nbsp;&nbsp;N = ' +
                     subgroup.results.length +
-                    '\nMin = ' +
-                    d3.min(subgroup.results) +
-                    '\n5th % = ' +
+                    '\n&nbsp;&nbsp;&nbsp;&nbsp;Min = ' +
+                    format0(d3.min(subgroup.results)) +
+                    '\n&nbsp;&nbsp;&nbsp;&nbsp;5th % = ' +
                     format1(d3.quantile(subgroup.results, 0.05)) +
-                    '\nQ1 = ' +
+                    '\n&nbsp;&nbsp;&nbsp;&nbsp;Q1 = ' +
                     format1(d3.quantile(subgroup.results, 0.25)) +
-                    '\nMedian = ' +
+                    '\n&nbsp;&nbsp;&nbsp;&nbsp;Median = ' +
                     format1(d3.median(subgroup.results)) +
-                    '\nQ3 = ' +
+                    '\n&nbsp;&nbsp;&nbsp;&nbsp;Q3 = ' +
                     format1(d3.quantile(subgroup.results, 0.75)) +
-                    '\n95th % = ' +
+                    '\n&nbsp;&nbsp;&nbsp;&nbsp;95th % = ' +
                     format1(d3.quantile(subgroup.results, 0.95)) +
-                    '\nMax = ' +
-                    d3.max(subgroup.results) +
-                    '\nMean = ' +
+                    '\n&nbsp;&nbsp;&nbsp;&nbsp;Max = ' +
+                    format0(d3.max(subgroup.results)) +
+                    '\n&nbsp;&nbsp;&nbsp;&nbsp;Mean = ' +
                     format1(d3.mean(subgroup.results)) +
-                    '\nStDev = ' +
+                    '\n&nbsp;&nbsp;&nbsp;&nbsp;StDev = ' +
                     format2(d3.deviation(subgroup.results))
                 );
             });
@@ -1298,9 +1296,9 @@
                     group.subgroups.push(subgroup);
 
                     if (_this.config.boxplots) addBoxPlot(_this, subgroup);
-
                     if (_this.config.violins)
                         addViolinPlot(_this, subgroup, _this.colorScale(subgroup.key));
+                    addSummaryStatistics.call(_this, subgroup);
                 });
             });
     }

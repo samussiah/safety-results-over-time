@@ -1,6 +1,6 @@
-import { ascending, scale, quantile, mean, format, min, median, max, deviation } from 'd3';
+import { ascending, scale, quantile, mean } from 'd3';
 
-export default function addBoxPlot(chart, subgroup, boxInsideColor = '#eee', precision = 0) {
+export default function addBoxPlot(chart, subgroup, boxInsideColor = '#eee') {
     //Make the numericResults numeric and sort.
     const numericResults = subgroup.results.map(d => +d).sort(ascending);
     const boxPlotWidth = 0.75 / chart.colorScale.domain().length;
@@ -111,35 +111,4 @@ export default function addBoxPlot(chart, subgroup, boxInsideColor = '#eee', pre
             fill: boxColor,
             stroke: 'none'
         });
-
-    //Annotate statistics.
-    const format0 = format(`.${precision + 0}f`);
-    const format1 = format(`.${precision + 1}f`);
-    const format2 = format(`.${precision + 2}f`);
-    boxplot
-        .selectAll('.boxplot')
-        .append('title')
-        .text(
-            d =>
-                'N = ' +
-                d.values.length +
-                '\nMin = ' +
-                min(d.values) +
-                '\n5th % = ' +
-                format1(quantile(d.values, 0.05)) +
-                '\nQ1 = ' +
-                format1(quantile(d.values, 0.25)) +
-                '\nMedian = ' +
-                format1(median(d.values)) +
-                '\nQ3 = ' +
-                format1(quantile(d.values, 0.75)) +
-                '\n95th % = ' +
-                format1(quantile(d.values, 0.95)) +
-                '\nMax = ' +
-                max(d.values) +
-                '\nMean = ' +
-                format1(mean(d.values)) +
-                '\nStDev = ' +
-                format2(deviation(d.values))
-        );
 }

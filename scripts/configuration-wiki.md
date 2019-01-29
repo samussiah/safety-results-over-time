@@ -243,7 +243,7 @@ The object below contains Webcharts settings as of version 2.2.0 of the Safety R
         "label": null,
         "behavior": "flex",
         "stat": "mean",
-        "format": "0.2f"
+        "format": null
     },
     "marks": [
         {
