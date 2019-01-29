@@ -552,14 +552,6 @@
             //Add placeholder variable for non-grouped comparisons.
             d.srot_none = 'All Participants';
 
-            //Flag unscheduled visits.
-            //d.srot_unscheduled = this.config.unscheduled_visit_values
-            //    ? this.config.unscheduled_visit_values.indexOf(d[this.config.time_settings.value_col]) >
-            //      -1
-            //    : this.config.unscheduled_visit_regex
-            //      ? this.config.unscheduled_visit_regex.test(d[this.config.time_settings.value_col])
-            //      : false;
-
             //Add placeholder variable for outliers.
             d.srot_outlier = null;
         });
@@ -1119,21 +1111,29 @@
     }
 
     function updateYaxisLimitControls() {
+        var _this = this;
+
         //Update y-axis limit controls.
+        var step = Math.pow(10, -this.config.y.precision);
+        var yDomain = this.config.y.domain.map(function(limit) {
+            return _this.config.y.d3_format(limit);
+        });
         this.controls.wrap
             .selectAll('.control-group')
             .filter(function(f) {
                 return f.option === 'y.domain[0]';
             })
             .select('input')
-            .property('value', this.config.y.domain[0]);
+            .attr('step', step)
+            .property('value', yDomain[0]);
         this.controls.wrap
             .selectAll('.control-group')
             .filter(function(f) {
                 return f.option === 'y.domain[1]';
             })
             .select('input')
-            .property('value', this.config.y.domain[1]);
+            .attr('step', step)
+            .property('value', yDomain[1]);
     }
 
     function onPreprocess() {
