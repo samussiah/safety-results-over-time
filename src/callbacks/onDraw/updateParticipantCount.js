@@ -5,7 +5,9 @@ export default function updateParticipantCount() {
     const subpopulationCount = set(this.filtered_data.map(d => d[this.config.id_col])).values()
         .length;
     const percentage = format('0.1%')(subpopulationCount / this.populationCount);
-    this.populationCountContainer.text(
-        `\n${subpopulationCount} of ${this.populationCount} participants  shown (${percentage})`
+    this.populationCountContainer.html(
+        `\n${subpopulationCount} of ${this
+            .populationCount} participants  shown (${percentage})<br>${this.filtered_data
+            .length} results`
     );
 }

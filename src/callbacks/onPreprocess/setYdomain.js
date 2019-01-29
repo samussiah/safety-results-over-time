@@ -2,7 +2,7 @@ import { extent } from 'd3';
 
 export default function setYdomain() {
     //Define y-domain.
-    if (this.currentMeasure !== this.previousMeasure)
+    if (this.currentMeasure !== this.previousMeasure || this.currentYAxis !== this.previousYAxis)
         this.config.y.domain = extent(this.measure_data.map(d => +d[this.config.y.column]));
     else if (this.config.y.domain[0] > this.config.y.domain[1])
         // new measure

@@ -1,4 +1,4 @@
-import clone from '../util/clone';
+import clone from '../../util/clone';
 import { ascending } from 'd3';
 import addBoxPlot from './drawPlots/addBoxPlot';
 import addViolinPlot from './drawPlots/addViolinPlot';

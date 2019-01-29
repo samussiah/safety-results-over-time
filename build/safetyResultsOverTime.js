@@ -4,7 +4,7 @@
         : typeof define === 'function' && define.amd
           ? define(['d3', 'webcharts'], factory)
           : (global.safetyResultsOverTime = factory(global.d3, global.webCharts));
-})(this, function(d3, webcharts) {
+})(this, function(d3$1, webcharts) {
     'use strict';
 
     if (typeof Object.assign != 'function') {
@@ -211,83 +211,84 @@
         return target;
     }
 
-    var rendererSpecificSettings = {
-        id_col: 'USUBJID',
-        time_settings: {
-            value_col: 'VISIT',
-            label: 'Visit',
-            order_col: 'VISITNUM',
-            order: null,
-            rotate_tick_labels: true,
-            vertical_space: 100
-        },
-        measure_col: 'TEST',
-        value_col: 'STRESN',
-        unit_col: 'STRESU',
-        normal_col_low: 'STNRLO',
-        normal_col_high: 'STNRHI',
-        start_value: null,
-        filters: null,
-        groups: null,
-        boxplots: true,
-        outliers: true,
-        violins: false,
-        missingValues: ['', 'NA', 'N/A'],
-        visits_without_data: false,
-        unscheduled_visits: false,
-        unscheduled_visit_pattern: '/unscheduled|early termination/i',
-        unscheduled_visit_values: null // takes precedence over unscheduled_visit_pattern
-    };
-
-    var webchartsSettings = {
-        x: {
-            column: null, // set in syncSettings()
-            type: 'ordinal',
-            label: null,
-            behavior: 'flex',
-            sort: 'alphabetical-ascending',
-            tickAttr: null
-        },
-        y: {
-            column: null, // set in syncSettings()
-            type: 'linear',
-            label: null,
-            behavior: 'flex',
-            stat: 'mean',
-            format: null // set in ./onPreprocess/setYprecision()
-        },
-        marks: [
-            {
-                type: 'line',
-                per: null, // set in syncSettings()
-                attributes: {
-                    'stroke-width': 2,
-                    'stroke-opacity': 1,
-                    display: 'none'
-                }
+    function rendererSettings() {
+        return {
+            id_col: 'USUBJID',
+            time_settings: {
+                value_col: 'VISIT',
+                label: 'Visit',
+                order_col: 'VISITNUM',
+                order: null,
+                rotate_tick_labels: true,
+                vertical_space: 100
             },
-            {
-                type: 'circle',
-                per: null, // set in syncSettings()
-                attributes: {},
-                values: {
-                    outlier: [true]
+            measure_col: 'TEST',
+            value_col: 'STRESN',
+            unit_col: 'STRESU',
+            normal_col_low: 'STNRLO',
+            normal_col_high: 'STNRHI',
+            start_value: null,
+            filters: null,
+            groups: null,
+            boxplots: true,
+            outliers: true,
+            violins: false,
+            missingValues: ['', 'NA', 'N/A'],
+            visits_without_data: false,
+            unscheduled_visits: false,
+            unscheduled_visit_pattern: '/unscheduled|early termination/i',
+            unscheduled_visit_values: null // takes precedence over unscheduled_visit_pattern
+        };
+    }
+
+    function webchartsSettings() {
+        return {
+            x: {
+                column: null, // set in syncSettings()
+                type: 'ordinal',
+                label: null,
+                behavior: 'flex',
+                sort: 'alphabetical-ascending',
+                tickAttr: null
+            },
+            y: {
+                column: null, // set in syncSettings()
+                type: 'linear',
+                label: null,
+                behavior: 'flex',
+                stat: 'mean',
+                format: null // set in ./onPreprocess/setYprecision()
+            },
+            marks: [
+                {
+                    type: 'line',
+                    per: null, // set in syncSettings()
+                    attributes: {
+                        'stroke-width': 2,
+                        'stroke-opacity': 1,
+                        display: 'none'
+                    }
                 },
-                radius: 1.5
-            }
-        ],
-        legend: {
-            mark: 'square'
-        },
-        color_by: null, // set in syncSettings()
-        resizable: true,
-        gridlines: 'y',
-        aspect: 3
-    };
+                {
+                    type: 'circle',
+                    per: null, // set in syncSettings()
+                    attributes: {},
+                    values: {
+                        outlier: [true]
+                    },
+                    radius: 1.5
+                }
+            ],
+            legend: {
+                mark: 'square'
+            },
+            color_by: null, // set in syncSettings()
+            resizable: true,
+            gridlines: 'y',
+            aspect: 3
+        };
+    }
 
-    var defaultSettings = Object.assign({}, rendererSpecificSettings, webchartsSettings);
-
-    // Replicate settings in multiple places in the settings object
     function syncSettings(settings) {
         settings.x.column = settings.time_settings.value_col;
         settings.x.label = settings.time_settings.label;
@@ -331,44 +332,45 @@
         return settings;
     }
 
-    // Default Control objects
-    var controlInputs = [
-        {
-            type: 'subsetter',
-            label: 'Measure',
-            description: 'filter',
-            value_col: null, // set in syncControlInputs()
-            start: null // set in syncControlInputs()
-        },
-        {
-            type: 'dropdown',
-            label: 'Group',
-            description: 'stratification',
-            options: ['marks.0.per.0', 'color_by'],
-            start: null, // set in syncControlInputs()
-            values: ['NONE'], // set in syncControlInputs()
-            require: true
-        },
-        { type: 'number', label: 'Lower Limit', option: 'y.domain[0]', require: true },
-        { type: 'number', label: 'Upper Limit', option: 'y.domain[1]', require: true },
-        {
-            type: 'checkbox',
-            inline: true,
-            option: 'visits_without_data',
-            label: 'Visits without data'
-        },
-        {
-            type: 'checkbox',
-            inline: true,
-            option: 'unscheduled_visits',
-            label: 'Unscheduled visits'
-        },
-        { type: 'checkbox', inline: true, option: 'boxplots', label: 'Box plots' },
-        { type: 'checkbox', inline: true, option: 'violins', label: 'Violin plots' },
-        { type: 'checkbox', inline: true, option: 'outliers', label: 'Outliers' }
-    ];
+    function controlInputs() {
+        return [
+            {
+                type: 'subsetter',
+                label: 'Measure',
+                description: 'filter',
+                value_col: null, // set in syncControlInputs()
+                start: null // set in syncControlInputs()
+            },
+            {
+                type: 'dropdown',
+                label: 'Group',
+                description: 'stratification',
+                options: ['marks.0.per.0', 'color_by'],
+                start: null, // set in syncControlInputs()
+                values: ['NONE'], // set in syncControlInputs()
+                require: true
+            },
+            { type: 'number', label: 'Lower Limit', option: 'y.domain[0]', require: true },
+            { type: 'number', label: 'Upper Limit', option: 'y.domain[1]', require: true },
+            {
+                type: 'checkbox',
+                inline: true,
+                option: 'visits_without_data',
+                label: 'Visits without data'
+            },
+            {
+                type: 'checkbox',
+                inline: true,
+                option: 'unscheduled_visits',
+                label: 'Unscheduled visits'
+            },
+            { type: 'checkbox', inline: true, option: 'boxplots', label: 'Box plots' },
+            { type: 'checkbox', inline: true, option: 'violins', label: 'Violin plots' },
+            { type: 'checkbox', inline: true, option: 'outliers', label: 'Outliers' },
+            { type: 'radio', option: 'y.type', values: ['linear', 'log'], label: 'Axis type' }
+        ];
+    }
 
-    // Map values from settings to control inputs
     function syncControlInputs(controlInputs, settings) {
         //Sync measure control.
         var measureControl = controlInputs.filter(function(controlInput) {
@@ -429,10 +431,19 @@
         return controlInputs;
     }
 
+    var configuration = {
+        rendererSettings: rendererSettings,
+        webchartsSettings: webchartsSettings,
+        defaultSettings: Object.assign({}, rendererSettings(), webchartsSettings()),
+        syncSettings: syncSettings,
+        controlInputs: controlInputs,
+        syncControlInputs: syncControlInputs
+    };
+
     function countParticipants() {
         var _this = this;
 
-        this.populationCount = d3
+        this.populationCount = d3$1
             .set(
                 this.raw_data.map(function(d) {
                     return d[_this.config.id_col];
@@ -461,10 +472,11 @@
                     (nRemoved > 1 ? 's have' : ' has') +
                     ' been removed.'
             );
+        this.initial_data = clean;
         this.raw_data = clean;
 
         //Attach array of continuous measures to chart object.
-        this.measures = d3
+        this.measures = d3$1
             .set(
                 this.raw_data.map(function(d) {
                     return d[_this.config.measure_col];
@@ -505,7 +517,7 @@
             this.raw_data[0].hasOwnProperty(this.config.time_settings.order_col)
         ) {
             //Define a unique set of visits with visit order concatenated.
-            visits = d3
+            visits = d3$1
                 .set(
                     this.raw_data.map(function(d) {
                         return (
@@ -523,7 +535,7 @@
                     var aOrder = a.split('|')[0],
                         bOrder = b.split('|')[0],
                         diff = +aOrder - +bOrder;
-                    return diff ? diff : d3.ascending(a, b);
+                    return diff ? diff : d3$1.ascending(a, b);
                 })
                 .map(function(visit) {
                     return visit.split('|')[1];
@@ -531,7 +543,7 @@
         } else {
             //Otherwise sort a unique set of visits alphanumerically.
             //Define a unique set of visits.
-            visits = d3
+            visits = d3$1
                 .set(
                     this.raw_data.map(function(d) {
                         return d[_this.config.time_settings.value_col];
@@ -569,7 +581,7 @@
                         ' ] filter has been removed because the variable does not exist.'
                 );
             } else {
-                var levels = d3
+                var levels = d3$1
                     .set(
                         _this.raw_data.map(function(d) {
                             return d[input.value_col];
@@ -590,10 +602,18 @@
     }
 
     function setInitialMeasure() {
-        this.controls.config.inputs.filter(function(input) {
+        var measureInput = this.controls.config.inputs.find(function(input) {
             return input.label === 'Measure';
-        })[0].start =
-            this.config.start_value || this.measures[0];
+        });
+        if (this.config.start_value && this.measures.indexOf(this.config.start_value) < 0) {
+            measureInput.start = this.measures[0];
+            console.warn(
+                this.config.start_value +
+                    ' is an invalid measure. Defaulting to ' +
+                    measureInput.start +
+                    '.'
+            );
+        } else if (!this.config.start_value) measureInput.start = this.measures[0];
     }
 
     function onInit() {
@@ -618,7 +638,7 @@
 
     function classControlGroups() {
         this.controls.wrap.selectAll('.control-group').each(function(d) {
-            var controlGroup = d3.select(this);
+            var controlGroup = d3$1.select(this);
             controlGroup.classed(d.label.toLowerCase().replace(' ', '-'), true);
             if (['Lower Limit', 'Upper Limit'].indexOf(d.label) > -1)
                 controlGroup.classed('y-axis', true);
@@ -658,7 +678,7 @@
                     var measure_data = context.raw_data.filter(function(d) {
                         return d[context.config.measure_col] === context.currentMeasure;
                     });
-                    context.config.y.domain = d3.extent(measure_data, function(d) {
+                    context.config.y.domain = d3$1.extent(measure_data, function(d) {
                         return +d[context.config.value_col];
                     }); //reset axis to full range
 
@@ -705,17 +725,49 @@
             .filter(function(d) {
                 return d.value_col && d.value_col === _this.config.measure_col;
             })
-            .select('option:checked')
+            .selectAll('option:checked')
             .text();
+        this.previousYAxis = this.currentYAxis;
+        this.currentYAxis = this.config.y.type;
     }
 
     function defineMeasureData() {
         var _this = this;
 
         //Filter raw data on selected measure.
-        this.measure_data = this.raw_data.filter(function(d) {
+        this.measure_data = this.initial_data.filter(function(d) {
             return d[_this.config.measure_col] === _this.currentMeasure;
         });
+
+        //Remove nonpositive results given log y-axis.
+        this.controls.wrap.select('.non-positive-results').remove();
+        if (this.config.y.type === 'log') {
+            var nResults = this.measure_data.length;
+            this.measure_data = this.measure_data.filter(function(d) {
+                return +d[_this.config.value_col] > 0;
+            });
+            var nonPositiveResults = nResults - this.measure_data.length;
+            if (nonPositiveResults > 0)
+                this.controls.wrap
+                    .selectAll('.axis-type .radio')
+                    .filter(function() {
+                        return (
+                            d3$1
+                                .select(this)
+                                .select('input')
+                                .attr('value') === 'log'
+                        );
+                    })
+                    .append('small')
+                    .classed('non-positive-results', true)
+                    .text(
+                        nonPositiveResults +
+                            ' nonpositive result' +
+                            (nonPositiveResults > 1 ? 's' : '') +
+                            ' removed.'
+                    );
+        }
+        this.raw_data = this.measure_data;
 
         //Apply filter to measure data.
         this.filtered_measure_data = this.measure_data;
@@ -728,7 +780,7 @@
         });
 
         //Nest data and calculate summary statistics for each visit-group combination.
-        this.nested_measure_data = d3
+        this.nested_measure_data = d3$1
             .nest()
             .key(function(d) {
                 return d[_this.config.x.column];
@@ -742,7 +794,7 @@
                         .map(function(m) {
                             return +m[_this.config.y.column];
                         })
-                        .sort(d3.ascending),
+                        .sort(d3$1.ascending),
                     n: d.length
                 };
 
@@ -761,8 +813,8 @@
                     var fx = Array.isArray(item) ? item[0] : item;
                     var stat = Array.isArray(item) ? '' + fx.substring(0, 1) + item[1] * 100 : fx;
                     results[stat] = Array.isArray(item)
-                        ? d3[fx](results.values, item[1])
-                        : d3[fx](results.values);
+                        ? d3$1[fx](results.values, item[1])
+                        : d3$1[fx](results.values);
                 });
 
                 return results;
@@ -798,7 +850,7 @@
         if (!this.config.visits_without_data)
             this.config.x.domain = this.config.x.domain.filter(function(visit) {
                 return (
-                    d3
+                    d3$1
                         .set(
                             _this.filtered_measure_data.map(function(d) {
                                 return d[_this.config.time_settings.value_col];
@@ -835,8 +887,11 @@
         var _this = this;
 
         //Define y-domain.
-        if (this.currentMeasure !== this.previousMeasure)
-            this.config.y.domain = d3.extent(
+        if (
+            this.currentMeasure !== this.previousMeasure ||
+            this.currentYAxis !== this.previousYAxis
+        )
+            this.config.y.domain = d3$1.extent(
                 this.measure_data.map(function(d) {
                     return +d[_this.config.y.column];
                 })
@@ -873,7 +928,7 @@
         this.config.y.precision = this.config.y.log10range > 0.5 ? 0 : this.config.y.precision1;
         this.config.y.format =
             this.config.y.log10range > 0.5 ? '1f' : '.' + this.config.y.precision1 + 'f';
-        this.config.y.d3_format = d3.format(this.config.y.format);
+        this.config.y.d3_format = d3$1.format(this.config.y.format);
         this.config.y.formatted_domain = this.config.y.domain.map(function(d) {
             return _this.config.y.d3_format(d);
         });
@@ -881,7 +936,7 @@
         //Define the bin format: one less than the y-axis format.
         this.config.y.format1 =
             this.config.y.log10range > 5 ? '1f' : '.' + this.config.y.precision2 + 'f';
-        this.config.y.d3_format1 = d3.format(this.config.y.format1);
+        this.config.y.d3_format1 = d3$1.format(this.config.y.format1);
     }
 
     function updateYaxisResetButton() {
@@ -988,22 +1043,24 @@
         var _this = this;
 
         this.populationCountContainer.selectAll('*').remove();
-        var subpopulationCount = d3
+        var subpopulationCount = d3$1
             .set(
                 this.filtered_data.map(function(d) {
                     return d[_this.config.id_col];
                 })
             )
             .values().length;
-        var percentage = d3.format('0.1%')(subpopulationCount / this.populationCount);
-        this.populationCountContainer.text(
+        var percentage = d3$1.format('0.1%')(subpopulationCount / this.populationCount);
+        this.populationCountContainer.html(
             '\n' +
                 subpopulationCount +
                 ' of ' +
                 this.populationCount +
                 ' participants  shown (' +
                 percentage +
-                ')'
+                ')<br>' +
+                this.filtered_data.length +
+                ' results'
         );
     }
 
@@ -1032,13 +1089,30 @@
     function onDraw() {
         updateParticipantCount.call(this);
         removeUnscheduledVisits$2.call(this);
+        this.svg.selectAll('.y.axis .tick').remove();
     }
 
     function addYAxisTicks() {
+        //Manually remove excess y-axis ticks.
+        if (this.config.y.type === 'log') {
+            var tickValues = [];
+            this.svg.selectAll('.y.axis .tick').each(function(d) {
+                var tick = d3.select(this);
+                var tickValue = tick.select('text').text();
+
+                //Check if tick value already exists on axis and if so, remove.
+                if (tickValues.indexOf(tickValue) < 0) tickValues.push(tickValue);
+                else tick.remove();
+            });
+        }
+    }
+
+    function addYAxisTicks$1() {
         var _this = this;
 
         //Manually draw y-axis ticks when none exist.
         if (!this.svg.selectAll('.y .tick')[0].length) {
+            //Define quantiles of current measure results.
             var probs = [
                 { probability: 0.05 },
                 { probability: 0.25 },
@@ -1048,22 +1122,30 @@
             ];
 
             for (var i = 0; i < probs.length; i++) {
-                probs[i].quantile = d3.quantile(
+                probs[i].quantile = d3$1.quantile(
                     this.measure_data
                         .map(function(d) {
                             return +d[_this.config.y.column];
                         })
-                        .sort(),
+                        .sort(function(a, b) {
+                            return a - b;
+                        }),
                     probs[i].probability
                 );
             }
 
             var ticks = [probs[1].quantile, probs[3].quantile];
+
+            //Manually define y-axis tick values.
             this.yAxis.tickValues(ticks);
+
+            //Transition the y-axis to draw the ticks.
             this.svg
                 .select('g.y.axis')
                 .transition()
                 .call(this.yAxis);
+
+            //Draw the gridlines.
             this.drawGridlines();
         }
     }
@@ -1073,16 +1155,16 @@
     }
 
     function defineScales(subgroup) {
-        subgroup.boxplot.x = d3.scale.linear().range([0, this.x.rangeBand()]);
+        subgroup.boxplot.x = d3$1.scale.linear().range([0, this.x.rangeBand()]);
         subgroup.boxplot.left = subgroup.boxplot.x(0.5 - subgroup.boxplot.boxPlotWidth / 2);
         subgroup.boxplot.right = subgroup.boxplot.x(0.5 + subgroup.boxplot.boxPlotWidth / 2);
         subgroup.boxplot.y =
             this.config.y.type === 'linear'
-                ? d3.scale
+                ? d3$1.scale
                       .linear()
                       .range([this.plot_height, 0])
                       .domain(this.y.domain())
-                : d3.scale
+                : d3$1.scale
                       .log()
                       .range([this.plot_height, 0])
                       .domain(this.y.domain());
@@ -1209,7 +1291,7 @@
     function defineData(subgroup) {
         //Define histogram data.
         subgroup.violinPlot = {
-            histogram: d3.layout
+            histogram: d3$1.layout
                 .histogram()
                 .bins(10)
                 .frequency(0)
@@ -1231,21 +1313,21 @@
         subgroup.violinPlot.width = this.x.rangeBand();
         subgroup.violinPlot.x =
             this.config.y.type === 'linear'
-                ? d3.scale
+                ? d3$1.scale
                       .linear()
                       .domain(this.y.domain())
                       .range([this.plot_height, 0])
-                : d3.scale
+                : d3$1.scale
                       .log()
                       .domain(this.y.domain())
                       .range([this.plot_height, 0]);
-        subgroup.violinPlot.y = d3.scale
+        subgroup.violinPlot.y = d3$1.scale
             .linear()
             .domain([
                 0,
                 Math.max(
                     1 - 1 / subgroup.group.x.nGroups,
-                    d3.max(subgroup.violinPlot.data, function(d) {
+                    d3$1.max(subgroup.violinPlot.data, function(d) {
                         return d.y;
                     })
                 )
@@ -1255,7 +1337,7 @@
 
     function addContainer$1(subgroup) {
         //Define violin shapes.
-        subgroup.violinPlot.area = d3.svg
+        subgroup.violinPlot.area = d3$1.svg
             .area()
             .interpolate('basis')
             .x(function(d) {
@@ -1265,7 +1347,7 @@
             .y1(function(d) {
                 return subgroup.violinPlot.y(d.y);
             });
-        subgroup.violinPlot.line = d3.svg
+        subgroup.violinPlot.line = d3$1.svg
             .line()
             .interpolate('basis')
             .x(function(d) {
@@ -1337,9 +1419,9 @@
     }
 
     function addSummaryStatistics(subgroup) {
-        var format0 = d3.format('.' + (this.config.y.precision + 0) + 'f');
-        var format1 = d3.format('.' + (this.config.y.precision + 1) + 'f');
-        var format2 = d3.format('.' + (this.config.y.precision + 2) + 'f');
+        var format0 = d3$1.format('.' + (this.config.y.precision + 0) + 'f');
+        var format1 = d3$1.format('.' + (this.config.y.precision + 1) + 'f');
+        var format2 = d3$1.format('.' + (this.config.y.precision + 2) + 'f');
         subgroup.svg
             .selectAll('g')
             .append('title')
@@ -1451,33 +1533,46 @@
 
     function onResize() {
         addYAxisTicks.call(this);
+        addYAxisTicks$1.call(this);
         clearCanvas.call(this);
         drawPlots.call(this);
         rotateXAxisTickLabels.call(this);
         removeLegend.call(this);
     }
 
+    function onDestroy() {}
+
+    var callbacks = {
+        onInit: onInit,
+        onLayout: onLayout,
+        onPreprocess: onPreprocess,
+        onDatatransform: onDatatransform,
+        onDraw: onDraw,
+        onResize: onResize,
+        onDestroy: onDestroy
+    };
+
     function safetyResultsOverTime(element, settings) {
-        var mergedSettings = merge(defaultSettings, settings),
-            //Merge user settings onto default settings.
-            syncedSettings = syncSettings(mergedSettings),
-            //Sync properties within merged settings, e.g. data mappings.
-            syncedControlInputs = syncControlInputs(controlInputs, syncedSettings),
-            //Sync merged settings with controls.
-            controls = webcharts.createControls(element, {
-                location: 'top',
-                inputs: syncedControlInputs
-            }),
-            //Define controls.
-            chart = webcharts.createChart(element, mergedSettings, controls); //Define chart.
+        var mergedSettings = merge(configuration.defaultSettings, settings); //Merge user settings onto default settings.
+        var syncedSettings = configuration.syncSettings(mergedSettings); //Sync properties within merged settings, e.g. data mappings.
+        var syncedControlInputs = configuration.syncControlInputs(
+            configuration.controlInputs(),
+            syncedSettings
+        ); //Sync merged settings with controls.
 
-        chart.on('init', onInit);
-        chart.on('layout', onLayout);
-        chart.on('preprocess', onPreprocess);
-        chart.on('datatransform', onDatatransform);
-        chart.on('draw', onDraw);
-        chart.on('resize', onResize);
+        //Define controls.
+        var controls = webcharts.createControls(element, {
+            location: 'top',
+            inputs: syncedControlInputs
+        });
 
+        //Define chart.
+        var chart = webcharts.createChart(element, syncedSettings, controls);
+
+        //Attach callbacks to chart.
+        for (var callback in callbacks) {
+            chart.on(callback.substring(2).toLowerCase(), callbacks[callback]);
+        }
         return chart;
     }
 

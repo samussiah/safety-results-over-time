@@ -2,9 +2,36 @@ import * as d3 from 'd3';
 
 export default function defineMeasureData() {
     //Filter raw data on selected measure.
-    this.measure_data = this.raw_data.filter(
+    this.measure_data = this.initial_data.filter(
         d => d[this.config.measure_col] === this.currentMeasure
     );
+
+    //Remove nonpositive results given log y-axis.
+    this.controls.wrap.select('.non-positive-results').remove();
+    if (this.config.y.type === 'log') {
+        const nResults = this.measure_data.length;
+        this.measure_data = this.measure_data.filter(d => +d[this.config.value_col] > 0);
+        const nonPositiveResults = nResults - this.measure_data.length;
+        if (nonPositiveResults > 0)
+            this.controls.wrap
+                .selectAll('.axis-type .radio')
+                .filter(function() {
+                    return (
+                        d3
+                            .select(this)
+                            .select('input')
+                            .attr('value') === 'log'
+                    );
+                })
+                .append('small')
+                .classed('non-positive-results', true)
+                .text(
+                    `${nonPositiveResults} nonpositive result${nonPositiveResults > 1
+                        ? 's'
+                        : ''} removed.`
+                );
+    }
+    this.raw_data = this.measure_data;
 
     //Apply filter to measure data.
     this.filtered_measure_data = this.measure_data;
