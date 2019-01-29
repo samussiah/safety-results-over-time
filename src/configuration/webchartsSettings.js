@@ -31,7 +31,7 @@ export default function webchartsSettings() {
                 per: null, // set in syncSettings()
                 attributes: {},
                 values: {
-                    outlier: [true]
+                    srot_outlier: [true]
                 },
                 radius: 1.5
             }

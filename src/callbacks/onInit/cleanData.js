@@ -1,5 +1,3 @@
-import { set } from 'd3';
-
 export default function cleanData() {
     //Remove missing and non-numeric data.
     const preclean = this.raw_data,
@@ -17,9 +15,4 @@ export default function cleanData() {
         );
     this.initial_data = clean;
     this.raw_data = clean;
-
-    //Attach array of continuous measures to chart object.
-    this.measures = set(this.raw_data.map(d => d[this.config.measure_col]))
-        .values()
-        .sort();
 }

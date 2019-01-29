@@ -4,16 +4,16 @@ export default function controlInputs() {
             type: 'subsetter',
             label: 'Measure',
             description: 'filter',
-            value_col: null, // set in syncControlInputs()
-            start: null // set in syncControlInputs()
+            value_col: 'srot_measure', // set in syncControlInputs()
+            start: null // set in ../callbacks/onInit/setInitialMeasure.js
         },
         {
             type: 'dropdown',
             label: 'Group',
             description: 'stratification',
             options: ['marks.0.per.0', 'color_by'],
-            start: null, // set in syncControlInputs()
-            values: ['NONE'], // set in syncControlInputs()
+            start: null, // set in ./syncControlInputs.js
+            values: null, // set in ./syncControlInputs.js
             require: true
         },
         { type: 'number', label: 'Lower Limit', option: 'y.domain[0]', require: true },

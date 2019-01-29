@@ -274,7 +274,7 @@
                     per: null, // set in syncSettings()
                     attributes: {},
                     values: {
-                        outlier: [true]
+                        srot_outlier: [true]
                     },
                     radius: 1.5
                 }
@@ -290,30 +290,45 @@
     }
 
     function syncSettings(settings) {
+        //groups
+        var defaultGroup = [{ value_col: 'srot_none', label: 'None' }];
+        if (!(settings.groups instanceof Array && settings.groups.length)) {
+            settings.groups = defaultGroup;
+        } else {
+            settings.groups = defaultGroup.concat(
+                settings.groups.map(function(group) {
+                    return {
+                        value_col: group.value_col || group,
+                        label: group.label || group.value_col || group
+                    };
+                })
+            );
+        }
+
+        //x-axis
         settings.x.column = settings.time_settings.value_col;
         settings.x.label = settings.time_settings.label;
         settings.x.behavior = settings.visits_without_data ? 'raw' : 'flex';
+
+        //y-axis
         settings.y.column = settings.value_col;
-        if (!(settings.groups instanceof Array && settings.groups.length))
-            settings.groups = [{ value_col: 'NONE', label: 'None' }];
-        else
-            settings.groups = settings.groups.map(function(group) {
-                return {
-                    value_col: group.value_col || group,
-                    label: group.label || group.value_col || group
-                };
-            });
-        settings.color_by = settings.groups[0].value_col
-            ? settings.groups[0].value_col
-            : settings.groups[0];
+
+        //stratification
+        settings.color_by =
+            settings.groups.length > 1
+                ? settings.groups[1].value_col
+                : settings.groups[0].value_col;
+
+        //marks
         settings.marks[0].per = [settings.color_by];
         settings.marks[1].per = [
             settings.id_col,
-            settings.measure_col,
             settings.time_settings.value_col,
             settings.value_col
         ];
         settings.marks[1].tooltip = '[' + settings.id_col + '] at [' + settings.x.column + ']: $y';
+
+        //margin
         settings.margin = settings.margin || { bottom: settings.time_settings.vertical_space };
 
         //Convert unscheduled_visit_pattern from string to regular expression.
@@ -338,16 +353,16 @@
                 type: 'subsetter',
                 label: 'Measure',
                 description: 'filter',
-                value_col: null, // set in syncControlInputs()
-                start: null // set in syncControlInputs()
+                value_col: 'srot_measure', // set in syncControlInputs()
+                start: null // set in ../callbacks/onInit/setInitialMeasure.js
             },
             {
                 type: 'dropdown',
                 label: 'Group',
                 description: 'stratification',
                 options: ['marks.0.per.0', 'color_by'],
-                start: null, // set in syncControlInputs()
-                values: ['NONE'], // set in syncControlInputs()
+                start: null, // set in ./syncControlInputs.js
+                values: null, // set in ./syncControlInputs.js
                 require: true
             },
             { type: 'number', label: 'Lower Limit', option: 'y.domain[0]', require: true },
@@ -372,25 +387,20 @@
     }
 
     function syncControlInputs(controlInputs, settings) {
-        //Sync measure control.
-        var measureControl = controlInputs.filter(function(controlInput) {
-            return controlInput.label === 'Measure';
-        })[0];
-        measureControl.value_col = settings.measure_col;
-        measureControl.start = settings.start_value;
-
         //Sync group control.
-        var groupControl = controlInputs.filter(function(controlInput) {
+        var groupControl = controlInputs.find(function(controlInput) {
             return controlInput.label === 'Group';
-        })[0];
+        });
         groupControl.start = settings.color_by;
-        settings.groups
-            .filter(function(group) {
-                return group.value_col !== 'NONE';
-            })
-            .forEach(function(group) {
-                groupControl.values.push(group.value_col);
-            });
+        groupControl.values = settings.groups.map(function(group) {
+            return group.label;
+        });
+        groupControl.value_cols = settings.groups.map(function(group) {
+            return group.value_col;
+        });
+        groupControl.labels = settings.groups.map(function(group) {
+            return group.label;
+        });
 
         //Add custom filters to control inputs.
         if (settings.filters) {
@@ -474,34 +484,25 @@
             );
         this.initial_data = clean;
         this.raw_data = clean;
-
-        //Attach array of continuous measures to chart object.
-        this.measures = d3$1
-            .set(
-                this.raw_data.map(function(d) {
-                    return d[_this.config.measure_col];
-                })
-            )
-            .values()
-            .sort();
     }
 
     function addVariables() {
         var _this = this;
 
         this.raw_data.forEach(function(d) {
+            //Convert results to numeric
             d[_this.config.y.column] = parseFloat(d[_this.config.y.column]);
-            d.NONE = 'All Participants'; // placeholder variable for non-grouped comparisons
-            d.unscheduled = _this.config.unscheduled_visit_values
-                ? _this.config.unscheduled_visit_values.indexOf(
-                      d[_this.config.time_settings.value_col]
-                  ) > -1
-                : _this.config.unscheduled_visit_regex
-                  ? _this.config.unscheduled_visit_regex.test(
-                        d[_this.config.time_settings.value_col]
-                    )
-                  : false;
-            d.outlier = null;
+
+            //Concatenate unit to measure if provided.
+            d.srot_measure = d.hasOwnProperty(_this.config.unit_col)
+                ? d[_this.config.measure_col] + ' (' + d[_this.config.unit_col] + ')'
+                : d[_this.config.measure_col];
+
+            //Add placeholder variable for non-grouped comparisons.
+            d.srot_none = 'All Participants';
+
+            //Add placeholder variable for outliers.
+            d.srot_outlier = null;
         });
     }
 
@@ -601,19 +602,55 @@
         });
     }
 
+    function defineMeasureSet() {
+        var _this = this;
+
+        this.measures = d3$1
+            .set(
+                this.initial_data.map(function(d) {
+                    return d[_this.config.measure_col];
+                })
+            )
+            .values()
+            .sort();
+        this.srot_measures = d3$1
+            .set(
+                this.initial_data.map(function(d) {
+                    return d.srot_measure;
+                })
+            )
+            .values()
+            .sort();
+    }
+
     function setInitialMeasure() {
         var measureInput = this.controls.config.inputs.find(function(input) {
             return input.label === 'Measure';
         });
-        if (this.config.start_value && this.measures.indexOf(this.config.start_value) < 0) {
-            measureInput.start = this.measures[0];
+        if (
+            this.config.start_value &&
+            this.srot_measures.indexOf(this.config.start_value) < 0 &&
+            this.measures.indexOf(this.config.start_value) < 0
+        ) {
+            measureInput.start = this.srot_measures[0];
             console.warn(
                 this.config.start_value +
                     ' is an invalid measure. Defaulting to ' +
                     measureInput.start +
                     '.'
             );
-        } else if (!this.config.start_value) measureInput.start = this.measures[0];
+        } else if (
+            this.config.start_value &&
+            this.srot_measures.indexOf(this.config.start_value) < 0
+        ) {
+            measureInput.start = this.srot_measures[this.measures.indexOf(this.config.start_value)];
+            console.warn(
+                this.config.start_value +
+                    ' is missing the units value. Defaulting to ' +
+                    measureInput.start +
+                    '.'
+            );
+        } else measureInput.start = this.config.start_value || this.srot_measures[0];
     }
 
     function onInit() {
@@ -632,7 +669,10 @@
         // 3c Remove filters for nonexistent or single-level variables.
         checkFilters.call(this);
 
-        // 3d Choose the start value for the Test filter
+        // 4. Define set of measures.
+        defineMeasureSet.call(this);
+
+        // 5. Choose the start value for the Test filter
         setInitialMeasure.call(this);
     }
 
@@ -645,14 +685,39 @@
         });
     }
 
-    function removeGroupControl() {
-        var groupControl = this.controls.wrap
-            .selectAll('.control-group')
-            .filter(function(controlGroup) {
-                return controlGroup.label === 'Group';
-            });
+    function customizeGroupControl() {
+        var _this = this;
+
+        var context = this;
+
+        //Select group control.
+        var groupControl = this.controls.wrap.selectAll('.control-group').filter(function(d) {
+            return d.type === 'dropdown' && d.label === 'Group';
+        });
+
+        //Hide group control when settings specify no groups.
         groupControl.style('display', function(d) {
             return d.values.length === 1 ? 'none' : groupControl.style('display');
+        });
+
+        //Customize group control event listener.
+        var groupSelect = groupControl.selectAll('select');
+        groupSelect.selectAll('option').property('selected', function(d) {
+            return (
+                d ===
+                _this.config.groups.find(function(group) {
+                    return group.value_col === _this.config.color_by;
+                }).label
+            );
+        });
+        groupSelect.on('change', function(d) {
+            var label = d3
+                .select(this)
+                .selectAll('option:checked')
+                .text();
+            var value_col = d.value_cols[d.labels.indexOf(label)];
+            context.config.color_by = value_col;
+            context.draw();
         });
     }
 
@@ -676,7 +741,7 @@
                 .text('Reset Limits')
                 .on('click', function() {
                     var measure_data = context.raw_data.filter(function(d) {
-                        return d[context.config.measure_col] === context.currentMeasure;
+                        return d.srot_measure === context.currentMeasure;
                     });
                     context.config.y.domain = d3$1.extent(measure_data, function(d) {
                         return +d[context.config.value_col];
@@ -711,22 +776,21 @@
 
     function onLayout() {
         classControlGroups.call(this);
-        removeGroupControl.call(this);
+        customizeGroupControl.call(this);
         addResetButton.call(this);
         addPopulationCountContainer.call(this);
     }
 
     function getCurrentMeasure() {
-        var _this = this;
-
         this.previousMeasure = this.currentMeasure;
         this.currentMeasure = this.controls.wrap
             .selectAll('.control-group')
             .filter(function(d) {
-                return d.value_col && d.value_col === _this.config.measure_col;
+                return d.value_col && d.value_col === 'srot_measure';
             })
             .selectAll('option:checked')
             .text();
+        this.config.y.label = this.currentMeasure;
         this.previousYAxis = this.currentYAxis;
         this.currentYAxis = this.config.y.type;
     }
@@ -736,7 +800,7 @@
 
         //Filter raw data on selected measure.
         this.measure_data = this.initial_data.filter(function(d) {
-            return d[_this.config.measure_col] === _this.currentMeasure;
+            return d.srot_measure === _this.currentMeasure;
         });
 
         //Remove nonpositive results given log y-axis.
@@ -838,7 +902,7 @@
             var quantiles = _this.quantileMap.get(
                 d[_this.config.x.column] + '|' + d[_this.config.color_by]
             );
-            d.outlier = _this.config.outliers
+            d.srot_outlier = _this.config.outliers
                 ? d[_this.config.y.column] < quantiles[0] || quantiles[1] < d[_this.config.y.column]
                 : false;
         });
@@ -906,14 +970,6 @@
             }); // domain with zero range
     }
 
-    function setYaxisLabel() {
-        this.config.y.label =
-            this.currentMeasure +
-            (this.config.unit_col && this.measure_data[0][this.config.unit_col]
-                ? ' (' + this.measure_data[0][this.config.unit_col] + ')'
-                : '');
-    }
-
     function setYprecision() {
         var _this = this;
 
@@ -955,26 +1011,34 @@
     }
 
     function updateYaxisLimitControls() {
+        var _this = this;
+
         //Update y-axis limit controls.
+        var step = Math.pow(10, -this.config.y.precision);
+        var yDomain = this.config.y.domain.map(function(limit) {
+            return _this.config.y.d3_format(limit);
+        });
         this.controls.wrap
             .selectAll('.control-group')
             .filter(function(f) {
                 return f.option === 'y.domain[0]';
             })
             .select('input')
-            .property('value', this.config.y.domain[0]);
+            .attr('step', step)
+            .property('value', yDomain[0]);
         this.controls.wrap
             .selectAll('.control-group')
             .filter(function(f) {
                 return f.option === 'y.domain[1]';
             })
             .select('input')
-            .property('value', this.config.y.domain[1]);
+            .attr('step', step)
+            .property('value', yDomain[1]);
     }
 
     function setLegendLabel() {
         this.config.legend.label =
-            this.config.color_by !== 'NONE'
+            this.config.color_by !== 'srot_none'
                 ? this.config.groups[
                       this.config.groups
                           .map(function(group) {
@@ -1001,9 +1065,6 @@
         // 3b Set y-domain given currently selected measure.
         setYdomain.call(this);
 
-        // 3c Set y-axis label to current measure.
-        setYaxisLabel.call(this);
-
         // 4a Define precision of measure.
         setYprecision.call(this);
 
@@ -1017,27 +1078,7 @@
         setLegendLabel.call(this);
     }
 
-    function removeUnscheduledVisits$1() {
-        //if (!this.config.unscheduled_visits) {
-        //    if (Array.isArray(this.current_data[0].values))
-        //        this.current_data
-        //            .forEach(d => {
-        //                d.values = d.values.filter(di => this.config.x.domain.indexOf(di.key) > -1);
-        //            });
-        //    else {
-        //        console.log(this.marks);
-        //        console.log(this.current_data.length);
-        //        this.current_data = this.current_data
-        //            .filter(d => this.config.x.domain.indexOf(d.values.x) > -1);
-        //        console.log(this.current_data.length);
-        //    }
-        //}
-    }
-
-    function onDatatransform() {
-        //Remove unscheduled visits from current_data array.
-        removeUnscheduledVisits$1.call(this);
-    }
+    function onDatatransform() {}
 
     function updateParticipantCount() {
         var _this = this;
@@ -1064,7 +1105,7 @@
         );
     }
 
-    function removeUnscheduledVisits$2() {
+    function removeUnscheduledVisits$1() {
         var _this = this;
 
         if (!this.config.unscheduled_visits)
@@ -1088,7 +1129,7 @@
 
     function onDraw() {
         updateParticipantCount.call(this);
-        removeUnscheduledVisits$2.call(this);
+        removeUnscheduledVisits$1.call(this);
         this.svg.selectAll('.y.axis .tick').remove();
     }
 
@@ -1528,7 +1569,7 @@
     }
 
     function removeLegend() {
-        if (this.config.color_by === 'NONE') this.wrap.select('.legend').remove();
+        if (this.config.color_by === 'srot_none') this.wrap.select('.legend').remove();
     }
 
     function onResize() {

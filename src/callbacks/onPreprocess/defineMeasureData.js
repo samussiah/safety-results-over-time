@@ -2,9 +2,7 @@ import * as d3 from 'd3';
 
 export default function defineMeasureData() {
     //Filter raw data on selected measure.
-    this.measure_data = this.initial_data.filter(
-        d => d[this.config.measure_col] === this.currentMeasure
-    );
+    this.measure_data = this.initial_data.filter(d => d.srot_measure === this.currentMeasure);
 
     //Remove nonpositive results given log y-axis.
     this.controls.wrap.select('.non-positive-results').remove();

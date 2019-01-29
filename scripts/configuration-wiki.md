@@ -269,7 +269,7 @@ The object below contains Webcharts settings as of version 2.2.0 of the Safety R
             "per": null,
             "attributes": {},
             "values": {
-                "outlier": [
+                "srot_outlier": [
                     true
                 ]
             },
