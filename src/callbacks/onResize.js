@@ -1,15 +1,15 @@
-import removeYAxisTicks from './onResize/removeYAxisTicks';
-import addYAxisTicks from './onResize/addYAxisTicks';
+import editXAxisTicks from './onResize/editXAxisTicks';
+import editYAxisTicks from './onResize/editYAxisTicks';
 import clearCanvas from './onResize/clearCanvas';
 import drawPlots from './onResize/drawPlots';
-import rotateXAxisTickLabels from './onResize/rotateXAxisTickLabels';
+import addMouseoverToOutliers from './onResize/addMouseoverToOutliers';
 import removeLegend from './onResize/removeLegend';
 
 export default function onResize() {
-    removeYAxisTicks.call(this);
-    addYAxisTicks.call(this);
+    editXAxisTicks.call(this);
+    editYAxisTicks.call(this);
     clearCanvas.call(this);
     drawPlots.call(this);
-    rotateXAxisTickLabels.call(this);
+    addMouseoverToOutliers.call(this);
     removeLegend.call(this);
 }

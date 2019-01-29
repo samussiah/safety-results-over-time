@@ -1,8 +1,11 @@
 import updateParticipantCount from './onDraw/updateParticipantCount';
 import removeUnscheduledVisits from './onDraw/removeUnscheduledVisits';
+import clearCanvas from './onDraw/clearCanvas';
+import updateMarkData from './onDraw/updateMarkData';
 
 export default function onDraw() {
     updateParticipantCount.call(this);
+    clearCanvas.call(this);
     removeUnscheduledVisits.call(this);
-    this.svg.selectAll('.y.axis .tick').remove();
+    updateMarkData.call(this);
 }

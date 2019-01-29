@@ -1,19 +1,4 @@
 export default function syncSettings(settings) {
-    //groups
-    const defaultGroup = [{ value_col: 'srot_none', label: 'None' }];
-    if (!(settings.groups instanceof Array && settings.groups.length)) {
-        settings.groups = defaultGroup;
-    } else {
-        settings.groups = defaultGroup.concat(
-            settings.groups.map(group => {
-                return {
-                    value_col: group.value_col || group,
-                    label: group.label || group.value_col || group
-                };
-            })
-        );
-    }
-
     //x-axis
     settings.x.column = settings.time_settings.value_col;
     settings.x.label = settings.time_settings.label;
@@ -23,15 +8,37 @@ export default function syncSettings(settings) {
     settings.y.column = settings.value_col;
 
     //stratification
-    settings.color_by =
-        settings.groups.length > 1 ? settings.groups[1].value_col : settings.groups[0].value_col;
+    const defaultGroup = { value_col: 'srot_none', label: 'None' };
+    if (!(settings.groups instanceof Array && settings.groups.length))
+        settings.groups = [defaultGroup];
+    else
+        settings.groups = [defaultGroup].concat(
+            settings.groups.map(group => {
+                return {
+                    value_col: group.value_col || group,
+                    label: group.label || group.value_col || group
+                };
+            })
+        );
+    settings.color_by = settings.color_by
+        ? settings.color_by
+        : settings.groups.length > 1 ? settings.groups[1].value_col : defaultGroup.value_col;
+    settings.legend.label = settings.groups.find(
+        group => group.value_col === settings.color_by
+    ).label;
 
     //marks
-    settings.marks[0].per = [settings.color_by];
-    settings.marks[1].per = [settings.id_col, settings.time_settings.value_col, settings.value_col];
-    settings.marks[1].tooltip = `[${settings.id_col}] at [${settings.x.column}]: $y`;
+    const lines = settings.marks.find(mark => mark.type === 'line');
+    const hiddenOutliers = settings.marks.find(mark => mark.type === 'circle' && mark.hidden);
+    const visibleOutliers = settings.marks.find(mark => mark.type === 'circle' && !mark.hidden);
+    lines.per = [settings.color_by];
+    hiddenOutliers.radius = visibleOutliers.radius * 4;
+    settings.marks.filter(mark => mark.type === 'circle').forEach(mark => {
+        mark.per = [settings.id_col, settings.time_settings.value_col, settings.value_col];
+        mark.tooltip = `[${settings.id_col}] at [${settings.x.column}]: [${settings.value_col}]`;
+    });
 
-    //margin
+    //miscellany
     settings.margin = settings.margin || { bottom: settings.time_settings.vertical_space };
 
     //Convert unscheduled_visit_pattern from string to regular expression.

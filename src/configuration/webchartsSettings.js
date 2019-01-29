@@ -29,11 +29,32 @@ export default function webchartsSettings() {
             {
                 type: 'circle',
                 per: null, // set in syncSettings()
-                attributes: {},
+                attributes: {
+                    stroke: 'black',
+                    'stroke-opacity': 0,
+                    'fill-opacity': 0
+                },
                 values: {
                     srot_outlier: [true]
                 },
-                radius: 1.5
+                radius: null, // set in syncSettings()
+                tooltip: null, // set in syncSettings()
+                hidden: true
+            },
+            {
+                type: 'circle',
+                per: null, // set in syncSettings()
+                attributes: {
+                    stroke: 'black',
+                    'stroke-opacity': 1,
+                    'fill-opacity': 1
+                },
+                values: {
+                    srot_outlier: [true]
+                },
+                radius: 1.75,
+                tooltip: null, // set in syncSettings()
+                hidden: false
             }
         ],
         legend: {

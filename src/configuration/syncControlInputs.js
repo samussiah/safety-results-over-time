@@ -1,10 +1,8 @@
 export default function syncControlInputs(controlInputs, settings) {
     //Sync group control.
-    const groupControl = controlInputs.find(controlInput => controlInput.label === 'Group');
-    groupControl.start = settings.color_by;
+    const groupControl = controlInputs.find(controlInput => controlInput.label === 'Group by');
+    groupControl.start = settings.groups.find(group => group.value_col === settings.color_by).label;
     groupControl.values = settings.groups.map(group => group.label);
-    groupControl.value_cols = settings.groups.map(group => group.value_col);
-    groupControl.labels = settings.groups.map(group => group.label);
 
     //Add custom filters to control inputs.
     if (settings.filters) {

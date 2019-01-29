@@ -1,23 +1,23 @@
 import { extent } from 'd3';
 
-export default function addResetButton() {
+export default function addYDomainResetButton() {
     const context = this,
         resetContainer = this.controls.wrap
-            .insert('div', '.lower-limit')
+            .insert('div', '.lower')
             .classed('control-group y-axis', true)
             .datum({
                 type: 'button',
                 option: 'y.domain',
-                label: 'Y-axis:'
+                label: 'Limits'
             }),
         resetLabel = resetContainer
             .append('span')
             .attr('class', 'wc-control-label')
-            .style('text-align', 'right')
-            .text('Y-axis:'),
+            .text('Limits'),
         resetButton = resetContainer
             .append('button')
-            .text('Reset Limits')
+            .style('padding', '0px 5px')
+            .text('Reset')
             .on('click', function() {
                 const measure_data = context.raw_data.filter(
                     d => d.srot_measure === context.currentMeasure

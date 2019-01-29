@@ -267,13 +267,36 @@ The object below contains Webcharts settings as of version 2.2.0 of the Safety R
         {
             "type": "circle",
             "per": null,
-            "attributes": {},
+            "attributes": {
+                "stroke": "black",
+                "stroke-opacity": 0,
+                "fill-opacity": 0
+            },
             "values": {
                 "srot_outlier": [
                     true
                 ]
             },
-            "radius": 1.5
+            "radius": null,
+            "tooltip": null,
+            "hidden": true
+        },
+        {
+            "type": "circle",
+            "per": null,
+            "attributes": {
+                "stroke": "black",
+                "stroke-opacity": 1,
+                "fill-opacity": 1
+            },
+            "values": {
+                "srot_outlier": [
+                    true
+                ]
+            },
+            "radius": 1.75,
+            "tooltip": null,
+            "hidden": false
         }
     ],
     "legend": {

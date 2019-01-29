@@ -1,15 +1,15 @@
 import { quantile } from 'd3';
 
-export default function addYAxisTicks() {
+export default function handleEmptyAxis() {
     //Manually draw y-axis ticks when none exist.
-    if (!this.svg.selectAll('.y .tick')[0].length) {
+    if (this.svg.selectAll('.y .tick').size() < 2) {
         //Define quantiles of current measure results.
         const probs = [
-            { probability: 0.05 },
-            { probability: 0.25 },
+            { probability: 0.1 },
+            { probability: 0.3 },
             { probability: 0.5 },
-            { probability: 0.75 },
-            { probability: 0.95 }
+            { probability: 0.7 },
+            { probability: 0.9 }
         ];
 
         for (let i = 0; i < probs.length; i++) {
@@ -19,7 +19,7 @@ export default function addYAxisTicks() {
             );
         }
 
-        const ticks = [probs[1].quantile, probs[3].quantile];
+        const ticks = probs.map(prob => prob.quantile);
 
         //Manually define y-axis tick values.
         this.yAxis.tickValues(ticks);
