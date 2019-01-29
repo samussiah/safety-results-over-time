@@ -8,8 +8,9 @@ d3.csv(
             console.log(error);
 
         var settings = {
-            filters: ['ARM', 'SEX', 'RACE', 'SITEID'],
+            //filters: ['ARM', 'SEX', 'RACE', 'SITEID'],
             groups: ['ARM', 'SEX', 'RACE', 'SITEID'],
+            //violins: true,
         };
         var instance = safetyResultsOverTime(
             '#container',

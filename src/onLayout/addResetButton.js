@@ -3,7 +3,7 @@ import { extent } from 'd3';
 export default function addResetButton() {
     const context = this,
         resetContainer = this.controls.wrap
-            .insert('div', '#lower-limit')
+            .insert('div', '.lower-limit')
             .classed('control-group y-axis', true)
             .datum({
                 type: 'button',

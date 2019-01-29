@@ -17,6 +17,7 @@ export const rendererSpecificSettings = {
     filters: null,
     groups: null,
     boxplots: true,
+    outliers: true,
     violins: false,
     missingValues: ['', 'NA', 'N/A'],
     visits_without_data: false,
@@ -51,6 +52,15 @@ export const webchartsSettings = {
                 'stroke-opacity': 1,
                 display: 'none'
             }
+        },
+        {
+            type: 'circle',
+            per: null, // set in syncSettings()
+            attributes: {},
+            values: {
+                outlier: [true]
+            },
+            radius: 1.5
         }
     ],
     legend: {
@@ -83,6 +93,13 @@ export function syncSettings(settings) {
         ? settings.groups[0].value_col
         : settings.groups[0];
     settings.marks[0].per = [settings.color_by];
+    settings.marks[1].per = [
+        settings.id_col,
+        settings.measure_col,
+        settings.time_settings.value_col,
+        settings.value_col
+    ];
+    settings.marks[1].tooltip = `[${settings.id_col}] at [${settings.x.column}]: $y`;
     settings.margin = settings.margin || { bottom: settings.time_settings.vertical_space };
 
     //Convert unscheduled_visit_pattern from string to regular expression.
@@ -124,7 +141,8 @@ export const controlInputs = [
     { type: 'checkbox', inline: true, option: 'visits_without_data', label: 'Visits without data' },
     { type: 'checkbox', inline: true, option: 'unscheduled_visits', label: 'Unscheduled visits' },
     { type: 'checkbox', inline: true, option: 'boxplots', label: 'Box plots' },
-    { type: 'checkbox', inline: true, option: 'violins', label: 'Violin plots' }
+    { type: 'checkbox', inline: true, option: 'violins', label: 'Violin plots' },
+    { type: 'checkbox', inline: true, option: 'outliers', label: 'Outliers' }
 ];
 
 // Map values from settings to control inputs

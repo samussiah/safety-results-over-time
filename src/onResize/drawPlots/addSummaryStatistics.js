@@ -1,4 +1,4 @@
-import { format, min, quantile, median, max, mean, deviation } from 'd3';
+import { format } from 'd3';
 
 export default function addSummaryStatistics(subgroup) {
     const format0 = format(`.${this.config.y.precision + 0}f`);
@@ -10,22 +10,22 @@ export default function addSummaryStatistics(subgroup) {
         .html(
             d =>
                 `${subgroup.key} at ${subgroup.group.x.key}:\n&nbsp;&nbsp;&nbsp;&nbsp;N = ${subgroup
-                    .results.length}\n&nbsp;&nbsp;&nbsp;&nbsp;Min = ${format0(
-                    min(subgroup.results)
+                    .results.n}\n&nbsp;&nbsp;&nbsp;&nbsp;Min = ${format0(
+                    subgroup.results.min
                 )}\n&nbsp;&nbsp;&nbsp;&nbsp;5th % = ${format1(
-                    quantile(subgroup.results, 0.05)
+                    subgroup.results.q5
                 )}\n&nbsp;&nbsp;&nbsp;&nbsp;Q1 = ${format1(
-                    quantile(subgroup.results, 0.25)
+                    subgroup.results.q25
                 )}\n&nbsp;&nbsp;&nbsp;&nbsp;Median = ${format1(
-                    median(subgroup.results)
+                    subgroup.results.median
                 )}\n&nbsp;&nbsp;&nbsp;&nbsp;Q3 = ${format1(
-                    quantile(subgroup.results, 0.75)
+                    subgroup.results.q75
                 )}\n&nbsp;&nbsp;&nbsp;&nbsp;95th % = ${format1(
-                    quantile(subgroup.results, 0.95)
+                    subgroup.results.q95
                 )}\n&nbsp;&nbsp;&nbsp;&nbsp;Max = ${format0(
-                    max(subgroup.results)
+                    subgroup.results.max
                 )}\n&nbsp;&nbsp;&nbsp;&nbsp;Mean = ${format1(
-                    mean(subgroup.results)
-                )}\n&nbsp;&nbsp;&nbsp;&nbsp;StDev = ${format2(deviation(subgroup.results))}`
+                    subgroup.results.mean
+                )}\n&nbsp;&nbsp;&nbsp;&nbsp;StDev = ${format2(subgroup.results.deviation)}`
         );
 }

@@ -1,114 +1,26 @@
-import { ascending, scale, quantile, mean } from 'd3';
+import defineScales from './addBoxPlot/defineScales';
+import addContainer from './addBoxPlot/addContainer';
+import drawBox from './addBoxPlot/drawBox';
+import drawHorizontalLines from './addBoxPlot/drawHorizontalLines';
+import drawVerticalLines from './addBoxPlot/drawVerticalLines';
+import drawOuterCircle from './addBoxPlot/drawOuterCircle';
+import drawInnerCircle from './addBoxPlot/drawInnerCircle';
 
-export default function addBoxPlot(chart, subgroup, boxInsideColor = '#eee') {
-    //Make the numericResults numeric and sort.
-    const numericResults = subgroup.results.map(d => +d).sort(ascending);
-    const boxPlotWidth = 0.75 / chart.colorScale.domain().length;
-    const boxColor = chart.colorScale(subgroup.key);
+export default function addBoxPlot(subgroup) {
+    //Attach needed stuff to subgroup object.
+    subgroup.boxplot = {
+        boxPlotWidth: 0.75 / this.colorScale.domain().length,
+        boxColor: this.colorScale(subgroup.key),
+        boxInsideColor: '#eee',
+        probs: ['q5', 'q25', 'median', 'q75', 'q95'].map(prob => subgroup.results[prob])
+    };
 
-    //Define x - and y - scales.
-    const x = scale.linear().range([0, chart.x.rangeBand()]);
-    const y =
-        chart.config.y.type === 'linear'
-            ? scale
-                  .linear()
-                  .range([chart.plot_height, 0])
-                  .domain(chart.y.domain())
-            : scale
-                  .log()
-                  .range([chart.plot_height, 0])
-                  .domain(chart.y.domain());
-
-    //Define quantiles of interest.
-    let probs = [0.05, 0.25, 0.5, 0.75, 0.95],
-        iS;
-    for (let i = 0; i < probs.length; i++) {
-        probs[i] = quantile(numericResults, probs[i]);
-    }
-
-    //Define box plot container.
-    const boxplot = subgroup.svg
-        .append('g')
-        .attr('class', 'boxplot')
-        .datum({
-            values: numericResults,
-            probs: probs
-        })
-        .attr('clip-path', `url(#${chart.id})`);
-    const left = x(0.5 - boxPlotWidth / 2);
-    const right = x(0.5 + boxPlotWidth / 2);
-
-    //Draw box.
-    boxplot
-        .append('rect')
-        .attr({
-            class: 'boxplot fill',
-            x: left,
-            width: right - left,
-            y: y(probs[3]),
-            height: y(probs[1]) - y(probs[3])
-        })
-        .style('fill', boxColor);
-
-    //Draw horizontal lines at 5th percentile, median, and 95th percentile.
-    iS = [0, 2, 4];
-    const iSclass = ['', 'median', ''];
-    const iSColor = [boxColor, boxInsideColor, boxColor];
-    for (let i = 0; i < iS.length; i++) {
-        boxplot
-            .append('line')
-            .attr({
-                class: 'boxplot ' + iSclass[i],
-                x1: left,
-                x2: right,
-                y1: y(probs[iS[i]]),
-                y2: y(probs[iS[i]])
-            })
-            .style({
-                fill: iSColor[i],
-                stroke: iSColor[i]
-            });
-    }
-
-    //Draw vertical lines from the 5th percentile to the 25th percentile and from the 75th percentile to the 95th percentile.
-    iS = [[0, 1], [3, 4]];
-    for (var i = 0; i < iS.length; i++) {
-        boxplot
-            .append('line')
-            .attr({
-                class: 'boxplot',
-                x1: x(0.5),
-                x2: x(0.5),
-                y1: y(probs[iS[i][0]]),
-                y2: y(probs[iS[i][1]])
-            })
-            .style('stroke', boxColor);
-    }
-    //Draw outer circle.
-    boxplot
-        .append('circle')
-        .attr({
-            class: 'boxplot mean',
-            cx: x(0.5),
-            cy: y(mean(numericResults)),
-            r: Math.min(x(boxPlotWidth / 3), 10)
-        })
-        .style({
-            fill: boxInsideColor,
-            stroke: boxColor
-        });
-
-    //Draw inner circle.
-    boxplot
-        .append('circle')
-        .attr({
-            class: 'boxplot mean',
-            cx: x(0.5),
-            cy: y(mean(numericResults)),
-            r: Math.min(x(boxPlotWidth / 6), 5)
-        })
-        .style({
-            fill: boxColor,
-            stroke: 'none'
-        });
+    //Draw box plot.
+    defineScales.call(this, subgroup);
+    addContainer.call(this, subgroup);
+    drawBox.call(this, subgroup);
+    drawHorizontalLines.call(this, subgroup);
+    drawVerticalLines.call(this, subgroup);
+    drawOuterCircle.call(this, subgroup);
+    drawInnerCircle.call(this, subgroup);
 }
