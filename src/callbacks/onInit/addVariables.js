@@ -14,4 +14,5 @@ export default function addVariables() {
         //Add placeholder variable for outliers.
         d.srot_outlier = null;
     });
+    this.variables = Object.keys(this.raw_data[0]);
 }

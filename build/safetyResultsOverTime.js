@@ -332,9 +332,30 @@
                     };
                 })
             );
+
+        //Remove duplicate values.
+        settings.groups = d3
+            .set(
+                settings.groups.map(function(group) {
+                    return group.value_col;
+                })
+            )
+            .values()
+            .map(function(value) {
+                return {
+                    value_col: value,
+                    label: settings.groups.find(function(group) {
+                        return group.value_col === value;
+                    }).label
+                };
+            });
+
+        //Set initial group-by variable.
         settings.color_by = settings.color_by
             ? settings.color_by
             : settings.groups.length > 1 ? settings.groups[1].value_col : defaultGroup.value_col;
+
+        //Set initial group-by label.
         settings.legend.label = settings.groups.find(function(group) {
             return group.value_col === settings.color_by;
         }).label;
@@ -555,6 +576,7 @@
             //Add placeholder variable for outliers.
             d.srot_outlier = null;
         });
+        this.variables = Object.keys(this.raw_data[0]);
     }
 
     function defineVisitOrder() {
@@ -653,6 +675,27 @@
         });
     }
 
+    function checkGroupByVariables() {
+        var _this = this;
+
+        var groupByInput = this.controls.config.inputs.find(function(input) {
+            return input.label === 'Group by';
+        });
+        this.config.groups = this.config.groups.filter(function(group) {
+            var groupByExists = _this.variables.indexOf(group.value_col) > -1;
+            if (!groupByExists)
+                console.warn(
+                    'The [ ' +
+                        group.label +
+                        ' ] group-by option has been removed because the variable does not exist.'
+                );
+            return groupByExists;
+        });
+        groupByInput.values = this.config.groups.map(function(group) {
+            return group.label;
+        });
+    }
+
     function defineMeasureSet() {
         var _this = this;
 
@@ -719,6 +762,9 @@
 
         // 3c Remove filters for nonexistent or single-level variables.
         checkFilters.call(this);
+
+        // 3d Remove group-by options for nonexistent variables.
+        checkGroupByVariables.call(this);
 
         // 4. Define set of measures.
         defineMeasureSet.call(this);

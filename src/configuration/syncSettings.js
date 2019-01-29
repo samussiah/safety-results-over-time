@@ -20,9 +20,24 @@ export default function syncSettings(settings) {
                 };
             })
         );
+
+    //Remove duplicate values.
+    settings.groups = d3
+        .set(settings.groups.map(group => group.value_col))
+        .values()
+        .map(value => {
+            return {
+                value_col: value,
+                label: settings.groups.find(group => group.value_col === value).label
+            };
+        });
+
+    //Set initial group-by variable.
     settings.color_by = settings.color_by
         ? settings.color_by
         : settings.groups.length > 1 ? settings.groups[1].value_col : defaultGroup.value_col;
+
+    //Set initial group-by label.
     settings.legend.label = settings.groups.find(
         group => group.value_col === settings.color_by
     ).label;
