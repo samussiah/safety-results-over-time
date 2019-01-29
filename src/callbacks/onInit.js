@@ -23,7 +23,7 @@ export default function onInit() {
     // 3c Remove filters for nonexistent or single-level variables.
     checkFilters.call(this);
 
-    // 3d Remove group-by options for nonexistent or single-level variables.
+    // 3d Remove group-by options for nonexistent variables.
     checkGroupByVariables.call(this);
 
     // 4. Define set of measures.
