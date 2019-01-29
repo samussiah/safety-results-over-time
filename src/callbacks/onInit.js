@@ -3,6 +3,7 @@ import cleanData from './onInit/cleanData';
 import addVariables from './onInit/addVariables';
 import defineVisitOrder from './onInit/defineVisitOrder';
 import checkFilters from './onInit/checkFilters';
+import checkGroupByVariables from './onInit/checkGroupByVariables';
 import defineMeasureSet from './onInit/defineMeasureSet';
 import setInitialMeasure from './onInit/setInitialMeasure';
 
@@ -21,6 +22,9 @@ export default function onInit() {
 
     // 3c Remove filters for nonexistent or single-level variables.
     checkFilters.call(this);
+
+    // 3d Remove group-by options for nonexistent or single-level variables.
+    checkGroupByVariables.call(this);
 
     // 4. Define set of measures.
     defineMeasureSet.call(this);

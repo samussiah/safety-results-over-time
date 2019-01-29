@@ -12,7 +12,10 @@ d3.csv(
                 {value_col: 'SEX', label: 'Sex'},
                 {value_col: 'ARM', label: 'Treatment Group'},
                 {value_col: 'RACE', label: 'Race'},
-                {value_col: 'SITEID', label: 'Site'}
+                {value_col: 'SITEID', label: 'Site'},
+                {value_col: 'SITEID', label: 'asdf'},
+                'srot_none',
+                'None'
             ],
             color_by: 'ARM',
         };
