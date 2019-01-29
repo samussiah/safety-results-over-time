@@ -1,10 +1,10 @@
 import { ascending, scale, quantile, mean, format, min, median, max, deviation } from 'd3';
 
-export default function addBoxPlot(chart, group, boxInsideColor = '#eee', precision = 0) {
+export default function addBoxPlot(chart, subgroup, boxInsideColor = '#eee', precision = 0) {
     //Make the numericResults numeric and sort.
-    const numericResults = group.results.map(d => +d).sort(ascending);
+    const numericResults = subgroup.results.map(d => +d).sort(ascending);
     const boxPlotWidth = 0.75 / chart.colorScale.domain().length;
-    const boxColor = chart.colorScale(group.key);
+    const boxColor = chart.colorScale(subgroup.key);
 
     //Define x - and y - scales.
     const x = scale.linear().range([0, chart.x.rangeBand()]);
@@ -27,7 +27,7 @@ export default function addBoxPlot(chart, group, boxInsideColor = '#eee', precis
     }
 
     //Define box plot container.
-    const boxplot = group.svg
+    const boxplot = subgroup.svg
         .append('g')
         .attr('class', 'boxplot')
         .datum({

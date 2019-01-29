@@ -1,19 +1,19 @@
 import { layout, min, max, scale, svg, format, mean, median, quantile, deviation } from 'd3';
 
-export default function addViolinPlot(chart, group, violinColor = '#ccc7d6', precision = 0) {
+export default function addViolinPlot(chart, subgroup, violinColor = '#ccc7d6', precision = 0) {
     //Define histogram data.
     const histogram = layout
         .histogram()
         .bins(10)
         .frequency(0);
-    const data = histogram(group.results);
+    const data = histogram(subgroup.results);
     data.unshift({
-        x: min(group.results),
+        x: min(subgroup.results),
         dx: 0,
         y: data[0].y
     });
     data.push({
-        x: max(group.results),
+        x: max(subgroup.results),
         dx: 0,
         y: data[data.length - 1].y
     });
@@ -32,7 +32,7 @@ export default function addViolinPlot(chart, group, violinColor = '#ccc7d6', pre
                   .range([chart.plot_height, 0]);
     const y = scale
         .linear()
-        .domain([0, Math.max(1 - 1 / group.x.nGroups, max(data, d => d.y))])
+        .domain([0, Math.max(1 - 1 / subgroup.group.x.nGroups, max(data, d => d.y))])
         .range([width / 2, 0]);
 
     //Define violin shapes.
@@ -47,7 +47,7 @@ export default function addViolinPlot(chart, group, violinColor = '#ccc7d6', pre
         .interpolate('basis')
         .x(d => x(d.x + d.dx / 2))
         .y(d => y(d.y));
-    const violinplot = group.svg
+    const violinplot = subgroup.svg
         .append('g')
         .attr('class', 'violinplot')
         .attr('clip-path', `url(#${chart.id})`);
@@ -100,30 +100,30 @@ export default function addViolinPlot(chart, group, violinColor = '#ccc7d6', pre
     const format0 = format(`.${precision + 0}f`);
     const format1 = format(`.${precision + 1}f`);
     const format2 = format(`.${precision + 2}f`);
-    group.svg
+    subgroup.svg
         .selectAll('g')
         .append('title')
         .text(
             d =>
                 'N = ' +
-                group.results.length +
+                subgroup.results.length +
                 '\nMin = ' +
-                min(group.results) +
+                min(subgroup.results) +
                 '\n5th % = ' +
-                format1(quantile(group.results, 0.05)) +
+                format1(quantile(subgroup.results, 0.05)) +
                 '\nQ1 = ' +
-                format1(quantile(group.results, 0.25)) +
+                format1(quantile(subgroup.results, 0.25)) +
                 '\nMedian = ' +
-                format1(median(group.results)) +
+                format1(median(subgroup.results)) +
                 '\nQ3 = ' +
-                format1(quantile(group.results, 0.75)) +
+                format1(quantile(subgroup.results, 0.75)) +
                 '\n95th % = ' +
-                format1(quantile(group.results, 0.95)) +
+                format1(quantile(subgroup.results, 0.95)) +
                 '\nMax = ' +
-                max(group.results) +
+                max(subgroup.results) +
                 '\nMean = ' +
-                format1(mean(group.results)) +
+                format1(mean(subgroup.results)) +
                 '\nStDev = ' +
-                format2(deviation(group.results))
+                format2(deviation(subgroup.results))
         );
 }

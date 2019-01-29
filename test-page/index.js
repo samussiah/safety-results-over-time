@@ -7,7 +7,10 @@ d3.csv(
         if (error)
             console.log(error);
 
-        var settings = {};
+        var settings = {
+            filters: ['ARM', 'SEX', 'RACE', 'SITEID'],
+            groups: ['ARM', 'SEX', 'RACE', 'SITEID'],
+        };
         var instance = safetyResultsOverTime(
             '#container',
             settings
