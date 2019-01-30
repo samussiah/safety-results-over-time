@@ -1,4 +1,4 @@
-# Saftey Results Over Time
+# Safety Results Over Time
 ![Example](https://github.com/RhoInc/safety-results-over-time/wiki/img/default.PNG)
 
 ## Overview
