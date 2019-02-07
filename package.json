@@ -5,8 +5,8 @@
     "author": "Rho, Inc.",
     "license": "MIT",
     "homepage": "https://github.com/rhoinc/safety-results-over-time#readme",
-    "main": "./build/safetyResultsOverTime.js",
     "module": "./src/index.js",
+    "main": "./safetyResultsOverTime.js",
     "keywords": [
         "labs",
         "vitals",
@@ -31,7 +31,7 @@
         "check-settings-schema": "node ./scripts/check-settings-schema.js",
         "format": "npm run format-src && npm run format-build",
         "format-src": "prettier --print-width=100 --tab-width=4 --single-quote --write \"./src/**/*.js\"",
-        "format-build": "prettier --print-width=100 --tab-width=4 --single-quote --write ./build/safetyResultsOverTime.js",
+        "format-build": "prettier --print-width=100 --tab-width=4 --single-quote --write ./safetyResultsOverTime.js",
         "test-page": "start chrome ./test-page/index.html && start firefox ./test-page/index.html && start iexplore file://%CD%/test-page/index.html",
         "watch": "rollup -c -w"
     },
@@ -40,7 +40,7 @@
         "babel-preset-env": "^1.7.0",
         "babel-register": "^6.26.0",
         "prettier": "^1.7.4",
-        "rollup": "^0.66.6",
+        "rollup": "^1.1.2",
         "rollup-plugin-babel": "^3.0.2"
     },
     "repository": {

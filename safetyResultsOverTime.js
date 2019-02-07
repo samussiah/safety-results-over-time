@@ -1,10 +1,11 @@
 (function(global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined'
-        ? (module.exports = factory(require('d3'), require('webcharts')))
+        ? (module.exports = factory(require('webcharts'), require('d3')))
         : typeof define === 'function' && define.amd
-          ? define(['d3', 'webcharts'], factory)
-          : (global.safetyResultsOverTime = factory(global.d3, global.webCharts));
-})(this, function(d3$1, webcharts) {
+          ? define(['webcharts', 'd3'], factory)
+          : ((global = global || self),
+            (global.safetyResultsOverTime = factory(global.webCharts, global.d3)));
+})(this, function(webcharts, d3$1) {
     'use strict';
 
     if (typeof Object.assign != 'function') {
@@ -125,6 +126,12 @@
             }
         });
     }
+
+    Math.log10 =
+        Math.log10 ||
+        function(x) {
+            return Math.log(x) * Math.LOG10E;
+        };
 
     var _typeof =
         typeof Symbol === 'function' && typeof Symbol.iterator === 'symbol'
@@ -774,26 +781,33 @@
     }
 
     function classControlGroups() {
-        this.controls.wrap.selectAll('.control-group').each(function(d) {
-            var controlGroup = d3$1.select(this);
-            controlGroup.classed(
-                d.type.toLowerCase().replace(' ', '-') +
-                    ' ' +
-                    d.label.toLowerCase().replace(' ', '-'),
-                true
-            );
+        var checkboxOffset = 0;
+        this.controls.wrap
+            .style('position', 'relative')
+            .selectAll('.control-group')
+            .each(function(d, i) {
+                var controlGroup = d3$1.select(this);
+                controlGroup.classed(
+                    d.type.toLowerCase().replace(' ', '-') +
+                        ' ' +
+                        d.label.toLowerCase().replace(' ', '-'),
+                    true
+                );
 
-            //Add y-axis class to group y-axis controls.
-            if (d.grouping) controlGroup.classed(d.grouping, true);
+                //Add y-axis class to group y-axis controls.
+                if (d.grouping) controlGroup.classed(d.grouping, true);
 
-            //Float all checkboxes right.
-            if (d.type === 'checkbox')
-                controlGroup.style({
-                    float: 'right',
-                    clear: 'right',
-                    margin: '0'
-                });
-        });
+                //Float all checkboxes right.
+                if (d.type === 'checkbox') {
+                    controlGroup.style({
+                        position: 'absolute',
+                        top: checkboxOffset + 'px',
+                        right: 0,
+                        margin: '0'
+                    });
+                    checkboxOffset += controlGroup.node().offsetHeight;
+                }
+            });
     }
 
     function customizeGroupByControl() {
