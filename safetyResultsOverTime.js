@@ -1243,9 +1243,7 @@
                 this.populationCount +
                 ' participants  shown (' +
                 percentage +
-                ')<br>' +
-                this.filtered_data.length +
-                ' results'
+                ')'
         );
     }
 
