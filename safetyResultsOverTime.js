@@ -1,11 +1,11 @@
 (function(global, factory) {
     typeof exports === 'object' && typeof module !== 'undefined'
-        ? (module.exports = factory(require('webcharts'), require('d3')))
+        ? (module.exports = factory(require('d3'), require('webcharts')))
         : typeof define === 'function' && define.amd
-          ? define(['webcharts', 'd3'], factory)
+          ? define(['d3', 'webcharts'], factory)
           : ((global = global || self),
-            (global.safetyResultsOverTime = factory(global.webCharts, global.d3)));
-})(this, function(webcharts, d3$1) {
+            (global.safetyResultsOverTime = factory(global.d3, global.webCharts)));
+})(this, function(d3, webcharts) {
     'use strict';
 
     if (typeof Object.assign != 'function') {
@@ -532,7 +532,7 @@
     function countParticipants() {
         var _this = this;
 
-        this.populationCount = d3$1
+        this.populationCount = d3
             .set(
                 this.raw_data.map(function(d) {
                     return d[_this.config.id_col];
@@ -598,7 +598,7 @@
             this.raw_data[0].hasOwnProperty(this.config.time_settings.order_col)
         ) {
             //Define a unique set of visits with visit order concatenated.
-            visits = d3$1
+            visits = d3
                 .set(
                     this.raw_data.map(function(d) {
                         return (
@@ -616,7 +616,7 @@
                     var aOrder = a.split('|')[0],
                         bOrder = b.split('|')[0],
                         diff = +aOrder - +bOrder;
-                    return diff ? diff : d3$1.ascending(a, b);
+                    return diff ? diff : d3.ascending(a, b);
                 })
                 .map(function(visit) {
                     return visit.split('|')[1];
@@ -624,7 +624,7 @@
         } else {
             //Otherwise sort a unique set of visits alphanumerically.
             //Define a unique set of visits.
-            visits = d3$1
+            visits = d3
                 .set(
                     this.raw_data.map(function(d) {
                         return d[_this.config.time_settings.value_col];
@@ -662,7 +662,7 @@
                         ' ] filter has been removed because the variable does not exist.'
                 );
             } else {
-                var levels = d3$1
+                var levels = d3
                     .set(
                         _this.raw_data.map(function(d) {
                             return d[input.value_col];
@@ -706,7 +706,7 @@
     function defineMeasureSet() {
         var _this = this;
 
-        this.measures = d3$1
+        this.measures = d3
             .set(
                 this.initial_data.map(function(d) {
                     return d[_this.config.measure_col];
@@ -714,7 +714,7 @@
             )
             .values()
             .sort();
-        this.srot_measures = d3$1
+        this.srot_measures = d3
             .set(
                 this.initial_data.map(function(d) {
                     return d.srot_measure;
@@ -786,7 +786,7 @@
             .style('position', 'relative')
             .selectAll('.control-group')
             .each(function(d, i) {
-                var controlGroup = d3$1.select(this);
+                var controlGroup = d3.select(this);
                 controlGroup.classed(
                     d.type.toLowerCase().replace(' ', '-') +
                         ' ' +
@@ -861,7 +861,7 @@
                     var measure_data = context.raw_data.filter(function(d) {
                         return d.srot_measure === context.currentMeasure;
                     });
-                    context.config.y.domain = d3$1.extent(measure_data, function(d) {
+                    context.config.y.domain = d3.extent(measure_data, function(d) {
                         return +d[context.config.value_col];
                     }); //reset axis to full range
 
@@ -971,7 +971,7 @@
                     .selectAll('.axis-type .radio')
                     .filter(function() {
                         return (
-                            d3$1
+                            d3
                                 .select(this)
                                 .select('input')
                                 .attr('value') === 'log'
@@ -999,7 +999,7 @@
         });
 
         //Nest data and calculate summary statistics for each visit-group combination.
-        this.nested_measure_data = d3$1
+        this.nested_measure_data = d3
             .nest()
             .key(function(d) {
                 return d[_this.config.x.column];
@@ -1013,7 +1013,7 @@
                         .map(function(m) {
                             return +m[_this.config.y.column];
                         })
-                        .sort(d3$1.ascending),
+                        .sort(d3.ascending),
                     n: d.length
                 };
 
@@ -1032,8 +1032,8 @@
                     var fx = Array.isArray(item) ? item[0] : item;
                     var stat = Array.isArray(item) ? '' + fx.substring(0, 1) + item[1] * 100 : fx;
                     results[stat] = Array.isArray(item)
-                        ? d3$1[fx](results.values, item[1])
-                        : d3$1[fx](results.values);
+                        ? d3[fx](results.values, item[1])
+                        : d3[fx](results.values);
                 });
 
                 return results;
@@ -1069,7 +1069,7 @@
         if (!this.config.visits_without_data)
             this.config.x.domain = this.config.x.domain.filter(function(visit) {
                 return (
-                    d3$1
+                    d3
                         .set(
                             _this.filtered_measure_data.map(function(d) {
                                 return d[_this.config.time_settings.value_col];
@@ -1115,7 +1115,7 @@
             this.currentMeasure !== this.previousMeasure ||
             this.currentYAxis !== this.previousYAxis
         )
-            this.config.y.domain = d3$1.extent(
+            this.config.y.domain = d3.extent(
                 this.measure_data.map(function(d) {
                     return +d[_this.config.y.column];
                 })
@@ -1144,7 +1144,7 @@
         this.config.y.precision = this.config.y.log10range > 0.5 ? 0 : this.config.y.precision1;
         this.config.y.format =
             this.config.y.log10range > 0.5 ? '1f' : '.' + this.config.y.precision1 + 'f';
-        this.config.y.d3_format = d3$1.format(this.config.y.format);
+        this.config.y.d3_format = d3.format(this.config.y.format);
         this.config.y.formatted_domain = this.config.y.domain.map(function(d) {
             return _this.config.y.d3_format(d);
         });
@@ -1152,7 +1152,7 @@
         //Define the bin format: one less than the y-axis format.
         this.config.y.format1 =
             this.config.y.log10range > 5 ? '1f' : '.' + this.config.y.precision2 + 'f';
-        this.config.y.d3_format1 = d3$1.format(this.config.y.format1);
+        this.config.y.d3_format1 = d3.format(this.config.y.format1);
     }
 
     function updateYaxisResetButton() {
@@ -1228,14 +1228,14 @@
         var _this = this;
 
         this.populationCountContainer.selectAll('*').remove();
-        var subpopulationCount = d3$1
+        var subpopulationCount = d3
             .set(
                 this.filtered_data.map(function(d) {
                     return d[_this.config.id_col];
                 })
             )
             .values().length;
-        var percentage = d3$1.format('0.1%')(subpopulationCount / this.populationCount);
+        var percentage = d3.format('0.1%')(subpopulationCount / this.populationCount);
         this.populationCountContainer.html(
             '\n' +
                 subpopulationCount +
@@ -1314,7 +1314,7 @@
     function drawLogAxis() {
         //Draw custom y-axis given a log scale.
         if (this.config.y.type === 'log') {
-            var logYAxis = d3$1.svg
+            var logYAxis = d3.svg
                 .axis()
                 .scale(this.y)
                 .orient('left')
@@ -1339,7 +1339,7 @@
             ];
 
             for (var i = 0; i < probs.length; i++) {
-                probs[i].quantile = d3$1.quantile(
+                probs[i].quantile = d3.quantile(
                     this.measure_data
                         .map(function(d) {
                             return +d[_this.config.y.column];
@@ -1407,16 +1407,16 @@
     }
 
     function defineScales(subgroup) {
-        subgroup.boxplot.x = d3$1.scale.linear().range([0, this.x.rangeBand()]);
+        subgroup.boxplot.x = d3.scale.linear().range([0, this.x.rangeBand()]);
         subgroup.boxplot.left = subgroup.boxplot.x(0.5 - subgroup.boxplot.boxPlotWidth / 2);
         subgroup.boxplot.right = subgroup.boxplot.x(0.5 + subgroup.boxplot.boxPlotWidth / 2);
         subgroup.boxplot.y =
             this.config.y.type === 'linear'
-                ? d3$1.scale
+                ? d3.scale
                       .linear()
                       .range([this.plot_height, 0])
                       .domain(this.y.domain())
-                : d3$1.scale
+                : d3.scale
                       .log()
                       .range([this.plot_height, 0])
                       .domain(this.y.domain());
@@ -1543,7 +1543,7 @@
     function defineData(subgroup) {
         //Define histogram data.
         subgroup.violinPlot = {
-            histogram: d3$1.layout
+            histogram: d3.layout
                 .histogram()
                 .bins(10)
                 .frequency(0)
@@ -1565,21 +1565,21 @@
         subgroup.violinPlot.width = this.x.rangeBand();
         subgroup.violinPlot.x =
             this.config.y.type === 'linear'
-                ? d3$1.scale
+                ? d3.scale
                       .linear()
                       .domain(this.y.domain())
                       .range([this.plot_height, 0])
-                : d3$1.scale
+                : d3.scale
                       .log()
                       .domain(this.y.domain())
                       .range([this.plot_height, 0]);
-        subgroup.violinPlot.y = d3$1.scale
+        subgroup.violinPlot.y = d3.scale
             .linear()
             .domain([
                 0,
                 Math.max(
                     1 - 1 / subgroup.group.x.nGroups,
-                    d3$1.max(subgroup.violinPlot.data, function(d) {
+                    d3.max(subgroup.violinPlot.data, function(d) {
                         return d.y;
                     })
                 )
@@ -1589,7 +1589,7 @@
 
     function addContainer$1(subgroup) {
         //Define violin shapes.
-        subgroup.violinPlot.area = d3$1.svg
+        subgroup.violinPlot.area = d3.svg
             .area()
             .interpolate('basis')
             .x(function(d) {
@@ -1599,7 +1599,7 @@
             .y1(function(d) {
                 return subgroup.violinPlot.y(d.y);
             });
-        subgroup.violinPlot.line = d3$1.svg
+        subgroup.violinPlot.line = d3.svg
             .line()
             .interpolate('basis')
             .x(function(d) {
@@ -1671,9 +1671,9 @@
     }
 
     function addSummaryStatistics(subgroup) {
-        var format0 = d3$1.format('.' + (this.config.y.precision + 0) + 'f');
-        var format1 = d3$1.format('.' + (this.config.y.precision + 1) + 'f');
-        var format2 = d3$1.format('.' + (this.config.y.precision + 2) + 'f');
+        var format0 = d3.format('.' + (this.config.y.precision + 0) + 'f');
+        var format1 = d3.format('.' + (this.config.y.precision + 1) + 'f');
+        var format2 = d3.format('.' + (this.config.y.precision + 2) + 'f');
         subgroup.svg
             .selectAll('g')
             .append('title')
