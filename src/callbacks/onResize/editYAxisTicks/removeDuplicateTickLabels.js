@@ -1,8 +1,10 @@
+import { select } from 'd3';
+
 export default function removeDuplicateTickLabels() {
     //Manually remove excess y-axis ticks.
     const tickLabels = [];
     this.svg.selectAll('.y.axis .tick').each(function(d) {
-        const tick = d3.select(this);
+        const tick = select(this);
         const label = tick.select('text');
 
         if (label.size()) {

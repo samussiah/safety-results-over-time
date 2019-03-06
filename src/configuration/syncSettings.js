@@ -1,3 +1,5 @@
+import { set } from 'd3';
+
 export default function syncSettings(settings) {
     //x-axis
     settings.x.column = settings.time_settings.value_col;
@@ -22,8 +24,7 @@ export default function syncSettings(settings) {
         );
 
     //Remove duplicate values.
-    settings.groups = d3
-        .set(settings.groups.map(group => group.value_col))
+    settings.groups = set(settings.groups.map(group => group.value_col))
         .values()
         .map(value => {
             return {

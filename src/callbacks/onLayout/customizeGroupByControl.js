@@ -1,3 +1,5 @@
+import { select } from 'd3';
+
 export default function customizeGroupByControl() {
     const context = this;
 
@@ -7,8 +9,7 @@ export default function customizeGroupByControl() {
         groupControl
             .selectAll('select')
             .on('change', function(d) {
-                const label = d3
-                    .select(this)
+                const label = select(this)
                     .selectAll('option:checked')
                     .text();
                 const value_col = context.config.groups.find(group => group.label === label)
