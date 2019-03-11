@@ -159,7 +159,7 @@
         },
         "color_by": {
             "title": "Grouping",
-            "description": "grouping variable; defaults to first item in `groups` setting; set to `'srot_none'` to display chart without grouping on intialization",
+            "description": "name of variable that captures grouping; defaults to first item in `groups` setting; set to `'srot_none'` to display chart without grouping on initialization",
             "default": null,
             "type": "string",
             "data-mapping": true,
