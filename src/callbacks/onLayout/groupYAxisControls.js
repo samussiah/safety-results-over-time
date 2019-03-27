@@ -1,3 +1,5 @@
+import { select } from 'd3';
+
 export default function groupYAxisControls() {
     //Define a container in which to place y-axis controls.
     const grouping = this.controls.wrap
@@ -20,8 +22,7 @@ export default function groupYAxisControls() {
 
         //Radio buttons sit too low.
         if (d.option === 'y.type')
-            d3
-                .select(this)
+            select(this)
                 .selectAll('input[type=radio]')
                 .style({
                     top: '-.1em'
