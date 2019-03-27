@@ -157,6 +157,14 @@
             "data-type": "either",
             "required": false
         },
+        "color_by": {
+            "title": "Grouping",
+            "description": "name of variable that captures grouping; defaults to first item in `groups` setting; set to `'srot_none'` to display chart without grouping on initialization",
+            "default": null,
+            "type": "string",
+            "data-mapping": true,
+            "data-type": "numeric",
+            "required": false
         "boxplots": {
             "title": "Display box plots?",
             "description": "controls initial display of box plots",
