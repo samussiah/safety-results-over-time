@@ -18,3 +18,4 @@ required and optional variables:
 |`normal_col_high`|_STNRHI_|**numeric**|ULN of measure||
 |`filters[]`||**either**|an array of filter variables and associated metadata||
 |`groups[]`||**either**|an array of grouping variables and associated metadata||
+|`color_by`||**numeric**|grouping; defaults to first item in `groups` setting; set to `'srot_none'` to display chart without grouping on initialization||

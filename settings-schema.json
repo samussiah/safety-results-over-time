@@ -165,6 +165,7 @@
             "data-mapping": true,
             "data-type": "numeric",
             "required": false
+        },
         "boxplots": {
             "title": "Display box plots?",
             "description": "controls initial display of box plots",

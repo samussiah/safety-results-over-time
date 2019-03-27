@@ -163,6 +163,15 @@ Variable label
 
 
 
+## settings.color_by
+`string`
+
+name of variable that captures grouping; defaults to first item in `groups` setting; set to `'srot_none'` to display chart without grouping on initialization
+
+**default:** `"null"`
+
+
+
 ## settings.boxplots
 `boolean`
 

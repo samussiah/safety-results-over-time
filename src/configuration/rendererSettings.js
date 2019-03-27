@@ -17,6 +17,7 @@ export default function rendererSettings() {
         start_value: null,
         filters: null,
         groups: null,
+        color_by: null,
         boxplots: true,
         outliers: true,
         violins: false,
