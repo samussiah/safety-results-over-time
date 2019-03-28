@@ -3,7 +3,7 @@ The most straightforward way to customize the Safety Results Over Time is by usi
 In addition to the standard Webcharts settings several custom settings not available in the base Webcharts library have been added to the Safety Results Over Time to facilitate data mapping and other custom functionality. These custom settings are described in detail below. All defaults can be overwritten by users.
 
 # Renderer-specific settings
-The sections below describe each safety-results-over-time setting as of version 2.3.1.
+The sections below describe each safety-results-over-time setting as of version 2.3.2.
 
 ## settings.id_col
 `string`
@@ -168,7 +168,7 @@ Variable label
 
 name of variable that captures grouping; defaults to first item in `groups` setting; set to `'srot_none'` to display chart without grouping on initialization
 
-**default:** `"null"`
+**default:** none
 
 
 
@@ -243,7 +243,7 @@ an array of strings that identify unscheduled visits; overrides unscheduled_visi
 **default:** none
 
 # Webcharts settings
-The object below contains Webcharts settings as of version 2.3.1 of the Safety Results Over Time.
+The object below contains Webcharts settings as of version 2.3.2 of the Safety Results Over Time.
 
 ```
 {
