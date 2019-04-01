@@ -2,7 +2,7 @@
     "title": "settings",
     "description": "JSON schema for the configuration of safety-results-over-time",
     "overview": "The most straightforward way to customize the Safety Results Over Time is by using a configuration object whose properties describe the behavior and appearance of the chart. Since the Safety Results Over Time is a Webcharts `chart` object, many default Webcharts settings are set in the [defaultSettings.js file](https://github.com/RhoInc/safety-results-over-time/blob/master/src/defaultSettings.js) as [described below](#webcharts-settings). Refer to the [Webcharts documentation](https://github.com/RhoInc/Webcharts/wiki/Chart-Configuration) for more details on these settings.\nIn addition to the standard Webcharts settings several custom settings not available in the base Webcharts library have been added to the Safety Results Over Time to facilitate data mapping and other custom functionality. These custom settings are described in detail below. All defaults can be overwritten by users.",
-    "version": "2.3.1",
+    "version": "2.3.2",
     "type": "object",
     "data-guidelines": "The Safety Results Over Time accepts [JSON](https://en.wikipedia.org/wiki/JSON) data of the format returned by [`d3.csv()`](https://github.com/d3/d3-3.x-api-reference/blob/master/CSV.md). The renderer visualizes clinical medical signs data with **one row per participant per visit per medical sign** plus the required variables specified below.",
     "data-structure": "one record per participant per visit per medical sign",
@@ -32,13 +32,13 @@
                 },
                 "label": {
                     "title": "Visit variable label",
-                    "default":  "Visit",
+                    "default": "Visit",
                     "type": "string"
                 },
                 "order_col": {
                     "title": "Visit Order",
                     "description": "name of variable that captures visit order",
-                    "default":  "VISITNUM",
+                    "default": "VISITNUM",
                     "type": "string",
                     "data-mapping": true,
                     "data-type": "numeric",
@@ -54,12 +54,12 @@
                 },
                 "rotate_tick_labels": {
                     "title": "Rotate tick labels 45 degrees?",
-                    "default":  true,
+                    "default": true,
                     "type": "boolean"
                 },
                 "vertical_space": {
                     "title": "Rotated tick label spacing",
-                    "default":  100,
+                    "default": 100,
                     "type": "number"
                 }
             },
@@ -157,22 +157,30 @@
             "data-type": "either",
             "required": false
         },
+        "color_by": {
+            "title": "Grouping",
+            "description": "name of variable that captures grouping; defaults to first item in `groups` setting; set to `'srot_none'` to display chart without grouping on initialization",
+            "type": "string",
+            "data-mapping": true,
+            "data-type": "character",
+            "required": false
+        },
         "boxplots": {
             "title": "Display box plots?",
             "description": "controls initial display of box plots",
-            "default":  true,
+            "default": true,
             "type": "boolean"
         },
         "outliers": {
             "title": "Display outliers?",
             "description": "controls initial display of outliers outside the 5th and 95th percentiles",
-            "default":  true,
+            "default": true,
             "type": "boolean"
         },
         "violins": {
             "title": "Display violin plots?",
             "description": "controls initial display of violin plots",
-            "default":  false,
+            "default": false,
             "type": "boolean"
         },
         "missingValues": {
@@ -191,13 +199,13 @@
         "visits_without_data": {
             "title": "Display visits without data?",
             "description": "controls display of visits without data for the current measure",
-            "default":  false,
+            "default": false,
             "type": "boolean"
         },
         "unscheduled_visits": {
             "title": "Display unscheduled visits?",
             "description": "controls display of unscheduled visits",
-            "default":  false,
+            "default": false,
             "type": "boolean"
         },
         "unscheduled_visit_pattern": {
