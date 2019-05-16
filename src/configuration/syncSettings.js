@@ -9,6 +9,13 @@ export default function syncSettings(settings) {
     //y-axis
     settings.y.column = settings.value_col;
 
+    //handle a string arguments to array settings
+    const array_settings = ['filters', 'groups', 'missingValues'];
+    array_settings.forEach(function(s) {
+        if (!(settings[s] instanceof Array))
+            settings[s] = typeof settings[s] === 'string' ? [settings[s]] : [];
+    });
+
     //stratification
     const defaultGroup = { value_col: 'srot_none', label: 'None' };
     if (!(settings.groups instanceof Array && settings.groups.length))
