@@ -2,9 +2,9 @@
     typeof exports === 'object' && typeof module !== 'undefined'
         ? (module.exports = factory(require('d3'), require('webcharts')))
         : typeof define === 'function' && define.amd
-          ? define(['d3', 'webcharts'], factory)
-          : ((global = global || self),
-            (global.safetyResultsOverTime = factory(global.d3, global.webCharts)));
+        ? define(['d3', 'webcharts'], factory)
+        : ((global = global || self),
+          (global.safetyResultsOverTime = factory(global.d3, global.webCharts)));
 })(this, function(d3, webcharts) {
     'use strict';
 
@@ -177,8 +177,8 @@
         }
 
         if (!hasOwnProperty.call(to, key) || !isObj(val)) to[key] = val;
-        else if (val instanceof Array)
-            to[key] = from[key]; // figure out how to merge arrays without converting them into objects
+        else if (val instanceof Array) to[key] = from[key];
+        // figure out how to merge arrays without converting them into objects
         else to[key] = assign(Object(to[key]), from[key]);
     }
 
@@ -361,7 +361,9 @@
         //Set initial group-by variable.
         settings.color_by = settings.color_by
             ? settings.color_by
-            : settings.groups.length > 1 ? settings.groups[1].value_col : defaultGroup.value_col;
+            : settings.groups.length > 1
+            ? settings.groups[1].value_col
+            : defaultGroup.value_col;
 
         //Set initial group-by label.
         settings.legend.label = settings.groups.find(function(group) {
@@ -490,7 +492,9 @@
                     value_col: filter.value_col ? filter.value_col : filter,
                     label: filter.label
                         ? filter.label
-                        : filter.value_col ? filter.value_col : filter,
+                        : filter.value_col
+                        ? filter.value_col
+                        : filter,
                     description: 'filter'
                 };
 
@@ -645,9 +649,9 @@
                     return _this.config.time_settings.order.indexOf(visit) < 0;
                 })
             );
-        } else
-            //Otherwise use data-driven visit order.
-            this.config.x.order = visitOrder;
+        }
+        //Otherwise use data-driven visit order.
+        else this.config.x.order = visitOrder;
     }
 
     function checkFilters() {
@@ -908,8 +912,7 @@
 
             //Radio buttons sit too low.
             if (d.option === 'y.type')
-                d3
-                    .select(this)
+                d3.select(this)
                     .selectAll('input[type=radio]')
                     .style({
                         top: '-.1em'

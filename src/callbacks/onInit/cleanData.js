@@ -9,9 +9,9 @@ export default function cleanData() {
     //Warn user of removed records.
     if (nRemoved > 0)
         console.warn(
-            `${nRemoved} missing or non-numeric result${nRemoved > 1
-                ? 's have'
-                : ' has'} been removed.`
+            `${nRemoved} missing or non-numeric result${
+                nRemoved > 1 ? 's have' : ' has'
+            } been removed.`
         );
     this.initial_data = clean;
     this.raw_data = clean;

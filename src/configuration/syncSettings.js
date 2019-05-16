@@ -36,7 +36,9 @@ export default function syncSettings(settings) {
     //Set initial group-by variable.
     settings.color_by = settings.color_by
         ? settings.color_by
-        : settings.groups.length > 1 ? settings.groups[1].value_col : defaultGroup.value_col;
+        : settings.groups.length > 1
+        ? settings.groups[1].value_col
+        : defaultGroup.value_col;
 
     //Set initial group-by label.
     settings.legend.label = settings.groups.find(
@@ -49,10 +51,14 @@ export default function syncSettings(settings) {
     const visibleOutliers = settings.marks.find(mark => mark.type === 'circle' && !mark.hidden);
     lines.per = [settings.color_by];
     hiddenOutliers.radius = visibleOutliers.radius * 4;
-    settings.marks.filter(mark => mark.type === 'circle').forEach(mark => {
-        mark.per = [settings.id_col, settings.time_settings.value_col, settings.value_col];
-        mark.tooltip = `[${settings.id_col}] at [${settings.x.column}]: [${settings.value_col}]`;
-    });
+    settings.marks
+        .filter(mark => mark.type === 'circle')
+        .forEach(mark => {
+            mark.per = [settings.id_col, settings.time_settings.value_col, settings.value_col];
+            mark.tooltip = `[${settings.id_col}] at [${settings.x.column}]: [${
+                settings.value_col
+            }]`;
+        });
 
     //miscellany
     settings.margin = settings.margin || { bottom: settings.time_settings.vertical_space };

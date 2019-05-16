@@ -9,8 +9,9 @@ export default function addSummaryStatistics(subgroup) {
         .append('title')
         .html(
             d =>
-                `${subgroup.key} at ${subgroup.group.x.key}:\n&nbsp;&nbsp;&nbsp;&nbsp;N = ${subgroup
-                    .results.n}\n&nbsp;&nbsp;&nbsp;&nbsp;Min = ${format0(
+                `${subgroup.key} at ${subgroup.group.x.key}:\n&nbsp;&nbsp;&nbsp;&nbsp;N = ${
+                    subgroup.results.n
+                }\n&nbsp;&nbsp;&nbsp;&nbsp;Min = ${format0(
                     subgroup.results.min
                 )}\n&nbsp;&nbsp;&nbsp;&nbsp;5th % = ${format1(
                     subgroup.results.q5

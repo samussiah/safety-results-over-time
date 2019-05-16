@@ -24,9 +24,9 @@ export default function defineMeasureData() {
                 .append('small')
                 .classed('non-positive-results', true)
                 .text(
-                    `${nonPositiveResults} nonpositive result${nonPositiveResults > 1
-                        ? 's'
-                        : ''} removed.`
+                    `${nonPositiveResults} nonpositive result${
+                        nonPositiveResults > 1 ? 's' : ''
+                    } removed.`
                 );
     }
     this.raw_data = this.measure_data;
