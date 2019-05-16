@@ -12,9 +12,9 @@ export default function defineVisitOrder() {
         visits = set(
             this.raw_data.map(
                 d =>
-                    `${d[this.config.time_settings.order_col]}|${d[
-                        this.config.time_settings.value_col
-                    ]}`
+                    `${d[this.config.time_settings.order_col]}|${
+                        d[this.config.time_settings.value_col]
+                    }`
             )
         ).values();
 
@@ -42,7 +42,7 @@ export default function defineVisitOrder() {
         this.config.x.order = this.config.time_settings.order.concat(
             visitOrder.filter(visit => this.config.time_settings.order.indexOf(visit) < 0)
         );
-    } else
-        //Otherwise use data-driven visit order.
-        this.config.x.order = visitOrder;
+    }
+    //Otherwise use data-driven visit order.
+    else this.config.x.order = visitOrder;
 }

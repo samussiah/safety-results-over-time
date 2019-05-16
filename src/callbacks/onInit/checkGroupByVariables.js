@@ -4,7 +4,9 @@ export default function checkGroupByVariables() {
         const groupByExists = this.variables.indexOf(group.value_col) > -1;
         if (!groupByExists)
             console.warn(
-                `The [ ${group.label} ] group-by option has been removed because the variable does not exist.`
+                `The [ ${
+                    group.label
+                } ] group-by option has been removed because the variable does not exist.`
             );
         return groupByExists;
     });

@@ -9,6 +9,13 @@ export default function syncSettings(settings) {
     //y-axis
     settings.y.column = settings.value_col;
 
+    //handle a string arguments to array settings
+    const array_settings = ['filters', 'groups', 'missingValues'];
+    array_settings.forEach(function(s) {
+        if (!(settings[s] instanceof Array))
+            settings[s] = typeof settings[s] === 'string' ? [settings[s]] : [];
+    });
+
     //stratification
     const defaultGroup = { value_col: 'srot_none', label: 'None' };
     if (!(settings.groups instanceof Array && settings.groups.length))
@@ -36,7 +43,9 @@ export default function syncSettings(settings) {
     //Set initial group-by variable.
     settings.color_by = settings.color_by
         ? settings.color_by
-        : settings.groups.length > 1 ? settings.groups[1].value_col : defaultGroup.value_col;
+        : settings.groups.length > 1
+        ? settings.groups[1].value_col
+        : defaultGroup.value_col;
 
     //Set initial group-by label.
     settings.legend.label = settings.groups.find(
@@ -49,10 +58,14 @@ export default function syncSettings(settings) {
     const visibleOutliers = settings.marks.find(mark => mark.type === 'circle' && !mark.hidden);
     lines.per = [settings.color_by];
     hiddenOutliers.radius = visibleOutliers.radius * 4;
-    settings.marks.filter(mark => mark.type === 'circle').forEach(mark => {
-        mark.per = [settings.id_col, settings.time_settings.value_col, settings.value_col];
-        mark.tooltip = `[${settings.id_col}] at [${settings.x.column}]: [${settings.value_col}]`;
-    });
+    settings.marks
+        .filter(mark => mark.type === 'circle')
+        .forEach(mark => {
+            mark.per = [settings.id_col, settings.time_settings.value_col, settings.value_col];
+            mark.tooltip = `[${settings.id_col}] at [${settings.x.column}]: [${
+                settings.value_col
+            }]`;
+        });
 
     //miscellany
     settings.margin = settings.margin || { bottom: settings.time_settings.vertical_space };

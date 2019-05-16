@@ -7,9 +7,8 @@ export default function customizeGroupControl() {
         .filter(d => d.type === 'dropdown' && d.label === 'Group');
 
     //Hide group control when settings specify no groups.
-    groupControl.style(
-        'display',
-        d => (d.values.length === 1 ? 'none' : groupControl.style('display'))
+    groupControl.style('display', d =>
+        d.values.length === 1 ? 'none' : groupControl.style('display')
     );
 
     //Customize group control event listener.
