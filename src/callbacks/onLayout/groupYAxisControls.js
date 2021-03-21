@@ -6,7 +6,8 @@ export default function groupYAxisControls() {
         .insert('div', '.y-axis')
         .style({
             display: 'inline-block',
-            'margin-right': '5px'
+            'margin-right': '5px',
+            'vertical-align': 'middle',
         })
         .append('fieldset')
         .style('padding', '0px 2px');

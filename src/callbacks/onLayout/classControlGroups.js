@@ -6,6 +6,7 @@ export default function classControlGroups() {
     this.controls.wrap
         .style('position', 'relative')
         .selectAll('.control-group')
+        .style('vertical-align', 'middle')
         .each(function(d, i) {
             const controlGroup = select(this);
             controlGroup.classed(

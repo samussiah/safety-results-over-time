@@ -10,6 +10,7 @@ export default function rendererSettings() {
             vertical_space: 100
         },
         measure_col: 'TEST',
+        measure_order_col: 'TESTN',
         value_col: 'STRESN',
         unit_col: 'STRESU',
         normal_col_low: 'STNRLO',

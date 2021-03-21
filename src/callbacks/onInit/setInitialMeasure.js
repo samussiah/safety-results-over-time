@@ -1,5 +1,6 @@
 export default function setInitialMeasure() {
     const measureInput = this.controls.config.inputs.find(input => input.label === 'Measure');
+    measureInput.values = this.srot_measures;
     if (
         this.config.start_value &&
         this.srot_measures.indexOf(this.config.start_value) < 0 &&

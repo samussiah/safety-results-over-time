@@ -4,9 +4,22 @@ d3.csv(
         return d;
     },
     function(data) {
-        var instance = safetyResultsOverTime(
+        const measures = [...new Set(data.map(d => d.TEST)).values()]
+            .sort(webCharts.dataOps.naturalSorter)
+            .reverse();
+        data.forEach(d => {
+            d.TESTN = measures.findIndex(measure => measure === d.TEST);
+        });
+
+        const instance = safetyResultsOverTime(
             '#container', // element
             {
+                filters: [
+                    {value_col: 'SEX', label: 'Sex', all: false, start: 'M'},
+                    {value_col: 'ARM', label: 'Treatment Group'},
+                    {value_col: 'RACE', label: 'Race'},
+                    {value_col: 'SITEID', label: 'Site'},
+                ],
                 groups: [
                     {value_col: 'SEX', label: 'Sex'},
                     {value_col: 'ARM', label: 'Treatment Group'},

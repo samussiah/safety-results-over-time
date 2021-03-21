@@ -11,6 +11,8 @@ export default function syncControlInputs(controlInputs, settings) {
                 type: 'subsetter',
                 value_col: filter.value_col ? filter.value_col : filter,
                 label: filter.label ? filter.label : filter.value_col ? filter.value_col : filter,
+                start: filter.start || null,
+                all: filter.all || true,
                 description: 'filter'
             };
 
